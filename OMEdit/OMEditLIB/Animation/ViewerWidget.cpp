@@ -390,6 +390,9 @@ void ViewerWidget::changeVisualizerColor()
     const QColor color = QColorDialog::getColor(currentColor, this, Helper::chooseColor);
     if (color.isValid()) { // Picked color is invalid if the user cancels the dialog
       mpSelectedVisualizer->setColor(color);
+      if (mpSelectedVisualizer->isSurface()) {
+        mpSelectedVisualizer->asSurface()->_multicolored.exp = false;
+      }
       mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
     mpSelectedVisualizer = nullptr;
@@ -474,7 +477,7 @@ void ViewerWidget::removeTexture()
 void ViewerWidget::resetTransparencyAndTextureForAllVisualizers()
 {
   for (AbstractVisualizerObject& visualizer : mpAnimationWidget->getVisualization()->getBaseData()->getVisualizerObjects()) {
-    visualizer.setTransparency(0.0);
+    visualizer.setTransparency(visualizer.isSurface() ? visualizer.asSurface()->_transparency.exp : 0.0);
     visualizer.setTextureImagePath("");
     mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(visualizer);
   }

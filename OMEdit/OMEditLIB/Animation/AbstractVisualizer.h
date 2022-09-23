@@ -97,7 +97,7 @@ public:
 
 class ShapeObject;
 class VectorObject;
-typedef void SurfaceObject;
+class SurfaceObject;
 
 class AbstractVisualizerObject
 {

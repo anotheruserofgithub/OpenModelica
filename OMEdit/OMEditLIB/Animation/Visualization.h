@@ -47,8 +47,9 @@
 #include <osg/Transform>
 #include <osg/AutoTransform>
 #include <osg/MatrixTransform>
-#include <osg/StateSet>
 #include <osg/Image>
+#include <osg/Material>
+#include <osg/StateSet>
 #include <osg/Geode>
 #include <osg/Group>
 #include <osg/Node>
@@ -70,6 +71,7 @@
 #include "AbstractVisualizer.h"
 #include "Shape.h"
 #include "Vector.h"
+#include "Surface.h"
 
 class VisualizationAbstract; // Forward declaration for passing a pointer to various constructors before class declaration
 
@@ -96,8 +98,9 @@ public:
   virtual void apply(osg::MatrixTransform& node) override;
   osg::Image* convertImage(const QImage& iImage);
   void applyTexture(osg::StateSet* ss, const std::string& imagePath);
-  void changeColor(osg::StateSet* ss, const QColor color);
-  void changeTransparency(osg::StateSet* ss, const float transparency);
+  void changeColor(osg::StateSet* ss, const QColor color, const osg::Material::ColorMode mode = osg::Material::OFF);
+  void changeTransparency(osg::StateSet* ss, const float transparency, const osg::Material::ColorMode mode = osg::Material::OFF);
+  void changeTransparency(const osg::Geode::DrawableList& drawables, const float transparency);
 public:
   AbstractVisualizerObject* _visualizer;
   bool _changeMaterialProperties;
@@ -164,6 +167,7 @@ public:
   void setPath(const std::string path);
   void setUpScene(std::vector<ShapeObject>& shapes);
   void setUpScene(std::vector<VectorObject>& vectors);
+  void setUpScene(std::vector<SurfaceObject>& surfaces);
 private:
   osg::ref_ptr<AutoTransformCullCallback> _atCullCallback;
   osg::ref_ptr<osg::Group> _rootNode;
@@ -224,6 +228,7 @@ private:
   VisualizationAbstract* _visualization;
   std::vector<ShapeObject> _shapes;
   std::vector<VectorObject> _vectors;
+  std::vector<SurfaceObject> _surfaces;
 };
 
 class VisualizationAbstract
@@ -270,5 +275,6 @@ Directions fixDirections(osg::Vec3f lDir, osg::Vec3f wDir);
 void assemblePokeMatrix(osg::Matrix& M, const osg::Matrix3& T, const osg::Vec3f& r);
 rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r, osg::Vec3f r_shape, osg::Vec3f lDir, osg::Vec3f wDir, std::string type);
 rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r, osg::Vec3f dir);
+rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r);
 
 #endif

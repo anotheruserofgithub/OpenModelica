@@ -42,7 +42,7 @@
 #include <osg/GL> // for having direct access to glClear()
 
 #include <osg/Drawable>
-#include <osg/Material>
+#include <osg/LightModel>
 #include <osg/Shape>
 #include <osg/ShapeDrawable>
 #include <osg/StateAttribute>
@@ -124,12 +124,15 @@ const std::string OMVisualBase::getXMLFileName() const
 std::vector<std::reference_wrapper<AbstractVisualizerObject>> OMVisualBase::getVisualizerObjects()
 {
   std::vector<std::reference_wrapper<AbstractVisualizerObject>> visualizers;
-  visualizers.reserve(_shapes.size() + _vectors.size());
+  visualizers.reserve(_shapes.size() + _vectors.size() + _surfaces.size());
   for (ShapeObject& shape : _shapes) {
     visualizers.push_back(shape);
   }
   for (VectorObject& vector : _vectors) {
     visualizers.push_back(vector);
+  }
+  for (SurfaceObject& surface : _surfaces) {
+    visualizers.push_back(surface);
   }
   return visualizers;
 }
@@ -433,6 +436,68 @@ void OMVisualBase::initVisObjects()
 
     _vectors.push_back(vector);
   }
+
+  for (rapidxml::xml_node<>* surfaceNode = rootNode->first_node("surface"); surfaceNode; surfaceNode = surfaceNode->next_sibling("surface"))
+  {
+    SurfaceObject surface; // Create a new object for each node to ensure that all attributes are reset to default values
+
+    expNode = surfaceNode->first_node("ident")->first_node();
+    surface._id = std::string(expNode->value());
+
+    //std::cout<<"id "<<surface._id<<std::endl;
+
+    expNode = surfaceNode->first_node("T")->first_node();
+    surface._T[0] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[1] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[2] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[3] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[4] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[5] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[6] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[7] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._T[8] = getVisualizerAttributeForNode(expNode);
+
+    expNode = surfaceNode->first_node("r")->first_node();
+    surface._r[0] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._r[1] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._r[2] = getVisualizerAttributeForNode(expNode);
+
+    expNode = surfaceNode->first_node("color")->first_node();
+    surface._color[0] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._color[1] = getVisualizerAttributeForNode(expNode);
+    expNode = expNode->next_sibling();
+    surface._color[2] = getVisualizerAttributeForNode(expNode);
+
+    expNode = surfaceNode->first_node("specCoeff")->first_node();
+    surface._specCoeff = getVisualizerAttributeForNode(expNode);
+
+    expNode = surfaceNode->first_node("nu")->first_node();
+    surface._nu = getVisualizerAttributeForNode(expNode);
+    expNode = surfaceNode->first_node("nv")->first_node();
+    surface._nv = getVisualizerAttributeForNode(expNode);
+
+    expNode = surfaceNode->first_node("wireframe")->first_node();
+    surface._wireframe = getVisualizerAttributeForNode(expNode);
+
+    expNode = surfaceNode->first_node("multiColored")->first_node();
+    surface._multicolored = getVisualizerAttributeForNode(expNode);
+
+    expNode = surfaceNode->first_node("transparency")->first_node();
+    surface._transparency = getVisualizerAttributeForNode(expNode);
+
+    _surfaces.push_back(surface);
+  }
 }
 
 void OMVisualBase::setFmuVarRefInVisObjects()
@@ -519,6 +584,42 @@ void OMVisualBase::setFmuVarRefInVisObjects()
       vector._twoHeadedArrow.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(vector._twoHeadedArrow);
 
       //vector.dumpVisualizerAttributes();
+    }
+
+    for (SurfaceObject& surface : _surfaces)
+    {
+      //std::cout<<"surface "<<surface._id <<std::endl;
+
+      surface._T[0].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[0]);
+      surface._T[1].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[1]);
+      surface._T[2].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[2]);
+      surface._T[3].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[3]);
+      surface._T[4].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[4]);
+      surface._T[5].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[5]);
+      surface._T[6].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[6]);
+      surface._T[7].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[7]);
+      surface._T[8].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._T[8]);
+
+      surface._r[0].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._r[0]);
+      surface._r[1].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._r[1]);
+      surface._r[2].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._r[2]);
+
+      surface._color[0].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._color[0]);
+      surface._color[1].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._color[1]);
+      surface._color[2].fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._color[2]);
+
+      surface._specCoeff.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._specCoeff);
+
+      surface._nu.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._nu);
+      surface._nv.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._nv);
+
+      surface._wireframe.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._wireframe);
+
+      surface._multicolored.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._multicolored);
+
+      surface._transparency.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._transparency);
+
+      //surface.dumpVisualizerAttributes();
     }
   }
   catch (std::exception& ex)
@@ -643,6 +744,52 @@ void OMVisualBase::updateVisObjects(const double time)
       updateVisualizer(vector, true);
       //vector.dumpVisualizerAttributes();
     }
+
+    for (SurfaceObject& surface : _surfaces)
+    {
+      // Get the values for the scene graph objects
+      //std::cout<<"surface "<<surface._id <<std::endl;
+
+      _visualization->updateVisualizerAttribute(surface._T[0], time);
+      _visualization->updateVisualizerAttribute(surface._T[1], time);
+      _visualization->updateVisualizerAttribute(surface._T[2], time);
+      _visualization->updateVisualizerAttribute(surface._T[3], time);
+      _visualization->updateVisualizerAttribute(surface._T[4], time);
+      _visualization->updateVisualizerAttribute(surface._T[5], time);
+      _visualization->updateVisualizerAttribute(surface._T[6], time);
+      _visualization->updateVisualizerAttribute(surface._T[7], time);
+      _visualization->updateVisualizerAttribute(surface._T[8], time);
+
+      _visualization->updateVisualizerAttribute(surface._r[0], time);
+      _visualization->updateVisualizerAttribute(surface._r[1], time);
+      _visualization->updateVisualizerAttribute(surface._r[2], time);
+
+      _visualization->updateVisualizerAttribute(surface._color[0], time);
+      _visualization->updateVisualizerAttribute(surface._color[1], time);
+      _visualization->updateVisualizerAttribute(surface._color[2], time);
+
+      _visualization->updateVisualizerAttribute(surface._specCoeff, time);
+
+      _visualization->updateVisualizerAttribute(surface._nu, time);
+      _visualization->updateVisualizerAttribute(surface._nv, time);
+
+      _visualization->updateVisualizerAttribute(surface._wireframe, time);
+
+      _visualization->updateVisualizerAttribute(surface._multicolored, time);
+
+      _visualization->updateVisualizerAttribute(surface._transparency, time);
+
+      rAndT rT = rotateModelica2OSG(
+          osg::Matrix3(surface._T[0].exp, surface._T[1].exp, surface._T[2].exp,
+                       surface._T[3].exp, surface._T[4].exp, surface._T[5].exp,
+                       surface._T[6].exp, surface._T[7].exp, surface._T[8].exp),
+          osg::Vec3f(surface._r[0].exp, surface._r[1].exp, surface._r[2].exp));
+      assemblePokeMatrix(surface._mat, rT._T, rT._r);
+
+      // Update the surfaces
+      updateVisualizer(surface, true);
+      //surface.dumpVisualizerAttributes();
+    }
   }
   catch (std::exception& ex)
   {
@@ -658,6 +805,7 @@ void OMVisualBase::setUpScene()
   // Build scene graph
   _visualization->getOMVisScene()->getScene().setUpScene(_shapes);
   _visualization->getOMVisScene()->getScene().setUpScene(_vectors);
+  _visualization->getOMVisScene()->getScene().setUpScene(_surfaces);
 }
 
 void OMVisualBase::updateVectorCoords(VectorObject& vector, const double time)
@@ -1374,6 +1522,37 @@ void OSGScene::setUpScene(std::vector<VectorObject>& vectors)
   }
 }
 
+void OSGScene::setUpScene(std::vector<SurfaceObject>& surfaces)
+{
+  for (SurfaceObject& surface : surfaces)
+  {
+    osg::ref_ptr<osg::MatrixTransform> transf = new osg::MatrixTransform();
+
+    osg::ref_ptr<osg::ShapeDrawable> shapeDraw = new osg::ShapeDrawable();
+    shapeDraw->setColor(osg::Vec4(1.0, 1.0, 1.0, 1.0));
+
+    osg::ref_ptr<osg::Geode> geode = new osg::Geode();
+    geode->setName(surface._id);
+    geode->addDrawable(shapeDraw.get());
+
+    osg::ref_ptr<osg::Material> material = new osg::Material();
+    material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(0.0, 0.0, 0.0, 0.0));
+
+    osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
+    lightModel->setTwoSided(true);
+
+    osg::ref_ptr<osg::StateSet> ss = geode->getOrCreateStateSet();
+    ss->setAttribute(material.get());
+    ss->setAttribute(lightModel.get());
+
+    transf->addChild(geode.get());
+
+    _rootNode->addChild(transf.get());
+
+    surface.setTransformNode(transf);
+  }
+}
+
 
 UpdateVisitor::UpdateVisitor()
   : _visualizer(nullptr),
@@ -1529,6 +1708,20 @@ void UpdateVisitor::apply(osg::Geode& node)
       break;
      }//end case type vector
 
+    case VisualizerType::surface:
+     {
+      SurfaceObject* surface = _visualizer->asSurface();
+
+      osg::ref_ptr<osg::Drawable> draw = node.getDrawable(0); // FIXME: Not required since the below two statements are useless?
+      draw->dirtyBound(); // FIXME: Automatically done since the drawable itself (and not its underlying shape) is sure to be changed?
+      draw->dirtyDisplayList(); // FIXME: Automatically done since the drawable itself (and not its underlying shape) is sure to be changed?
+      node.setDrawable(0, surface->drawGeometry());
+      //std::cout<<"SURFACE "<<draw->getShape()->className()<<std::endl;
+
+      surface->setTransparency(surface->_transparency.exp); // FIXME: Work-around for transparency input dumped in visual.xml file only for surface visualizer
+      break;
+     }//end case type surface
+
     default:
      {break;}
 
@@ -1549,12 +1742,18 @@ void UpdateVisitor::apply(osg::Geode& node)
   }//end switch action
 
   if (_changeMaterialProperties) {
-    //set color
-    if (!_visualizer->isShape() or _visualizer->asShape()->_type.compare("dxf") != 0)
-      changeColor(node.getOrCreateStateSet(), _visualizer->getColor());
+    if (!_visualizer->isSurface() or !_visualizer->asSurface()->_multicolored.exp) {
+      //set color
+      if (!_visualizer->isShape() or _visualizer->asShape()->_type.compare("dxf") != 0)
+        changeColor(node.getOrCreateStateSet(), _visualizer->getColor());
 
-    //set transparency
-    changeTransparency(node.getOrCreateStateSet(), _visualizer->getTransparency());
+      //set transparency
+      changeTransparency(node.getOrCreateStateSet(), _visualizer->getTransparency());
+    } else {
+      //set transparency of each geometry vertex
+      changeTransparency(node.getOrCreateStateSet(), _visualizer->getTransparency(), osg::Material::DIFFUSE);
+      changeTransparency(node.getDrawableList(), _visualizer->getTransparency());
+    }
   }
 
   traverse(node);
@@ -1635,13 +1834,14 @@ void UpdateVisitor::applyTexture(osg::StateSet* ss, const std::string& imagePath
  * \brief UpdateVisitor::changeColor
  * changes color for a geode
  */
-void UpdateVisitor::changeColor(osg::StateSet* ss, const QColor color)
+void UpdateVisitor::changeColor(osg::StateSet* ss, const QColor color, const osg::Material::ColorMode mode)
 {
   if (ss)
   {
     osg::ref_ptr<osg::Material> material = dynamic_cast<osg::Material*>(ss->getAttribute(osg::StateAttribute::MATERIAL));
     if (!material.valid()) material = new osg::Material();
-    material->setDiffuse(osg::Material::FRONT, osg::Vec4f(color.redF(), color.greenF(), color.blueF(), color.alphaF()));
+    material->setColorMode(mode);
+    material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(color.redF(), color.greenF(), color.blueF(), color.alphaF()));
     ss->setAttribute(material.get());
   }
 }
@@ -1650,16 +1850,41 @@ void UpdateVisitor::changeColor(osg::StateSet* ss, const QColor color)
  * \brief UpdateVisitor::changeTransparency
  * changes transparency for a geode
  */
-void UpdateVisitor::changeTransparency(osg::StateSet* ss, const float transparency)
+void UpdateVisitor::changeTransparency(osg::StateSet* ss, const float transparency, const osg::Material::ColorMode mode)
 {
   if (ss)
   {
     osg::ref_ptr<osg::Material> material = dynamic_cast<osg::Material*>(ss->getAttribute(osg::StateAttribute::MATERIAL));
     if (!material.valid()) material = new osg::Material();
+    material->setColorMode(mode);
     material->setTransparency(osg::Material::FRONT_AND_BACK, transparency);
     ss->setAttributeAndModes(material.get(), osg::StateAttribute::OVERRIDE);
     ss->setMode(GL_BLEND, transparency ? osg::StateAttribute::ON : osg::StateAttribute::OFF);
     ss->setRenderingHint(transparency ? osg::StateSet::TRANSPARENT_BIN : osg::StateSet::OPAQUE_BIN);
+  }
+}
+
+/*!
+ * \brief UpdateVisitor::changeTransparency
+ * changes transparency for a geode's geometry
+ */
+void UpdateVisitor::changeTransparency(const osg::Geode::DrawableList& drawables, const float transparency) {
+  if (drawables.size() > 0) {
+    SurfaceObject::Vec4::value_type opacity = 1.0 - transparency;
+    for (osg::Drawable* drawable : drawables) {
+      if (drawable) {
+        osg::Geometry* geometry = drawable->asGeometry();
+        if (geometry) {
+          SurfaceObject::Vec4Array* colors = dynamic_cast<osg::Vec4Array*>(geometry->getColorArray());
+          if (colors) {
+            for (SurfaceObject::Vec4& color : colors->asVector()) {
+              color.a() = opacity;
+            }
+            colors->dirty();
+          }
+        }
+      }
+    }
   }
 }
 
@@ -1826,6 +2051,42 @@ rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r, osg::Vec3f r_shape, osg::
 rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r, osg::Vec3f dir)
 {
   rAndT res;
+
+  // See https://math.stackexchange.com/a/413235
+  int i = dir[0] ? 0 : dir[1] ? 1 : 2;
+  int j = (i + 1) % 3;
+
+  osg::Vec3f lDir = dir;
+  osg::Vec3f wDir = osg::Vec3f();
+  wDir[i] = -lDir[j];
+  wDir[j] = +lDir[i];
+
+  Directions dirs = fixDirections(lDir, wDir);
+  osg::Vec3f hDir = dirs._lDir ^ dirs._wDir;
+  //std::cout << "lDir " << dirs._lDir[0] << ", " << dirs._lDir[1] << ", " << dirs._lDir[2] << std::endl;
+  //std::cout << "wDir " << dirs._wDir[0] << ", " << dirs._wDir[1] << ", " << dirs._wDir[2] << std::endl;
+  //std::cout << "hDir " <<       hDir[0] << ", " <<       hDir[1] << ", " <<       hDir[2] << std::endl;
+
+  osg::Matrix3 T0 = osg::Matrix3(dirs._wDir[0], dirs._wDir[1], dirs._wDir[2],
+                                       hDir[0],       hDir[1],       hDir[2],
+                                 dirs._lDir[0], dirs._lDir[1], dirs._lDir[2]);
+  //std::cout << "T0 " << T0[0] << ", " << T0[1] << ", " << T0[2] << std::endl;
+  //std::cout << "   " << T0[3] << ", " << T0[4] << ", " << T0[5] << std::endl;
+  //std::cout << "   " << T0[6] << ", " << T0[7] << ", " << T0[8] << std::endl;
+
+  res._r = r;
+  res._T = Mat3mulMat3(T0, T);
+
+  return res;
+}
+
+rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r)
+{
+  rAndT res;
+
+  // Assuming Modelica main direction is along x-axis while OSG's is along z-axis
+  // TODO: Simplify all the below computations since all directions are known and normalized and canonical
+  osg::Vec3f dir = osg::Vec3f(1, 0, 0);
 
   // See https://math.stackexchange.com/a/413235
   int i = dir[0] ? 0 : dir[1] ? 1 : 2;
