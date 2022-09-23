@@ -143,6 +143,7 @@ set(OMEDITLIB_SOURCES Util/Helper.cpp
                       Animation/AbstractVisualizer.cpp
                       Animation/Shape.cpp
                       Animation/Vector.cpp
+                      Animation/Surface.cpp
                       resource_omedit.qrc)
 
 
@@ -277,6 +278,7 @@ set(OMEDITLIB_HEADERS Util/Helper.h
                       Animation/AbstractVisualizer.h
                       Animation/Shape.h
                       Animation/Vector.h
+                      Animation/Surface.h
                       Animation/rapidxml.hpp)
 
 

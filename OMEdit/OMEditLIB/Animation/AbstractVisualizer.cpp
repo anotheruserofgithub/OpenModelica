@@ -203,8 +203,10 @@ void AbstractVisualizerObjectWithVisualProperties<VisualizerObject>::dumpVisuali
 // Avoid linker errors (see https://isocpp.org/wiki/faq/templates#separate-template-class-defn-from-decl)
 #include "Shape.h"
 #include "Vector.h"
+#include "Surface.h"
 template class AbstractVisualizerObjectWithVisualProperties<ShapeObject>;
 template class AbstractVisualizerObjectWithVisualProperties<VectorObject>;
+template class AbstractVisualizerObjectWithVisualProperties<SurfaceObject>;
 
 VisualizerAttribute getVisualizerAttributeForNode(const rapidxml::xml_node<>* node)
 {
