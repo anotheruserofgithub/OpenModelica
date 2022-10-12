@@ -34,7 +34,18 @@
 
 #include "AbstractVisualizer.h"
 
+#include <type_traits>
+
+#include <osg/Array>
 #include <osg/Geometry>
+
+enum class SurfaceClosenessCheckState {inactive = 0b0, active = 0b1};
+enum class SurfaceStripsWrappingMethod {restart = 0b0, degenerate = 0b1};
+enum class SurfaceNormalsAverageWeights {none = 0b000, equal = 0b001, area = 0b010, angle = 0b100, bothAreaAndAngle = 0b110};
+enum class SurfaceNormalsAnimationTypes {none = 0b000, vertices = 0b001, facets = 0b010, bothVerticesAndFacets = 0b011};
+
+std::underlying_type<SurfaceNormalsAverageWeights>::type operator&(const SurfaceNormalsAverageWeights& lhs, const SurfaceNormalsAverageWeights& rhs);
+std::underlying_type<SurfaceNormalsAnimationTypes>::type operator&(const SurfaceNormalsAnimationTypes& lhs, const SurfaceNormalsAnimationTypes& rhs);
 
 class SurfaceObject : public AbstractVisualizerObject
 {
@@ -61,6 +72,11 @@ public:
   // https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osgUtil/LineSegmentIntersector.cpp#L530
 private:
   void fakeTorus(const itype nu, const itype nv, ftype** X, ftype** Y, ftype** Z, ftype*** N, ftype*** C) const; // TODO: Remove
+private:
+  SurfaceClosenessCheckState mClosenessCheckState;
+  SurfaceStripsWrappingMethod mStripsWrappingMethod;
+  SurfaceNormalsAverageWeights mNormalsAverageWeights;
+  SurfaceNormalsAnimationTypes mNormalsAnimationTypes;
 public:
   VisualizerAttribute _nu;
   VisualizerAttribute _nv;
