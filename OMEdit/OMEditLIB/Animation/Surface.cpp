@@ -60,6 +60,7 @@ SurfaceObject::SurfaceObject()
       _nv(VisualizerAttribute(0.0)),
       _wireframe(VisualizerAttribute(0.0)),
       _normalized(VisualizerAttribute(0.0)),
+      _doublesided(VisualizerAttribute(1.0)),
       _multicolored(VisualizerAttribute(0.0)),
       _transparency(VisualizerAttribute(0.0))
 {
@@ -83,6 +84,7 @@ void SurfaceObject::dumpVisualizerAttributes()
 #include <osg/ref_ptr>
 #include <osg/Array>
 #include <osg/Geometry>
+#include <osg/LightModel>
 #include <osg/LineWidth>
 #include <osg/PolygonMode>
 #include <osg/PrimitiveRestartIndex>
@@ -166,6 +168,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const     itype nv = _nv.exp;
   const bool wireframe = _wireframe.exp;
   const bool normalized = _normalized.exp;
+  const bool doublesided = _doublesided.exp;
   const bool multicolored = _multicolored.exp;
   const ftype opacity = 1.0 - _transparency.exp;
 
@@ -367,6 +370,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
   if (wireframe) {
     ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::Face::FRONT_AND_BACK, osg::PolygonMode::Mode::LINE), mode);
+  }
+  if (doublesided) {
+    osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
+    lightModel->setTwoSided(true);
+    ss->setAttributeAndModes(lightModel.get(), mode);
   }
 
   constexpr itype x = 0; // TODO index of 1st coordinate
