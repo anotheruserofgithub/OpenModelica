@@ -42,7 +42,6 @@
 #include <osg/GL> // for having direct access to glClear()
 
 #include <osg/Drawable>
-#include <osg/LightModel>
 #include <osg/Shape>
 #include <osg/ShapeDrawable>
 #include <osg/StateAttribute>
@@ -1538,12 +1537,8 @@ void OSGScene::setUpScene(std::vector<SurfaceObject>& surfaces)
     osg::ref_ptr<osg::Material> material = new osg::Material();
     material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(0.0, 0.0, 0.0, 0.0));
 
-    osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
-    lightModel->setTwoSided(true);
-
     osg::ref_ptr<osg::StateSet> ss = geode->getOrCreateStateSet();
     ss->setAttribute(material.get());
-    ss->setAttribute(lightModel.get());
 
     transf->addChild(geode.get());
 

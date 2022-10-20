@@ -82,6 +82,7 @@ public:
   VisualizerAttribute _nv;
   VisualizerAttribute _wireframe;
   VisualizerAttribute _normalized;
+  VisualizerAttribute _doublesided;
   VisualizerAttribute _multicolored;
   VisualizerAttribute _transparency;
 };
