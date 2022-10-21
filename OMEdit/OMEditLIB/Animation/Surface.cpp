@@ -69,7 +69,6 @@ void SurfaceObject::dumpVisualizerAttributes() const
 
 #include <cmath>
 #include <new>
-#include <vector>
 
 #include <osg/Array>
 #include <osg/Geometry>
@@ -428,15 +427,15 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
   }
   if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets || !normalized) {
-    Vec3::value_type**** A = nullptr;
+    ftype**** A = nullptr;
 
     if (!normalized) {
 #if 0 // Ragged array (with allocator overhead)
 #else // Contiguous array (with pointers overhead)
-      Vec3::value_type**** Au = nullptr;
-      Vec3::value_type*** Auv = nullptr;
-      Vec3::value_type** Auvw = nullptr;
-      Vec3::value_type* Auvwc = nullptr;
+      ftype**** Au = nullptr;
+      ftype*** Auv = nullptr;
+      ftype** Auvw = nullptr;
+      ftype* Auvwc = nullptr;
 #endif
 
       try {
@@ -569,15 +568,15 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         break;
     }
 
-    Vec3::value_type**** W = nullptr; // FIXME allocate together with A as a whole contiguous array?
+    ftype**** W = nullptr; // FIXME allocate together with A as a whole contiguous array?
 
     if (!normalized && na > 0) {
 #if 0 // Ragged array (with allocator overhead)
 #else // Contiguous array (with pointers overhead)
-      Vec3::value_type**** Wu = nullptr;
-      Vec3::value_type*** Wuv = nullptr;
-      Vec3::value_type** Wuvw = nullptr;
-      Vec3::value_type* Wuvwa = nullptr;
+      ftype**** Wu = nullptr;
+      ftype*** Wuv = nullptr;
+      ftype** Wuvw = nullptr;
+      ftype* Wuvwa = nullptr;
 #endif
 
       try {
@@ -740,24 +739,25 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         const ftype X11 = X[up1][vp1];
         const ftype Y11 = Y[up1][vp1];
         const ftype Z11 = Z[up1][vp1];
-        // TODO: Could avoid creating & destructing so many Vec3 by manually storing and computing things as Vec3::value_type in static arrays
-        const Vec3 du1 = Vec3(X10 - X00, Y10 - Y00, Z10 - Z00);
-        const Vec3 du2 = Vec3(X01 - X11, Y01 - Y11, Z01 - Z11);
-        const Vec3 dv1 = Vec3(X01 - X00, Y01 - Y00, Z01 - Z00);
-        const Vec3 dv2 = Vec3(X10 - X11, Y10 - Y11, Z10 - Z11);
-        const Vec3 cross1 = du1 ^ dv1;
-        const Vec3 cross2 = du2 ^ dv2;
-        const Vec3::value_type length1 = cross1.length();
-        const Vec3::value_type length2 = cross2.length();
-        const Vec3 normal1 = length1 > 0 ? cross1 / length1 : Vec3();
-        const Vec3 normal2 = length2 > 0 ? cross2 / length2 : Vec3();
+        const ftype du1[nc] = {X10 - X00, Y10 - Y00, Z10 - Z00};
+        const ftype du2[nc] = {X01 - X11, Y01 - Y11, Z01 - Z11};
+        const ftype dv1[nc] = {X01 - X00, Y01 - Y00, Z01 - Z00};
+        const ftype dv2[nc] = {X10 - X11, Y10 - Y11, Z10 - Z11};
+        const ftype cross1[nc] = {du1[y] * dv1[z] - du1[z] * dv1[y], du1[z] * dv1[x] - du1[x] * dv1[z], du1[x] * dv1[y] - du1[y] * dv1[x]};
+        const ftype cross2[nc] = {du2[y] * dv2[z] - du2[z] * dv2[y], du2[z] * dv2[x] - du2[x] * dv2[z], du2[x] * dv2[y] - du2[y] * dv2[x]};
+        const ftype length1 = std::sqrt(cross1[x] * cross1[x] + cross1[y] * cross1[y] + cross1[z] * cross1[z]);
+        const ftype length2 = std::sqrt(cross2[x] * cross2[x] + cross2[y] * cross2[y] + cross2[z] * cross2[z]);
+        const ftype invnorm1 = length1 > 0 ? 1 / length1 : 0;
+        const ftype invnorm2 = length2 > 0 ? 1 / length2 : 0;
+        const ftype normal1[nc] = {cross1[x] * invnorm1, cross1[y] * invnorm1, cross1[z] * invnorm1};
+        const ftype normal2[nc] = {cross2[x] * invnorm2, cross2[y] * invnorm2, cross2[z] * invnorm2};
         if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
-          const Vec3 center1 = Vec3((X00 + X10 + X01) / 3, (Y00 + Y10 + Y01) / 3, (Z00 + Z10 + Z01) / 3);
-          const Vec3 center2 = Vec3((X10 + X11 + X01) / 3, (Y10 + Y11 + Y01) / 3, (Z10 + Z11 + Z01) / 3);
-          facetsCenters->push_back(center1);
-          facetsCenters->push_back(center2);
-          facetsNormals->push_back(normal1);
-          facetsNormals->push_back(normal2);
+          const ftype center1[nc] = {(X00 + X10 + X01) / 3, (Y00 + Y10 + Y01) / 3, (Z00 + Z10 + Z01) / 3};
+          const ftype center2[nc] = {(X10 + X11 + X01) / 3, (Y10 + Y11 + Y01) / 3, (Z10 + Z11 + Z01) / 3};
+          facetsCenters->push_back(Vec3(center1[x], center1[y], center1[z]));
+          facetsCenters->push_back(Vec3(center2[x], center2[y], center2[z]));
+          facetsNormals->push_back(Vec3(normal1[x], normal1[y], normal1[z]));
+          facetsNormals->push_back(Vec3(normal2[x], normal2[y], normal2[z]));
         }
         if (!normalized) {
           {
@@ -781,8 +781,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             ftype** W11 = W[up1][vp1];
             itype a = 0;
             if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::area) {
-              const Vec3::value_type area1 = length1 / 2; // TODO surface area = triangle area = half the norm of the cross product
-              const Vec3::value_type area2 = length2 / 2; // TODO surface area = triangle area = half the norm of the cross product
+              const ftype area1 = length1 / 2; // TODO surface area = triangle area = half the norm of the cross product
+              const ftype area2 = length2 / 2; // TODO surface area = triangle area = half the norm of the cross product
               W00[i][a] = area1;
               W10[j][a] = area1;
               W01[k][a] = area1;
@@ -792,32 +792,32 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               a++;
             }
             if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle) {
-              const Vec3 duv = Vec3(X01 - X10, Y01 - Y10, Z01 - Z10);
-              const Vec3 dvu = Vec3(X10 - X01, Y10 - Y01, Z10 - Z01);
-              const Vec3::value_type dot11 = dv1 * du1;
-              const Vec3::value_type dot12 = du1 * dvu;
-              const Vec3::value_type dot13 = duv * dv1;
-              const Vec3::value_type dot21 = dvu * dv2;
-              const Vec3::value_type dot22 = dv2 * du2;
-              const Vec3::value_type dot23 = du2 * duv;
-              const Vec3::value_type lu1 = du1.length();
-              const Vec3::value_type lu2 = du2.length();
-              const Vec3::value_type luv = duv.length();
-              const Vec3::value_type lv1 = dv1.length();
-              const Vec3::value_type lv2 = dv2.length();
-              const Vec3::value_type lvu = dvu.length();
-              const Vec3::value_type length11 = lv1 * lu1;
-              const Vec3::value_type length12 = lu1 * lvu;
-              const Vec3::value_type length13 = luv * lv1;
-              const Vec3::value_type length21 = lvu * lv2;
-              const Vec3::value_type length22 = lv2 * lu2;
-              const Vec3::value_type length23 = lu2 * luv;
-              const Vec3::value_type angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const Vec3::value_type angle12 = std::acos(length12 > 0 ? dot12 / length12 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const Vec3::value_type angle13 = std::acos(length13 > 0 ? dot13 / length13 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const Vec3::value_type angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const Vec3::value_type angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const Vec3::value_type angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+              const ftype duv[nc] = {X01 - X10, Y01 - Y10, Z01 - Z10};
+              const ftype dvu[nc] = {X10 - X01, Y10 - Y01, Z10 - Z01};
+              const ftype dot11 = dv1[x] * du1[x] + dv1[y] * du1[y] + dv1[z] * du1[z];
+              const ftype dot12 = du1[x] * dvu[x] + du1[y] * dvu[y] + du1[z] * dvu[z];
+              const ftype dot13 = duv[x] * dv1[x] + duv[y] * dv1[y] + duv[z] * dv1[z];
+              const ftype dot21 = dvu[x] * dv2[x] + dvu[y] * dv2[y] + dvu[z] * dv2[z];
+              const ftype dot22 = dv2[x] * du2[x] + dv2[y] * du2[y] + dv2[z] * du2[z];
+              const ftype dot23 = du2[x] * duv[x] + du2[y] * duv[y] + du2[z] * duv[z];
+              const ftype lu1 = std::sqrt(du1[x] * du1[x] + du1[y] * du1[y] + du1[z] * du1[z]);
+              const ftype lu2 = std::sqrt(du2[x] * du2[x] + du2[y] * du2[y] + du2[z] * du2[z]);
+              const ftype luv = std::sqrt(duv[x] * duv[x] + duv[y] * duv[y] + duv[z] * duv[z]);
+              const ftype lv1 = std::sqrt(dv1[x] * dv1[x] + dv1[y] * dv1[y] + dv1[z] * dv1[z]);
+              const ftype lv2 = std::sqrt(dv2[x] * dv2[x] + dv2[y] * dv2[y] + dv2[z] * dv2[z]);
+              const ftype lvu = std::sqrt(dvu[x] * dvu[x] + dvu[y] * dvu[y] + dvu[z] * dvu[z]);
+              const ftype length11 = lv1 * lu1;
+              const ftype length12 = lu1 * lvu;
+              const ftype length13 = luv * lv1;
+              const ftype length21 = lvu * lv2;
+              const ftype length22 = lv2 * lu2;
+              const ftype length23 = lu2 * luv;
+              const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+              const ftype angle12 = std::acos(length12 > 0 ? dot12 / length12 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+              const ftype angle13 = std::acos(length13 > 0 ? dot13 / length13 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+              const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+              const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+              const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
               W00[i][a] = angle11;
               W10[j][a] = angle12;
               W01[k][a] = angle13;
@@ -882,8 +882,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
 
       if (mNormalsAverageWeights == SurfaceNormalsAverageWeights::none) {
-        // FIXME: Does not seem to work... => Of course because this is by primitive SET (entire triangle strip) not by primitive => Deprecated BIND_PER_PRIMITIVE
+        // FIXME: Does not work ... => Of course because this is by primitive SET (entire triangle strip), not by primitive => BIND_PER_PRIMITIVE was deprecated
         // => The only simple way to go with faceted rendering is to duplicate vertices for each facet in the indices array below, so three normals per triangle
+        // => It is not sufficient to duplicate the indices, it is rather mandatory to duplicate the vertices themselves for any triangle to have its own triple
         // normals->setBinding(osg::Array::BIND_PER_PRIMITIVE_SET);
         // for (Vec3& normal : facetsNormals->asVector()) {
         //   normals->push_back(normal);
@@ -891,9 +892,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       } else {
         for (itype u = 0; u < nu; u++) {
           for (itype v = 0; v < nv; v++) {
-            Vec3::value_type normal[nc] = {0};
+            ftype normal[nc] = {0};
             for (itype w = 0; w < nw; w++) {
-              Vec3::value_type weight = 1;
+              ftype weight = 1;
               for (itype a = 0; a < na; a++) {
                 weight *= W[u][v][w][a];
               }
@@ -901,17 +902,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               normal[y] += A[u][v][w][y] * weight;
               normal[z] += A[u][v][w][z] * weight;
             }
-            const Vec3::value_type length = std::sqrt(normal[x] * normal[x] + normal[y] * normal[y] + normal[z] * normal[z]);
-            if (length > 0) {
-              const Vec3::value_type norm = 1 / length;
-              normal[x] *= norm;
-              normal[y] *= norm;
-              normal[z] *= norm;
-            } else {
-              normal[x] = 0;
-              normal[y] = 0;
-              normal[z] = 0;
-            }
+            const ftype length = std::sqrt(normal[x] * normal[x] + normal[y] * normal[y] + normal[z] * normal[z]);
+            const ftype invnorm = length > 0 ? 1 / length : 0;
+            normal[x] *= invnorm;
+            normal[y] *= invnorm;
+            normal[z] *= invnorm;
             normals->push_back(Vec3(normal[x], normal[y], normal[z]));
           }
         }
