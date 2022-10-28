@@ -86,6 +86,7 @@ void SurfaceObject::dumpVisualizerAttributes()
 #include <osg/Geometry>
 #include <osg/LightModel>
 #include <osg/LineWidth>
+#include <osg/Point>
 #include <osg/PolygonMode>
 #include <osg/PrimitiveRestartIndex>
 #include <osg/PrimitiveSet>
@@ -115,9 +116,9 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
   ftype beta;
 
   for (itype u = 0; u < nu; u++) {
-    alpha = startAngle + (stopAngle - startAngle) * u / (nu - 1);
+    alpha = startAngle + (nu > 1 ? (stopAngle - startAngle) * u / (nu - 1) : 0);
     for (itype v = 0; v < nv; v++) {
-      beta = phi_start + (phi_stop - phi_start) * v / (nv - 1);
+      beta = phi_start + (nv > 1 ? (phi_stop - phi_start) * v / (nv - 1) : 0);
       Z[u][v] = (R + r * std::cos(beta)) * std::cos(alpha);
       X[u][v] = (R + r * std::cos(beta)) * std::sin(alpha);
       Y[u][v] =      r * std::sin(beta);
@@ -135,24 +136,28 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
   }
 
   if (mClosenessCheckState == SurfaceClosenessCheckState::active) {
-    for (itype u = 0; u < nu; u++) {
-      X[u][nv - 1] = X[u][0];
-      Y[u][nv - 1] = Y[u][0];
-      Z[u][nv - 1] = Z[u][0];
-      if (N) {
-        N[u][nv - 1][0] = N[u][0][0];
-        N[u][nv - 1][1] = N[u][0][1];
-        N[u][nv - 1][2] = N[u][0][2];
+    if (phi_stop - pi == phi_start + pi) {
+      for (itype u = 0; u < nu; u++) {
+        X[u][nv - 1] = X[u][0];
+        Y[u][nv - 1] = Y[u][0];
+        Z[u][nv - 1] = Z[u][0];
+        if (N) {
+          N[u][nv - 1][0] = N[u][0][0];
+          N[u][nv - 1][1] = N[u][0][1];
+          N[u][nv - 1][2] = N[u][0][2];
+        }
       }
     }
-    for (itype v = 0; v < nv; v++) {
-      X[nu - 1][v] = X[0][v];
-      Y[nu - 1][v] = Y[0][v];
-      Z[nu - 1][v] = Z[0][v];
-      if (N) {
-        N[nu - 1][v][0] = N[0][v][0];
-        N[nu - 1][v][1] = N[0][v][1];
-        N[nu - 1][v][2] = N[0][v][2];
+    if (stopAngle - pi == startAngle + pi) {
+      for (itype v = 0; v < nv; v++) {
+        X[nu - 1][v] = X[0][v];
+        Y[nu - 1][v] = Y[0][v];
+        Z[nu - 1][v] = Z[0][v];
+        if (N) {
+          N[nu - 1][v][0] = N[0][v][0];
+          N[nu - 1][v][1] = N[0][v][1];
+          N[nu - 1][v][2] = N[0][v][2];
+        }
       }
     }
   }
@@ -162,14 +167,29 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 {
   osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
 
-  constexpr itype nc = 3; // TODO number of dimensions/coordinates
-  const     itype nu = _nu.exp;
-  const     itype nv = _nv.exp;
+  const char* id = _id.c_str();
+  const itype nu = _nu.exp;
+  const itype nv = _nv.exp;
   const bool wireframe = _wireframe.exp;
   const bool normalized = _normalized.exp;
   const bool doublesided = _doublesided.exp;
   const bool multicolored = _multicolored.exp;
   const ftype opacity = 1.0 - _transparency.exp;
+
+  if (nu < 1 || nv < 1) {
+    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                          QString(QObject::tr("A dimension of surface \"%1\" is empty (nu = %2, nv = %3)."))
+                                                              .arg(id)
+                                                              .arg(nu)
+                                                              .arg(nv),
+                                                          Helper::scriptingKind,
+                                                          Helper::errorLevel));
+    return geometry.release();
+  }
+
+  // TODO: Guarantee nu * nv < int max minus index offset, or explicitly use a larger type (unsigned long long int) if the product is not used as an index
+
+  constexpr itype nc = 3; // TODO number of dimensions/coordinates
 
 #if 0 // Ragged array (with allocator overhead)
   ftype**  X = nullptr;
@@ -268,9 +288,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   } catch (const std::bad_alloc&) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                           QString(QObject::tr("Not enough memory to allocate vertices of surface \"%1\" (nu = %2, nv = %3)."))
-                                                              .arg(_id.c_str())
-                                                              .arg(QString::number(nu))
-                                                              .arg(QString::number(nv)),
+                                                              .arg(id)
+                                                              .arg(nu)
+                                                              .arg(nv),
                                                           Helper::scriptingKind,
                                                           Helper::errorLevel));
 #if 0 // Ragged array (with allocator overhead)
@@ -353,19 +373,36 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   fakeTorus(nu, nv, X, Y, Z, N, C);
   // TODO: Fake multicolored surface
 
-  // TODO: Guarantee nu & nv > 1 => Draw line/point otherwise (could technically be a valid degenerate surface)
-  // TODO: Guarantee nu * nv < int max minus index offset, or explicitly use a larger type (long long (unsigned) int) if the product is not used as an index
+  constexpr ftype ps = 1; // Point size // FIXME vendor-specific annotation
+  constexpr ftype lw = 1; // Line width // FIXME vendor-specific annotation
+  constexpr ftype ns = 0.25; // Normal scale // FIXME vendor-specific annotation
 
-  /* Attributes */ // TODO: #define instead of evaluating conditions every time => instead, let the user choose through vendor-specific annotations
+  constexpr itype ri = 0; // Restart index
+
+  constexpr itype x = 0; // Index of 1st coordinate
+  constexpr itype y = 1; // Index of 2nd coordinate
+  constexpr itype z = 2; // Index of 3rd coordinate
+
+  const bool lines = nu == 1 || nv == 1; // Surface degenerated to a line strip
+  const bool point = nu == 1 && nv == 1; // Surface degenerated to a single point
+
   const bool degenerate = mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
   const bool restart    = mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
-  constexpr itype r = 0; // Restart index
-  const itype o = restart ? r + 1 : 0; // Index offset
+
+  const itype o = restart && !lines ? ri + 1 : 0; // Index offset
+
+  /* Attributes */
   constexpr osg::StateAttribute::GLModeValue mode = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
   osg::ref_ptr<osg::StateSet> ss = geometry->getOrCreateStateSet();
-  if (restart) {
+  if (point) {
+    ss->setAttributeAndModes(new osg::Point(ps), mode);
+  }
+  if ((lines && !point) || wireframe || mNormalsAnimationTypes != SurfaceNormalsAnimationTypes::none) {
+    ss->setAttributeAndModes(new osg::LineWidth(lw), mode);
+  }
+  if (restart && !lines) {
+    ss->setAttributeAndModes(new osg::PrimitiveRestartIndex(ri), mode);
     ss->setMode(GL_PRIMITIVE_RESTART, mode);
-    ss->setAttributeAndModes(new osg::PrimitiveRestartIndex(r), mode);
   }
   if (wireframe) {
     ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::Face::FRONT_AND_BACK, osg::PolygonMode::Mode::LINE), mode);
@@ -376,315 +413,667 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     ss->setAttributeAndModes(lightModel.get(), mode);
   }
 
-  constexpr itype x = 0; // TODO index of 1st coordinate
-  constexpr itype y = 1; // TODO index of 2nd coordinate
-  constexpr itype z = 2; // TODO index of 3rd coordinate
-
-  const itype num1 = nu - 1;
-  const itype nvm1 = nv - 1;
-  const itype num2 = nu - 2;
-  const ftype fnum1 = (ftype)num1;
-  const ftype fnvm1 = (ftype)nvm1;
-  const itype opnutnv = o + nu * nv; // FIXME if not normalized and weighting is none then arrays need to be larger
-
-  const itype nVertices = opnutnv;
-  const itype nNormals  = opnutnv;
-  const itype nColors   = opnutnv;
-  const itype nTexels   = opnutnv;
-  const itype nIndices  = opnutnv; // TODO
-
+  /* Arrays */
   osg::ref_ptr<Vec3Array> vertices = new Vec3Array(osg::Array::BIND_PER_VERTEX);
   osg::ref_ptr<Vec3Array> normals  = new Vec3Array(osg::Array::BIND_PER_VERTEX);
   osg::ref_ptr<Vec4Array> colors   = new Vec4Array(osg::Array::BIND_PER_VERTEX);
   osg::ref_ptr<Vec2Array> texels   = new Vec2Array(osg::Array::BIND_PER_VERTEX);
-  osg::ref_ptr<osg::PrimitiveSet> indices; // TODO create only when handling indices below?
-
-  vertices->reserve(nVertices);
-  normals ->reserve(nNormals );
-  colors  ->reserve(nColors  );
-  texels  ->reserve(nTexels  );
-
-  if (restart) { // Duplicate the first vertex (see OSG commit 353b18b)
-    for (itype i = 0; i < o; i++) {
-      vertices->push_back(Vec3());
-      normals ->push_back(Vec3());
-      colors  ->push_back(Vec4());
-      texels  ->push_back(Vec2());
-    }
-  }
-
-  osg::ref_ptr<Vec3Array> facetsCenters = nullptr;
-  osg::ref_ptr<Vec3Array> facetsNormals = nullptr;
+  osg::ref_ptr<osg::PrimitiveSet> indices;
+  osg::ref_ptr<Vec3Array> facetsCenters;
+  osg::ref_ptr<Vec3Array> facetsNormals;
   if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
     facetsCenters = new Vec3Array();
     facetsNormals = new Vec3Array();
-    facetsCenters->reserve(2 * num1 * nvm1); // TODO constexpr
-    facetsNormals->reserve(2 * num1 * nvm1); // TODO constexpr
   }
 
-  /* Vertices */
-  if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+  if (lines) {
+    const itype nutnv = nu * nv;
+    const itype nutnvm1 = nutnv - 1;
+    const ftype fnutnvm1 = (ftype)nutnvm1;
+
+    const itype nVertices = nutnv;
+    const itype nNormals  = nutnv;
+    const itype nColors   = nutnv;
+    const itype nTexels   = nutnv;
+    const itype nIndices  = nutnv;
+
+    vertices->reserve(nVertices);
+    normals ->reserve(nNormals );
+    colors  ->reserve(nColors  );
+    texels  ->reserve(nTexels  );
+
     for (itype u = 0; u < nu; u++) {
       for (itype v = 0; v < nv; v++) {
         vertices->push_back(Vec3(X[u][v], Y[u][v], Z[u][v]));
+
+        if (normalized) {
+          normals->push_back(Vec3(N[u][v][x], N[u][v][y], N[u][v][z]));
+        } else {
+          normals->push_back(Vec3(X[u][v], Y[u][v], Z[u][v]));
+        }
+
+        if (multicolored) {
+          colors->push_back(Vec4(C[u][v][x], C[u][v][y], C[u][v][z], opacity));
+        } else {
+          colors->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
+        }
+
+        if (point) {
+          texels->push_back(Vec2(u, v));
+        } else {
+          texels->push_back(Vec2(u / fnutnvm1, v / fnutnvm1));
+        }
       }
     }
+
+    indices = new osg::DrawArrays(point ? osg::PrimitiveSet::POINTS : osg::PrimitiveSet::LINE_STRIP, 0, nIndices);
   } else {
-    for (itype u = 0; u < num1; u++) {
-      const itype up0 = u;
-      const itype up1 = u + 1;
-      for (itype v = 0; v < nvm1; v++) {
-        const itype vp0 = v;
-        const itype vp1 = v + 1;
-        const ftype X00 = X[up0][vp0];
-        const ftype Y00 = Y[up0][vp0];
-        const ftype Z00 = Z[up0][vp0];
-        const ftype X01 = X[up0][vp1];
-        const ftype Y01 = Y[up0][vp1];
-        const ftype Z01 = Z[up0][vp1];
-        const ftype X10 = X[up1][vp0];
-        const ftype Y10 = Y[up1][vp0];
-        const ftype Z10 = Z[up1][vp0];
-        const ftype X11 = X[up1][vp1];
-        const ftype Y11 = Y[up1][vp1];
-        const ftype Z11 = Z[up1][vp1];
-        vertices->push_back(Vec3(X00, Y00, Z00));
-        vertices->push_back(Vec3(X10, Y10, Z10));
-        vertices->push_back(Vec3(X01, Y01, Z01));
-        vertices->push_back(Vec3(X10, Y10, Z10));
-        vertices->push_back(Vec3(X11, Y11, Z11));
-        vertices->push_back(Vec3(X01, Y01, Z01));
+    const itype num1 = nu - 1;
+    const itype nvm1 = nv - 1;
+    const itype num2 = nu - 2;
+    const ftype fnum1 = (ftype)num1;
+    const ftype fnvm1 = (ftype)nvm1;
+    const itype num1tnvm1t2 = (num1 * nvm1) << 1;
+    const itype opnutnv = o + nu * nv; // FIXME if not normalized and weighting is none then arrays need to be larger
+
+    const itype nVertices = opnutnv;
+    const itype nNormals  = opnutnv;
+    const itype nColors   = opnutnv;
+    const itype nTexels   = opnutnv;
+    const itype nFacets   = num1tnvm1t2;
+    const itype nIndices  = opnutnv; // TODO
+
+    vertices->reserve(nVertices);
+    normals ->reserve(nNormals );
+    colors  ->reserve(nColors  );
+    texels  ->reserve(nTexels  );
+
+    if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+      facetsCenters->reserve(nFacets);
+      facetsNormals->reserve(nFacets);
+    }
+
+    if (restart) { // Duplicate a dummy vertex (see OSG commit 353b18b)
+      for (itype i = 0; i < o; i++) {
+        vertices->push_back(Vec3());
+        normals ->push_back(Vec3());
+        colors  ->push_back(Vec4());
+        texels  ->push_back(Vec2());
       }
     }
-  }
 
-  /* Normals */
-  if (normalized) {
-    for (itype u = 0; u < nu; u++) {
-      for (itype v = 0; v < nv; v++) {
-        normals->push_back(Vec3(N[u][v][x], N[u][v][y], N[u][v][z]));
+    /* Vertices */
+    if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+      for (itype u = 0; u < nu; u++) {
+        for (itype v = 0; v < nv; v++) {
+          vertices->push_back(Vec3(X[u][v], Y[u][v], Z[u][v]));
+        }
+      }
+    } else {
+      for (itype u = 0; u < num1; u++) {
+        const itype up0 = u;
+        const itype up1 = u + 1;
+        for (itype v = 0; v < nvm1; v++) {
+          const itype vp0 = v;
+          const itype vp1 = v + 1;
+          const ftype X00 = X[up0][vp0];
+          const ftype Y00 = Y[up0][vp0];
+          const ftype Z00 = Z[up0][vp0];
+          const ftype X01 = X[up0][vp1];
+          const ftype Y01 = Y[up0][vp1];
+          const ftype Z01 = Z[up0][vp1];
+          const ftype X10 = X[up1][vp0];
+          const ftype Y10 = Y[up1][vp0];
+          const ftype Z10 = Z[up1][vp0];
+          const ftype X11 = X[up1][vp1];
+          const ftype Y11 = Y[up1][vp1];
+          const ftype Z11 = Z[up1][vp1];
+          vertices->push_back(Vec3(X00, Y00, Z00));
+          vertices->push_back(Vec3(X10, Y10, Z10));
+          vertices->push_back(Vec3(X01, Y01, Z01));
+          vertices->push_back(Vec3(X10, Y10, Z10));
+          vertices->push_back(Vec3(X11, Y11, Z11));
+          vertices->push_back(Vec3(X01, Y01, Z01));
+        }
       }
     }
-  }
-  if (!normalized || mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
-    itype nw = 6; // TODO number of adjacent facets/windings
-    switch (mNormalsAverageWeights) {
-      case SurfaceNormalsAverageWeights::none:
-        nw = 2;
-        break;
-      default:
-        break;
+
+    /* Normals */
+    if (normalized) {
+      for (itype u = 0; u < nu; u++) {
+        for (itype v = 0; v < nv; v++) {
+          normals->push_back(Vec3(N[u][v][x], N[u][v][y], N[u][v][z]));
+        }
+      }
     }
+    if (!normalized || mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+      itype nw = 6; // TODO number of adjacent facets/windings
+      switch (mNormalsAverageWeights) {
+        case SurfaceNormalsAverageWeights::none:
+          nw = 2;
+          break;
+        default:
+          break;
+      }
 
-    ftype**** A = nullptr;
+      ftype**** A = nullptr;
 
-    if (!normalized && nw > 0) {
+      if (!normalized && nw > 0) {
 #if 0 // Ragged array (with allocator overhead)
 #else // Contiguous array (with pointers overhead)
-      ftype**** Au = nullptr;
-      ftype*** Auv = nullptr;
-      ftype** Auvw = nullptr;
-      ftype* Auvwc = nullptr;
+        ftype**** Au = nullptr;
+        ftype*** Auv = nullptr;
+        ftype** Auvw = nullptr;
+        ftype* Auvwc = nullptr;
 #endif
 
-      try {
+        try {
 #if 0 // Ragged array (with allocator overhead)
-        A = new ftype***[nu]();
-        for (itype u = 0; u < nu; u++) {
-          A[u] = new ftype**[nv]();
-          for (itype v = 0; v < nv; v++) {
-            A[u][v] = new ftype*[nw]();
-            for (itype w = 0; w < nw; w++) {
-              A[u][v][w] = new ftype[nc]();
-            }
-          }
-        }
-#else // Contiguous array (with pointers overhead)
-        Au = new ftype***[nu];
-        Auv = new ftype**[nu * nv];
-        Auvw = new ftype*[nu * nv * nw];
-        Auvwc = new ftype[nu * nv * nw * nc]{0};
-        for (itype u = 0; u < nu; u++, Auv += nv) {
-          Au[u] = Auv;
-          for (itype v = 0; v < nv; v++, Auvw += nw) {
-            Au[u][v] = Auvw;
-            for (itype w = 0; w < nw; w++, Auvwc += nc) {
-              Au[u][v][w] = Auvwc;
-            }
-          }
-        }
-#endif
-      } catch (const std::bad_alloc&) {
-        MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                              QString(QObject::tr("Not enough memory to allocate adjacent facets normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, nc = %5)."))
-                                                                  .arg(_id.c_str())
-                                                                  .arg(QString::number(nu))
-                                                                  .arg(QString::number(nv))
-                                                                  .arg(QString::number(nw))
-                                                                  .arg(QString::number(nc)),
-                                                              Helper::scriptingKind,
-                                                              Helper::errorLevel));
-#if 0 // Ragged array (with allocator overhead)
-        if (A) {
+          A = new ftype***[nu]();
           for (itype u = 0; u < nu; u++) {
-            if (A[u]) {
-              for (itype v = 0; v < nv; v++) {
-                if (A[u][v]) {
-                  for (itype w = 0; w < nw; w++) {
-                    if (A[u][v][w]) {
-                      delete[] A[u][v][w];
+            A[u] = new ftype**[nv]();
+            for (itype v = 0; v < nv; v++) {
+              A[u][v] = new ftype*[nw]();
+              for (itype w = 0; w < nw; w++) {
+                A[u][v][w] = new ftype[nc]();
+              }
+            }
+          }
+#else // Contiguous array (with pointers overhead)
+          Au = new ftype***[nu];
+          Auv = new ftype**[nu * nv];
+          Auvw = new ftype*[nu * nv * nw];
+          Auvwc = new ftype[nu * nv * nw * nc]{0};
+          for (itype u = 0; u < nu; u++, Auv += nv) {
+            Au[u] = Auv;
+            for (itype v = 0; v < nv; v++, Auvw += nw) {
+              Au[u][v] = Auvw;
+              for (itype w = 0; w < nw; w++, Auvwc += nc) {
+                Au[u][v][w] = Auvwc;
+              }
+            }
+          }
+#endif
+        } catch (const std::bad_alloc&) {
+          MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                                QString(QObject::tr("Not enough memory to allocate adjacent facets normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, nc = %5)."))
+                                                                    .arg(id)
+                                                                    .arg(nu)
+                                                                    .arg(nv)
+                                                                    .arg(nw)
+                                                                    .arg(nc),
+                                                                Helper::scriptingKind,
+                                                                Helper::errorLevel));
+#if 0 // Ragged array (with allocator overhead)
+          if (A) {
+            for (itype u = 0; u < nu; u++) {
+              if (A[u]) {
+                for (itype v = 0; v < nv; v++) {
+                  if (A[u][v]) {
+                    for (itype w = 0; w < nw; w++) {
+                      if (A[u][v][w]) {
+                        delete[] A[u][v][w];
+                      }
                     }
+                    delete[] A[u][v];
                   }
-                  delete[] A[u][v];
                 }
+                delete[] A[u];
+              }
+            }
+            delete[] A;
+          }
+          if (multicolored) {
+            for (itype u = 0; u < nu; u++) {
+              for (itype v = 0; v < nv; v++) {
+                delete[] C[u][v];
+              }
+              delete[] C[u];
+            }
+            delete[] C;
+          }
+          if (normalized) {
+            for (itype u = 0; u < nu; u++) {
+              for (itype v = 0; v < nv; v++) {
+                delete[] N[u][v];
+              }
+              delete[] N[u];
+            }
+            delete[] N;
+          }
+          {
+            for (itype u = 0; u < nu; u++) {
+              delete[] Z[u];
+              delete[] Y[u];
+              delete[] X[u];
+            }
+            delete[] Z;
+            delete[] Y;
+            delete[] X;
+          }
+#else // Contiguous array (with pointers overhead)
+          delete[] Auvwc;
+          delete[] Auvw;
+          delete[] Auv;
+          delete[] Au;
+          if (multicolored) {
+            delete[] C[0][0];
+            delete[] C[0];
+            delete[] C;
+          }
+          if (normalized) {
+            delete[] N[0][0];
+            delete[] N[0];
+            delete[] N;
+          }
+          {
+            delete[] Z[0];
+            delete[] Y[0];
+            delete[] X[0];
+            delete[] Z;
+            delete[] Y;
+            delete[] X;
+          }
+#endif
+          return geometry.release();
+        }
+
+#if 0 // Ragged array (with allocator overhead)
+#else // Contiguous array (with pointers overhead)
+        A = Au;
+#endif
+      }
+
+      itype na = 0; // TODO number of area/angle weights
+      switch (mNormalsAverageWeights) {
+        case SurfaceNormalsAverageWeights::area:
+        case SurfaceNormalsAverageWeights::angle:
+          na = 1;
+          break;
+        case SurfaceNormalsAverageWeights::bothAreaAndAngle:
+          na = 2;
+          break;
+        default:
+          break;
+      }
+
+      ftype**** W = nullptr; // FIXME allocate together with A as a whole contiguous array?
+
+      if (!normalized && na > 0) {
+#if 0 // Ragged array (with allocator overhead)
+#else // Contiguous array (with pointers overhead)
+        ftype**** Wu = nullptr;
+        ftype*** Wuv = nullptr;
+        ftype** Wuvw = nullptr;
+        ftype* Wuvwa = nullptr;
+#endif
+
+        try {
+#if 0 // Ragged array (with allocator overhead)
+          W = new ftype***[nu]();
+          for (itype u = 0; u < nu; u++) {
+            W[u] = new ftype**[nv]();
+            for (itype v = 0; v < nv; v++) {
+              W[u][v] = new ftype*[nw]();
+              for (itype w = 0; w < nw; w++) {
+                W[u][v][w] = new ftype[na]();
+              }
+            }
+          }
+#else // Contiguous array (with pointers overhead)
+          Wu = new ftype***[nu];
+          Wuv = new ftype**[nu * nv];
+          Wuvw = new ftype*[nu * nv * nw];
+          Wuvwa = new ftype[nu * nv * nw * na]{0};
+          for (itype u = 0; u < nu; u++, Wuv += nv) {
+            Wu[u] = Wuv;
+            for (itype v = 0; v < nv; v++, Wuvw += nw) {
+              Wu[u][v] = Wuvw;
+              for (itype w = 0; w < nw; w++, Wuvwa += na) {
+                Wu[u][v][w] = Wuvwa;
+              }
+            }
+          }
+#endif
+        } catch (const std::bad_alloc&) {
+          MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                                QString(QObject::tr("Not enough memory to allocate weights for normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, na = %5)."))
+                                                                    .arg(id)
+                                                                    .arg(nu)
+                                                                    .arg(nv)
+                                                                    .arg(nw)
+                                                                    .arg(na),
+                                                                Helper::scriptingKind,
+                                                                Helper::errorLevel));
+#if 0 // Ragged array (with allocator overhead)
+          if (W) {
+            for (itype u = 0; u < nu; u++) {
+              if (W[u]) {
+                for (itype v = 0; v < nv; v++) {
+                  if (W[u][v]) {
+                    for (itype w = 0; w < nw; w++) {
+                      if (W[u][v][w]) {
+                        delete[] W[u][v][w];
+                      }
+                    }
+                    delete[] W[u][v];
+                  }
+                }
+                delete[] W[u];
+              }
+            }
+            delete[] W;
+          }
+          {
+            for (itype u = 0; u < nu; u++) {
+              for (itype v = 0; v < nv; v++) {
+                for (itype w = 0; w < nw; w++) {
+                  delete[] A[u][v][w];
+                }
+                delete[] A[u][v];
               }
               delete[] A[u];
             }
+            delete[] A;
           }
-          delete[] A;
-        }
-        if (multicolored) {
-          for (itype u = 0; u < nu; u++) {
-            for (itype v = 0; v < nv; v++) {
-              delete[] C[u][v];
+          if (multicolored) {
+            for (itype u = 0; u < nu; u++) {
+              for (itype v = 0; v < nv; v++) {
+                delete[] C[u][v];
+              }
+              delete[] C[u];
             }
-            delete[] C[u];
+            delete[] C;
           }
-          delete[] C;
-        }
-        if (normalized) {
-          for (itype u = 0; u < nu; u++) {
-            for (itype v = 0; v < nv; v++) {
-              delete[] N[u][v];
+          if (normalized) {
+            for (itype u = 0; u < nu; u++) {
+              for (itype v = 0; v < nv; v++) {
+                delete[] N[u][v];
+              }
+              delete[] N[u];
             }
-            delete[] N[u];
+            delete[] N;
           }
-          delete[] N;
-        }
-        {
-          for (itype u = 0; u < nu; u++) {
-            delete[] Z[u];
-            delete[] Y[u];
-            delete[] X[u];
+          {
+            for (itype u = 0; u < nu; u++) {
+              delete[] Z[u];
+              delete[] Y[u];
+              delete[] X[u];
+            }
+            delete[] Z;
+            delete[] Y;
+            delete[] X;
           }
-          delete[] Z;
-          delete[] Y;
-          delete[] X;
-        }
 #else // Contiguous array (with pointers overhead)
-        delete[] Auvwc;
-        delete[] Auvw;
-        delete[] Auv;
-        delete[] Au;
-        if (multicolored) {
-          delete[] C[0][0];
-          delete[] C[0];
-          delete[] C;
-        }
-        if (normalized) {
-          delete[] N[0][0];
-          delete[] N[0];
-          delete[] N;
-        }
-        {
-          delete[] Z[0];
-          delete[] Y[0];
-          delete[] X[0];
-          delete[] Z;
-          delete[] Y;
-          delete[] X;
-        }
+          delete[] Wuvwa;
+          delete[] Wuvw;
+          delete[] Wuv;
+          delete[] Wu;
+          {
+            delete[] A[0][0][0];
+            delete[] A[0][0];
+            delete[] A[0];
+            delete[] A;
+          }
+          if (multicolored) {
+            delete[] C[0][0];
+            delete[] C[0];
+            delete[] C;
+          }
+          if (normalized) {
+            delete[] N[0][0];
+            delete[] N[0];
+            delete[] N;
+          }
+          {
+            delete[] Z[0];
+            delete[] Y[0];
+            delete[] X[0];
+            delete[] Z;
+            delete[] Y;
+            delete[] X;
+          }
 #endif
-        return geometry.release();
+          return geometry.release();
+        }
+
+#if 0 // Ragged array (with allocator overhead)
+#else // Contiguous array (with pointers overhead)
+        W = Wu;
+#endif
       }
 
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
-      A = Au;
-#endif
-    }
+      constexpr itype i = 0; // TODO index of first adjacent facet for top right vertex
+      constexpr itype j = 2; // TODO index of first adjacent facet for top left vertex
+      constexpr itype k = 4; // TODO index of first adjacent facet for bottom right vertex
+      constexpr itype l = 1; // TODO index of second adjacent facet for top left vertex
+      constexpr itype m = 3; // TODO index of second adjacent facet for bottom left vertex
+      constexpr itype n = 5; // TODO index of second adjacent facet for bottom right vertex
 
-    itype na = 0; // TODO number of area/angle weights
-    switch (mNormalsAverageWeights) {
-      case SurfaceNormalsAverageWeights::area:
-      case SurfaceNormalsAverageWeights::angle:
-        na = 1;
-        break;
-      case SurfaceNormalsAverageWeights::bothAreaAndAngle:
-        na = 2;
-        break;
-      default:
-        break;
-    }
-
-    ftype**** W = nullptr; // FIXME allocate together with A as a whole contiguous array?
-
-    if (!normalized && na > 0) {
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
-      ftype**** Wu = nullptr;
-      ftype*** Wuv = nullptr;
-      ftype** Wuvw = nullptr;
-      ftype* Wuvwa = nullptr;
-#endif
-
-      try {
-#if 0 // Ragged array (with allocator overhead)
-        W = new ftype***[nu]();
-        for (itype u = 0; u < nu; u++) {
-          W[u] = new ftype**[nv]();
-          for (itype v = 0; v < nv; v++) {
-            W[u][v] = new ftype*[nw]();
-            for (itype w = 0; w < nw; w++) {
-              W[u][v][w] = new ftype[na]();
+      for (itype u = 0; u < num1; u++) {
+        const itype up0 = u;
+        const itype up1 = u + 1;
+        for (itype v = 0; v < nvm1; v++) {
+          const itype vp0 = v;
+          const itype vp1 = v + 1;
+          const ftype X00 = X[up0][vp0];
+          const ftype Y00 = Y[up0][vp0];
+          const ftype Z00 = Z[up0][vp0];
+          const ftype X01 = X[up0][vp1];
+          const ftype Y01 = Y[up0][vp1];
+          const ftype Z01 = Z[up0][vp1];
+          const ftype X10 = X[up1][vp0];
+          const ftype Y10 = Y[up1][vp0];
+          const ftype Z10 = Z[up1][vp0];
+          const ftype X11 = X[up1][vp1];
+          const ftype Y11 = Y[up1][vp1];
+          const ftype Z11 = Z[up1][vp1];
+          const ftype du1[nc] = {X10 - X00, Y10 - Y00, Z10 - Z00};
+          const ftype du2[nc] = {X01 - X11, Y01 - Y11, Z01 - Z11};
+          const ftype dv1[nc] = {X01 - X00, Y01 - Y00, Z01 - Z00};
+          const ftype dv2[nc] = {X10 - X11, Y10 - Y11, Z10 - Z11};
+          const ftype cross1[nc] = {du1[y] * dv1[z] - du1[z] * dv1[y], du1[z] * dv1[x] - du1[x] * dv1[z], du1[x] * dv1[y] - du1[y] * dv1[x]};
+          const ftype cross2[nc] = {du2[y] * dv2[z] - du2[z] * dv2[y], du2[z] * dv2[x] - du2[x] * dv2[z], du2[x] * dv2[y] - du2[y] * dv2[x]};
+          const ftype length1 = std::sqrt(cross1[x] * cross1[x] + cross1[y] * cross1[y] + cross1[z] * cross1[z]);
+          const ftype length2 = std::sqrt(cross2[x] * cross2[x] + cross2[y] * cross2[y] + cross2[z] * cross2[z]);
+          const ftype invnorm1 = length1 > 0 ? 1 / length1 : 0;
+          const ftype invnorm2 = length2 > 0 ? 1 / length2 : 0;
+          const ftype normal1[nc] = {cross1[x] * invnorm1, cross1[y] * invnorm1, cross1[z] * invnorm1};
+          const ftype normal2[nc] = {cross2[x] * invnorm2, cross2[y] * invnorm2, cross2[z] * invnorm2};
+          if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+            const ftype center1[nc] = {(X00 + X10 + X01) / 3, (Y00 + Y10 + Y01) / 3, (Z00 + Z10 + Z01) / 3};
+            const ftype center2[nc] = {(X10 + X11 + X01) / 3, (Y10 + Y11 + Y01) / 3, (Z10 + Z11 + Z01) / 3};
+            facetsCenters->push_back(Vec3(center1[x], center1[y], center1[z]));
+            facetsCenters->push_back(Vec3(center2[x], center2[y], center2[z]));
+            facetsNormals->push_back(Vec3(normal1[x], normal1[y], normal1[z]));
+            facetsNormals->push_back(Vec3(normal2[x], normal2[y], normal2[z]));
+          }
+          if (!normalized) {
+            if (mNormalsAverageWeights == SurfaceNormalsAverageWeights::none) {
+              ftype** A00 = A[up0][vp0];
+              ftype** A11 = A[up1][vp1];
+              for (itype c = 0; c < nc; c++) {
+                A00[i][c] = normal1[c];
+                A11[l][c] = normal2[c];
+              }
+            } else {
+              ftype** A00 = A[up0][vp0];
+              ftype** A01 = A[up0][vp1];
+              ftype** A10 = A[up1][vp0];
+              ftype** A11 = A[up1][vp1];
+              for (itype c = 0; c < nc; c++) {
+                A00[i][c] = normal1[c];
+                A10[j][c] = normal1[c];
+                A01[k][c] = normal1[c];
+                A10[l][c] = normal2[c];
+                A11[m][c] = normal2[c];
+                A01[n][c] = normal2[c];
+              }
+            }
+            if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::bothAreaAndAngle) {
+              itype a = 0;
+              ftype** W00 = W[up0][vp0];
+              ftype** W01 = W[up0][vp1];
+              ftype** W10 = W[up1][vp0];
+              ftype** W11 = W[up1][vp1];
+              if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::area) {
+                const ftype area1 = length1 / 2; // TODO surface area = triangle area = half the norm of the cross product
+                const ftype area2 = length2 / 2; // TODO surface area = triangle area = half the norm of the cross product
+                W00[i][a] = area1;
+                W10[j][a] = area1;
+                W01[k][a] = area1;
+                W10[l][a] = area2;
+                W11[m][a] = area2;
+                W01[n][a] = area2;
+                a++;
+              }
+              if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle) {
+                const ftype duv[nc] = {X01 - X10, Y01 - Y10, Z01 - Z10};
+                const ftype dvu[nc] = {X10 - X01, Y10 - Y01, Z10 - Z01};
+                const ftype dot11 = dv1[x] * du1[x] + dv1[y] * du1[y] + dv1[z] * du1[z];
+                const ftype dot12 = du1[x] * dvu[x] + du1[y] * dvu[y] + du1[z] * dvu[z];
+                const ftype dot13 = duv[x] * dv1[x] + duv[y] * dv1[y] + duv[z] * dv1[z];
+                const ftype dot21 = dvu[x] * dv2[x] + dvu[y] * dv2[y] + dvu[z] * dv2[z];
+                const ftype dot22 = dv2[x] * du2[x] + dv2[y] * du2[y] + dv2[z] * du2[z];
+                const ftype dot23 = du2[x] * duv[x] + du2[y] * duv[y] + du2[z] * duv[z];
+                const ftype lu1 = std::sqrt(du1[x] * du1[x] + du1[y] * du1[y] + du1[z] * du1[z]);
+                const ftype lu2 = std::sqrt(du2[x] * du2[x] + du2[y] * du2[y] + du2[z] * du2[z]);
+                const ftype luv = std::sqrt(duv[x] * duv[x] + duv[y] * duv[y] + duv[z] * duv[z]);
+                const ftype lv1 = std::sqrt(dv1[x] * dv1[x] + dv1[y] * dv1[y] + dv1[z] * dv1[z]);
+                const ftype lv2 = std::sqrt(dv2[x] * dv2[x] + dv2[y] * dv2[y] + dv2[z] * dv2[z]);
+                const ftype lvu = std::sqrt(dvu[x] * dvu[x] + dvu[y] * dvu[y] + dvu[z] * dvu[z]);
+                const ftype length11 = lv1 * lu1;
+                const ftype length12 = lu1 * lvu;
+                const ftype length13 = luv * lv1;
+                const ftype length21 = lvu * lv2;
+                const ftype length22 = lv2 * lu2;
+                const ftype length23 = lu2 * luv;
+                const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+                const ftype angle12 = std::acos(length12 > 0 ? dot12 / length12 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+                const ftype angle13 = std::acos(length13 > 0 ? dot13 / length13 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+                const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+                const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+                const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+                W00[i][a] = angle11;
+                W10[j][a] = angle12;
+                W01[k][a] = angle13;
+                W10[l][a] = angle21;
+                W11[m][a] = angle22;
+                W01[n][a] = angle23;
+                a++;
+              }
             }
           }
         }
-#else // Contiguous array (with pointers overhead)
-        Wu = new ftype***[nu];
-        Wuv = new ftype**[nu * nv];
-        Wuvw = new ftype*[nu * nv * nw];
-        Wuvwa = new ftype[nu * nv * nw * na]{0};
-        for (itype u = 0; u < nu; u++, Wuv += nv) {
-          Wu[u] = Wuv;
-          for (itype v = 0; v < nv; v++, Wuvw += nw) {
-            Wu[u][v] = Wuvw;
-            for (itype w = 0; w < nw; w++, Wuvwa += na) {
-              Wu[u][v][w] = Wuvwa;
-            }
-          }
-        }
-#endif
-      } catch (const std::bad_alloc&) {
-        MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                              QString(QObject::tr("Not enough memory to allocate weights for normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, na = %5)."))
-                                                                  .arg(_id.c_str())
-                                                                  .arg(QString::number(nu))
-                                                                  .arg(QString::number(nv))
-                                                                  .arg(QString::number(nw))
-                                                                  .arg(QString::number(na)),
-                                                              Helper::scriptingKind,
-                                                              Helper::errorLevel));
-#if 0 // Ragged array (with allocator overhead)
-        if (W) {
-          for (itype u = 0; u < nu; u++) {
-            if (W[u]) {
-              for (itype v = 0; v < nv; v++) {
-                if (W[u][v]) {
-                  for (itype w = 0; w < nw; w++) {
-                    if (W[u][v][w]) {
-                      delete[] W[u][v][w];
-                    }
-                  }
-                  delete[] W[u][v];
+      }
+
+      if (!normalized) {
+        if (mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+          if (mClosenessCheckState == SurfaceClosenessCheckState::active) {
+            constexpr itype nut0 = 0;
+            constexpr itype nvt0 = 0;
+            for (itype u = 0; u < nu; u++) {
+              if (X[u][nvt0] == X[u][nvm1] &&
+                  Y[u][nvt0] == Y[u][nvm1] &&
+                  Z[u][nvt0] == Z[u][nvm1]) {
+                for (itype c = 0; c < nc; c++) {
+                  A[u][nvm1][i][c] = A[u][nvt0][i][c];
+                  A[u][nvm1][l][c] = A[u][nvt0][l][c];
+                  A[u][nvm1][j][c] = A[u][nvt0][j][c];
+                  A[u][nvt0][m][c] = A[u][nvm1][m][c];
+                  A[u][nvt0][k][c] = A[u][nvm1][k][c];
+                  A[u][nvt0][n][c] = A[u][nvm1][n][c];
+                }
+                for (itype a = 0; a < na; a++) {
+                  W[u][nvm1][i][a] = W[u][nvt0][i][a];
+                  W[u][nvm1][l][a] = W[u][nvt0][l][a];
+                  W[u][nvm1][j][a] = W[u][nvt0][j][a];
+                  W[u][nvt0][m][a] = W[u][nvm1][m][a];
+                  W[u][nvt0][k][a] = W[u][nvm1][k][a];
+                  W[u][nvt0][n][a] = W[u][nvm1][n][a];
                 }
               }
-              delete[] W[u];
+            }
+            for (itype v = 0; v < nv; v++) {
+              if (X[nut0][v] == X[num1][v] &&
+                  Y[nut0][v] == Y[num1][v] &&
+                  Z[nut0][v] == Z[num1][v]) {
+                for (itype c = 0; c < nc; c++) {
+                  A[num1][v][i][c] = A[nut0][v][i][c];
+                  A[num1][v][k][c] = A[nut0][v][k][c];
+                  A[num1][v][n][c] = A[nut0][v][n][c];
+                  A[nut0][v][l][c] = A[num1][v][l][c];
+                  A[nut0][v][j][c] = A[num1][v][j][c];
+                  A[nut0][v][m][c] = A[num1][v][m][c];
+                }
+                for (itype a = 0; a < na; a++) {
+                  W[num1][v][i][a] = W[nut0][v][i][a];
+                  W[num1][v][k][a] = W[nut0][v][k][a];
+                  W[num1][v][n][a] = W[nut0][v][n][a];
+                  W[nut0][v][l][a] = W[num1][v][l][a];
+                  W[nut0][v][j][a] = W[num1][v][j][a];
+                  W[nut0][v][m][a] = W[num1][v][m][a];
+                }
+              }
             }
           }
-          delete[] W;
+
+          for (itype u = 0; u < nu; u++) {
+            for (itype v = 0; v < nv; v++) {
+              ftype normal[nc] = {0};
+              for (itype w = 0; w < nw; w++) {
+                ftype weight = 1;
+                for (itype a = 0; a < na; a++) {
+                  weight *= W[u][v][w][a];
+                }
+                normal[x] += A[u][v][w][x] * weight;
+                normal[y] += A[u][v][w][y] * weight;
+                normal[z] += A[u][v][w][z] * weight;
+              }
+              const ftype length = std::sqrt(normal[x] * normal[x] + normal[y] * normal[y] + normal[z] * normal[z]);
+              const ftype invnorm = length > 0 ? 1 / length : 0;
+              normal[x] *= invnorm;
+              normal[y] *= invnorm;
+              normal[z] *= invnorm;
+              normals->push_back(Vec3(normal[x], normal[y], normal[z]));
+            }
+          }
+        } else {
+          for (itype u = 0; u < num1; u++) {
+            const itype up0 = u;
+            const itype up1 = u + 1;
+            for (itype v = 0; v < nvm1; v++) {
+              const itype vp0 = v;
+              const itype vp1 = v + 1;
+              ftype* normal1 = A[up0][vp0][i];
+              ftype* normal2 = A[up1][vp1][l];
+              normals->insert(normals->end(), 3, Vec3(normal1[x], normal1[y], normal1[z]));
+              normals->insert(normals->end(), 3, Vec3(normal2[x], normal2[y], normal2[z]));
+            }
+          }
         }
-        {
+
+        if (na > 0) {
+#if 0 // Ragged array (with allocator overhead)
+          for (itype u = 0; u < nu; u++) {
+            for (itype v = 0; v < nv; v++) {
+              for (itype w = 0; w < nw; w++) {
+                delete[] W[u][v][w];
+              }
+              delete[] W[u][v];
+            }
+            delete[] W[u];
+          }
+          delete[] W;
+#else // Contiguous array (with pointers overhead)
+          delete[] W[0][0][0];
+          delete[] W[0][0];
+          delete[] W[0];
+          delete[] W;
+#endif
+        }
+        if (nw > 0) {
+#if 0 // Ragged array (with allocator overhead)
           for (itype u = 0; u < nu; u++) {
             for (itype v = 0; v < nv; v++) {
               for (itype w = 0; w < nw; w++) {
@@ -695,267 +1084,22 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             delete[] A[u];
           }
           delete[] A;
-        }
-        if (multicolored) {
-          for (itype u = 0; u < nu; u++) {
-            for (itype v = 0; v < nv; v++) {
-              delete[] C[u][v];
-            }
-            delete[] C[u];
-          }
-          delete[] C;
-        }
-        if (normalized) {
-          for (itype u = 0; u < nu; u++) {
-            for (itype v = 0; v < nv; v++) {
-              delete[] N[u][v];
-            }
-            delete[] N[u];
-          }
-          delete[] N;
-        }
-        {
-          for (itype u = 0; u < nu; u++) {
-            delete[] Z[u];
-            delete[] Y[u];
-            delete[] X[u];
-          }
-          delete[] Z;
-          delete[] Y;
-          delete[] X;
-        }
 #else // Contiguous array (with pointers overhead)
-        delete[] Wuvwa;
-        delete[] Wuvw;
-        delete[] Wuv;
-        delete[] Wu;
-        {
           delete[] A[0][0][0];
           delete[] A[0][0];
           delete[] A[0];
           delete[] A;
-        }
-        if (multicolored) {
-          delete[] C[0][0];
-          delete[] C[0];
-          delete[] C;
-        }
-        if (normalized) {
-          delete[] N[0][0];
-          delete[] N[0];
-          delete[] N;
-        }
-        {
-          delete[] Z[0];
-          delete[] Y[0];
-          delete[] X[0];
-          delete[] Z;
-          delete[] Y;
-          delete[] X;
-        }
 #endif
-        return geometry.release();
-      }
-
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
-      W = Wu;
-#endif
-    }
-
-    constexpr itype i = 0; // TODO index of first adjacent facet for top right vertex
-    constexpr itype j = 2; // TODO index of first adjacent facet for top left vertex
-    constexpr itype k = 4; // TODO index of first adjacent facet for bottom right vertex
-    constexpr itype l = 1; // TODO index of second adjacent facet for top left vertex
-    constexpr itype m = 3; // TODO index of second adjacent facet for bottom left vertex
-    constexpr itype n = 5; // TODO index of second adjacent facet for bottom right vertex
-
-    for (itype u = 0; u < num1; u++) {
-      const itype up0 = u;
-      const itype up1 = u + 1;
-      for (itype v = 0; v < nvm1; v++) {
-        const itype vp0 = v;
-        const itype vp1 = v + 1;
-        const ftype X00 = X[up0][vp0];
-        const ftype Y00 = Y[up0][vp0];
-        const ftype Z00 = Z[up0][vp0];
-        const ftype X01 = X[up0][vp1];
-        const ftype Y01 = Y[up0][vp1];
-        const ftype Z01 = Z[up0][vp1];
-        const ftype X10 = X[up1][vp0];
-        const ftype Y10 = Y[up1][vp0];
-        const ftype Z10 = Z[up1][vp0];
-        const ftype X11 = X[up1][vp1];
-        const ftype Y11 = Y[up1][vp1];
-        const ftype Z11 = Z[up1][vp1];
-        const ftype du1[nc] = {X10 - X00, Y10 - Y00, Z10 - Z00};
-        const ftype du2[nc] = {X01 - X11, Y01 - Y11, Z01 - Z11};
-        const ftype dv1[nc] = {X01 - X00, Y01 - Y00, Z01 - Z00};
-        const ftype dv2[nc] = {X10 - X11, Y10 - Y11, Z10 - Z11};
-        const ftype cross1[nc] = {du1[y] * dv1[z] - du1[z] * dv1[y], du1[z] * dv1[x] - du1[x] * dv1[z], du1[x] * dv1[y] - du1[y] * dv1[x]};
-        const ftype cross2[nc] = {du2[y] * dv2[z] - du2[z] * dv2[y], du2[z] * dv2[x] - du2[x] * dv2[z], du2[x] * dv2[y] - du2[y] * dv2[x]};
-        const ftype length1 = std::sqrt(cross1[x] * cross1[x] + cross1[y] * cross1[y] + cross1[z] * cross1[z]);
-        const ftype length2 = std::sqrt(cross2[x] * cross2[x] + cross2[y] * cross2[y] + cross2[z] * cross2[z]);
-        const ftype invnorm1 = length1 > 0 ? 1 / length1 : 0;
-        const ftype invnorm2 = length2 > 0 ? 1 / length2 : 0;
-        const ftype normal1[nc] = {cross1[x] * invnorm1, cross1[y] * invnorm1, cross1[z] * invnorm1};
-        const ftype normal2[nc] = {cross2[x] * invnorm2, cross2[y] * invnorm2, cross2[z] * invnorm2};
-        if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
-          const ftype center1[nc] = {(X00 + X10 + X01) / 3, (Y00 + Y10 + Y01) / 3, (Z00 + Z10 + Z01) / 3};
-          const ftype center2[nc] = {(X10 + X11 + X01) / 3, (Y10 + Y11 + Y01) / 3, (Z10 + Z11 + Z01) / 3};
-          facetsCenters->push_back(Vec3(center1[x], center1[y], center1[z]));
-          facetsCenters->push_back(Vec3(center2[x], center2[y], center2[z]));
-          facetsNormals->push_back(Vec3(normal1[x], normal1[y], normal1[z]));
-          facetsNormals->push_back(Vec3(normal2[x], normal2[y], normal2[z]));
-        }
-        if (!normalized) {
-          if (mNormalsAverageWeights == SurfaceNormalsAverageWeights::none) {
-            ftype** A00 = A[up0][vp0];
-            ftype** A11 = A[up1][vp1];
-            for (itype c = 0; c < nc; c++) {
-              A00[i][c] = normal1[c];
-              A11[l][c] = normal2[c];
-            }
-          } else {
-            ftype** A00 = A[up0][vp0];
-            ftype** A01 = A[up0][vp1];
-            ftype** A10 = A[up1][vp0];
-            ftype** A11 = A[up1][vp1];
-            for (itype c = 0; c < nc; c++) {
-              A00[i][c] = normal1[c];
-              A10[j][c] = normal1[c];
-              A01[k][c] = normal1[c];
-              A10[l][c] = normal2[c];
-              A11[m][c] = normal2[c];
-              A01[n][c] = normal2[c];
-            }
-          }
-          if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::bothAreaAndAngle) {
-            itype a = 0;
-            ftype** W00 = W[up0][vp0];
-            ftype** W01 = W[up0][vp1];
-            ftype** W10 = W[up1][vp0];
-            ftype** W11 = W[up1][vp1];
-            if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::area) {
-              const ftype area1 = length1 / 2; // TODO surface area = triangle area = half the norm of the cross product
-              const ftype area2 = length2 / 2; // TODO surface area = triangle area = half the norm of the cross product
-              W00[i][a] = area1;
-              W10[j][a] = area1;
-              W01[k][a] = area1;
-              W10[l][a] = area2;
-              W11[m][a] = area2;
-              W01[n][a] = area2;
-              a++;
-            }
-            if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle) {
-              const ftype duv[nc] = {X01 - X10, Y01 - Y10, Z01 - Z10};
-              const ftype dvu[nc] = {X10 - X01, Y10 - Y01, Z10 - Z01};
-              const ftype dot11 = dv1[x] * du1[x] + dv1[y] * du1[y] + dv1[z] * du1[z];
-              const ftype dot12 = du1[x] * dvu[x] + du1[y] * dvu[y] + du1[z] * dvu[z];
-              const ftype dot13 = duv[x] * dv1[x] + duv[y] * dv1[y] + duv[z] * dv1[z];
-              const ftype dot21 = dvu[x] * dv2[x] + dvu[y] * dv2[y] + dvu[z] * dv2[z];
-              const ftype dot22 = dv2[x] * du2[x] + dv2[y] * du2[y] + dv2[z] * du2[z];
-              const ftype dot23 = du2[x] * duv[x] + du2[y] * duv[y] + du2[z] * duv[z];
-              const ftype lu1 = std::sqrt(du1[x] * du1[x] + du1[y] * du1[y] + du1[z] * du1[z]);
-              const ftype lu2 = std::sqrt(du2[x] * du2[x] + du2[y] * du2[y] + du2[z] * du2[z]);
-              const ftype luv = std::sqrt(duv[x] * duv[x] + duv[y] * duv[y] + duv[z] * duv[z]);
-              const ftype lv1 = std::sqrt(dv1[x] * dv1[x] + dv1[y] * dv1[y] + dv1[z] * dv1[z]);
-              const ftype lv2 = std::sqrt(dv2[x] * dv2[x] + dv2[y] * dv2[y] + dv2[z] * dv2[z]);
-              const ftype lvu = std::sqrt(dvu[x] * dvu[x] + dvu[y] * dvu[y] + dvu[z] * dvu[z]);
-              const ftype length11 = lv1 * lu1;
-              const ftype length12 = lu1 * lvu;
-              const ftype length13 = luv * lv1;
-              const ftype length21 = lvu * lv2;
-              const ftype length22 = lv2 * lu2;
-              const ftype length23 = lu2 * luv;
-              const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const ftype angle12 = std::acos(length12 > 0 ? dot12 / length12 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const ftype angle13 = std::acos(length13 > 0 ? dot13 / length13 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-              W00[i][a] = angle11;
-              W10[j][a] = angle12;
-              W01[k][a] = angle13;
-              W10[l][a] = angle21;
-              W11[m][a] = angle22;
-              W01[n][a] = angle23;
-              a++;
-            }
-          }
         }
       }
     }
 
-    if (!normalized) {
-      if (mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
-        if (mClosenessCheckState == SurfaceClosenessCheckState::active) {
-          constexpr itype nut0 = 0;
-          constexpr itype nvt0 = 0;
-          for (itype u = 0; u < nu; u++) {
-            if (X[u][nvt0] == X[u][nvm1] &&
-                Y[u][nvt0] == Y[u][nvm1] &&
-                Z[u][nvt0] == Z[u][nvm1]) {
-              for (itype c = 0; c < nc; c++) {
-                A[u][nvm1][i][c] = A[u][nvt0][i][c];
-                A[u][nvm1][l][c] = A[u][nvt0][l][c];
-                A[u][nvm1][j][c] = A[u][nvt0][j][c];
-                A[u][nvt0][m][c] = A[u][nvm1][m][c];
-                A[u][nvt0][k][c] = A[u][nvm1][k][c];
-                A[u][nvt0][n][c] = A[u][nvm1][n][c];
-              }
-              for (itype a = 0; a < na; a++) {
-                W[u][nvm1][i][a] = W[u][nvt0][i][a];
-                W[u][nvm1][l][a] = W[u][nvt0][l][a];
-                W[u][nvm1][j][a] = W[u][nvt0][j][a];
-                W[u][nvt0][m][a] = W[u][nvm1][m][a];
-                W[u][nvt0][k][a] = W[u][nvm1][k][a];
-                W[u][nvt0][n][a] = W[u][nvm1][n][a];
-              }
-            }
-          }
-          for (itype v = 0; v < nv; v++) {
-            if (X[nut0][v] == X[num1][v] &&
-                Y[nut0][v] == Y[num1][v] &&
-                Z[nut0][v] == Z[num1][v]) {
-              for (itype c = 0; c < nc; c++) {
-                A[num1][v][i][c] = A[nut0][v][i][c];
-                A[num1][v][k][c] = A[nut0][v][k][c];
-                A[num1][v][n][c] = A[nut0][v][n][c];
-                A[nut0][v][l][c] = A[num1][v][l][c];
-                A[nut0][v][j][c] = A[num1][v][j][c];
-                A[nut0][v][m][c] = A[num1][v][m][c];
-              }
-              for (itype a = 0; a < na; a++) {
-                W[num1][v][i][a] = W[nut0][v][i][a];
-                W[num1][v][k][a] = W[nut0][v][k][a];
-                W[num1][v][n][a] = W[nut0][v][n][a];
-                W[nut0][v][l][a] = W[num1][v][l][a];
-                W[nut0][v][j][a] = W[num1][v][j][a];
-                W[nut0][v][m][a] = W[num1][v][m][a];
-              }
-            }
-          }
-        }
-
+    /* Colors */
+    if (multicolored) {
+      if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
         for (itype u = 0; u < nu; u++) {
           for (itype v = 0; v < nv; v++) {
-            ftype normal[nc] = {0};
-            for (itype w = 0; w < nw; w++) {
-              ftype weight = 1;
-              for (itype a = 0; a < na; a++) {
-                weight *= W[u][v][w][a];
-              }
-              normal[x] += A[u][v][w][x] * weight;
-              normal[y] += A[u][v][w][y] * weight;
-              normal[z] += A[u][v][w][z] * weight;
-            }
-            const ftype length = std::sqrt(normal[x] * normal[x] + normal[y] * normal[y] + normal[z] * normal[z]);
-            const ftype invnorm = length > 0 ? 1 / length : 0;
-            normal[x] *= invnorm;
-            normal[y] *= invnorm;
-            normal[z] *= invnorm;
-            normals->push_back(Vec3(normal[x], normal[y], normal[z]));
+            colors->push_back(Vec4(C[u][v][x], C[u][v][y], C[u][v][z], opacity));
           }
         }
       } else {
@@ -965,114 +1109,50 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           for (itype v = 0; v < nvm1; v++) {
             const itype vp0 = v;
             const itype vp1 = v + 1;
-            ftype* normal1 = A[up0][vp0][i];
-            ftype* normal2 = A[up1][vp1][l];
-            normals->insert(normals->end(), 3, Vec3(normal1[x], normal1[y], normal1[z]));
-            normals->insert(normals->end(), 3, Vec3(normal2[x], normal2[y], normal2[z]));
+            ftype* C00 = C[up0][vp0];
+            ftype* C01 = C[up0][vp1];
+            ftype* C10 = C[up1][vp0];
+            ftype* C11 = C[up1][vp1];
+            colors->push_back(Vec4(C00[x], C00[y], C00[z], opacity));
+            colors->push_back(Vec4(C10[x], C10[y], C10[z], opacity));
+            colors->push_back(Vec4(C01[x], C01[y], C01[z], opacity));
+            colors->push_back(Vec4(C10[x], C10[y], C10[z], opacity));
+            colors->push_back(Vec4(C11[x], C11[y], C11[z], opacity));
+            colors->push_back(Vec4(C01[x], C01[y], C01[z], opacity));
           }
         }
       }
-
-      if (na > 0) {
-#if 0 // Ragged array (with allocator overhead)
-        for (itype u = 0; u < nu; u++) {
-          for (itype v = 0; v < nv; v++) {
-            for (itype w = 0; w < nw; w++) {
-              delete[] W[u][v][w];
-            }
-            delete[] W[u][v];
-          }
-          delete[] W[u];
-        }
-        delete[] W;
-#else // Contiguous array (with pointers overhead)
-        delete[] W[0][0][0];
-        delete[] W[0][0];
-        delete[] W[0];
-        delete[] W;
-#endif
-      }
-      if (nw > 0) {
-#if 0 // Ragged array (with allocator overhead)
-        for (itype u = 0; u < nu; u++) {
-          for (itype v = 0; v < nv; v++) {
-            for (itype w = 0; w < nw; w++) {
-              delete[] A[u][v][w];
-            }
-            delete[] A[u][v];
-          }
-          delete[] A[u];
-        }
-        delete[] A;
-#else // Contiguous array (with pointers overhead)
-        delete[] A[0][0][0];
-        delete[] A[0][0];
-        delete[] A[0];
-        delete[] A;
-#endif
-      }
+    } else {
+      colors->clear();
+      colors->setBinding(osg::Array::BIND_OVERALL);
+      colors->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
     }
-  }
 
-  /* Colors */
-  if (multicolored) {
+    /* Texels */
     if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
       for (itype u = 0; u < nu; u++) {
         for (itype v = 0; v < nv; v++) {
-          colors->push_back(Vec4(C[u][v][x], C[u][v][y], C[u][v][z], opacity));
+          texels->push_back(Vec2(u / fnum1, v / fnvm1));
         }
       }
     } else {
       for (itype u = 0; u < num1; u++) {
-        const itype up0 = u;
-        const itype up1 = u + 1;
+        const ftype Tu0 =  u      / fnum1;
+        const ftype Tu1 = (u + 1) / fnum1;
         for (itype v = 0; v < nvm1; v++) {
-          const itype vp0 = v;
-          const itype vp1 = v + 1;
-          ftype* C00 = C[up0][vp0];
-          ftype* C01 = C[up0][vp1];
-          ftype* C10 = C[up1][vp0];
-          ftype* C11 = C[up1][vp1];
-          colors->push_back(Vec4(C00[x], C00[y], C00[z], opacity));
-          colors->push_back(Vec4(C10[x], C10[y], C10[z], opacity));
-          colors->push_back(Vec4(C01[x], C01[y], C01[z], opacity));
-          colors->push_back(Vec4(C10[x], C10[y], C10[z], opacity));
-          colors->push_back(Vec4(C11[x], C11[y], C11[z], opacity));
-          colors->push_back(Vec4(C01[x], C01[y], C01[z], opacity));
+          const ftype Tv0 =  v      / fnvm1;
+          const ftype Tv1 = (v + 1) / fnvm1;
+          texels->push_back(Vec2(Tu0, Tv0));
+          texels->push_back(Vec2(Tu1, Tv0));
+          texels->push_back(Vec2(Tu0, Tv1));
+          texels->push_back(Vec2(Tu1, Tv0));
+          texels->push_back(Vec2(Tu1, Tv1));
+          texels->push_back(Vec2(Tu0, Tv1));
         }
       }
     }
-  } else {
-    colors->clear();
-    colors->setBinding(osg::Array::BIND_OVERALL);
-    colors->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
-  }
 
-  /* Texels */
-  if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
-    for (itype u = 0; u < nu; u++) {
-      for (itype v = 0; v < nv; v++) {
-        texels->push_back(Vec2(u / fnum1, v / fnvm1));
-      }
-    }
-  } else {
-    for (itype u = 0; u < num1; u++) {
-      const ftype Tu0 =  u      / fnum1;
-      const ftype Tu1 = (u + 1) / fnum1;
-      for (itype v = 0; v < nvm1; v++) {
-        const ftype Tv0 =  v      / fnvm1;
-        const ftype Tv1 = (v + 1) / fnvm1;
-        texels->push_back(Vec2(Tu0, Tv0));
-        texels->push_back(Vec2(Tu1, Tv0));
-        texels->push_back(Vec2(Tu0, Tv1));
-        texels->push_back(Vec2(Tu1, Tv0));
-        texels->push_back(Vec2(Tu1, Tv1));
-        texels->push_back(Vec2(Tu0, Tv1));
-      }
-    }
-  }
-
-  /* Indices */
+    /* Indices */
 #define SURFACE_FIRST_V()                       \
   if (degenerate) {                             \
     strip->addElement(up0tnvpopv);              \
@@ -1085,59 +1165,58 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 #define SURFACE_LAST_V()                        \
   if (degenerate) {                             \
     strip->addElement(up0tnvpopv + nvm1);       \
-  }                                             \
-  if (restart) {                                \
-    strip->addElement(r);                       \
+  } else if (restart) {                         \
+    strip->addElement(ri);                      \
   }
-  if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
-    indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
-    osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
-    strip->reserveElements(nIndices);
+    if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+      indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
+      osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
+      strip->reserveElements(nIndices);
 #if 0
-    const itype opnum1tnv = o + num1 * nv;
-    const itype opnum2tnv = o + num2 * nv;
-    for (itype up0tnvpopv = o; up0tnvpopv < opnum1tnv;) {
-      const bool ug0    = up0tnvpopv > o;
-      const bool ulnum2 = up0tnvpopv < opnum2tnv;
-      if (ug0) {
-        SURFACE_FIRST_V()
+      const itype opnum1tnv = o + num1 * nv;
+      const itype opnum2tnv = o + num2 * nv;
+      for (itype up0tnvpopv = o; up0tnvpopv < opnum1tnv;) {
+        const bool ug0    = up0tnvpopv > o;
+        const bool ulnum2 = up0tnvpopv < opnum2tnv;
+        if (ug0) {
+          SURFACE_FIRST_V()
+        }
+        {
+          const itype up1tnvpo = up0tnvpopv + nv;
+          SURFACE_LOOP_V()
+        }
+        if (ulnum2) {
+          SURFACE_LAST_V()
+        }
       }
+#else
+      const itype opnum2tnv = o + num2 * nv;
+      const bool num2g0 = num2 > 0;
+      itype up0tnvpopv = o;
+      itype up1tnvpo = nv + o;
       {
-        const itype up1tnvpo = up0tnvpopv + nv;
         SURFACE_LOOP_V()
       }
-      if (ulnum2) {
+      if (num2g0) {
         SURFACE_LAST_V()
       }
-    }
-#else
-    const itype opnum2tnv = o + num2 * nv;
-    const bool num2g0 = num2 > 0;
-    itype up0tnvpopv = o;
-    itype up1tnvpo = nv + o;
-    {
-      SURFACE_LOOP_V()
-    }
-    if (num2g0) {
-      SURFACE_LAST_V()
-    }
-    for (up1tnvpo += nv; up0tnvpopv < opnum2tnv; up1tnvpo += nv) {
-      SURFACE_FIRST_V()
-      SURFACE_LOOP_V()
-      SURFACE_LAST_V()
-    }
-    if (num2g0) {
-      SURFACE_FIRST_V()
-      SURFACE_LOOP_V()
-    }
+      for (up1tnvpo += nv; up0tnvpopv < opnum2tnv; up1tnvpo += nv) {
+        SURFACE_FIRST_V()
+        SURFACE_LOOP_V()
+        SURFACE_LAST_V()
+      }
+      if (num2g0) {
+        SURFACE_FIRST_V()
+        SURFACE_LOOP_V()
+      }
 #endif
-  } else {
-    indices = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, o, (itype)vertices->size() - o);
+    } else {
+      indices = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, o, (itype)vertices->size() - o);
+    }
   }
 
   /* Debug */
 #define SURFACE_DEBUG_N(o, e, v, n, r, g, b)    \
-  constexpr Vec3::value_type s = 0.25;          \
   const itype l = vertices->size();             \
   const itype c = (e - o) << 1;                 \
   for (itype i = o; i < e; i++) {               \
@@ -1146,7 +1225,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     const Vec2 texel0 = Vec2(0, 1);             \
     const Vec2 texel1 = Vec2(1, 1);             \
     vertices->push_back(vertex);                \
-    vertices->push_back(vertex + normal * s);   \
+    vertices->push_back(vertex + normal * ns);  \
     normals ->push_back(normal);                \
     normals ->push_back(normal);                \
     texels  ->push_back(texel0);                \
@@ -1160,28 +1239,26 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       new osg::DrawArrays(                      \
           osg::PrimitiveSet::LINES, l, c);      \
   geometry->addPrimitiveSet(lines.get());
-  if (mNormalsAnimationTypes != SurfaceNormalsAnimationTypes::none) {
-    ss->setAttributeAndModes(new osg::LineWidth(5), mode); // TODO constexpr // FIXME line width will change for all lines including wireframe if enabled
-    if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices) {
-      const itype offset = o;
-      const itype size = vertices->size();
-      SURFACE_DEBUG_N(
-          offset, size,
-          vertices,
-          normals,
-          1, 0, 0);
-    }
-    if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
-      const itype offset = 0;
-      const itype size = facetsCenters->size();
-      SURFACE_DEBUG_N(
-          offset, size,
-          facetsCenters,
-          facetsNormals,
-          0, 0, 1);
-    }
+  if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices) {
+    const itype offset = o;
+    const itype size = vertices->size();
+    SURFACE_DEBUG_N(
+        offset, size,
+        vertices,
+        normals,
+        1, 0, 0);
+  }
+  if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+    const itype offset = 0;
+    const itype size = facetsCenters->size();
+    SURFACE_DEBUG_N(
+        offset, size,
+        facetsCenters,
+        facetsNormals,
+        0, 0, 1);
   }
 
+  /* Geometry */
   geometry->setUseVertexBufferObjects(true);
   geometry->setVertexArray(vertices.get());
   geometry->setNormalArray(normals.get());
