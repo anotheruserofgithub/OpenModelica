@@ -1711,7 +1711,13 @@ void UpdateVisitor::apply(osg::Geode& node)
       draw->dirtyBound(); // FIXME: Automatically done since the drawable itself (and not its underlying shape) is sure to be changed?
       draw->dirtyDisplayList(); // FIXME: Automatically done since the drawable itself (and not its underlying shape) is sure to be changed?
       node.setDrawable(0, surface->drawGeometry());
-      //std::cout<<"SURFACE "<<draw->getShape()->className()<<std::endl;
+      //std::cout<<"SURFACE "<<draw->getShape()->className()<<std::endl; // FIXME: This is not a shape but a geometry!
+
+      node.setCullingActive(
+          node.getDrawable(0) == nullptr ||
+          node.getDrawable(0)->asGeometry() == nullptr ||
+          node.getDrawable(0)->asGeometry()->getVertexArray() == nullptr ||
+          node.getDrawable(0)->asGeometry()->getVertexArray()->getNumElements() != 1); // FIXME: Surface degenerated to a single point
 
       surface->setTransparency(surface->_transparency.exp); // FIXME: Work-around for transparency input dumped in visual.xml file only for surface visualizer
       break;
