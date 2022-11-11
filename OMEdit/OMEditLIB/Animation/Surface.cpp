@@ -391,13 +391,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     return geometry.release();
   }
 
-#if 0 // Ragged array (with allocator overhead)
-  ftype**  X = nullptr;
-  ftype**  Y = nullptr;
-  ftype**  Z = nullptr;
-  ftype*** N = nullptr;
-  ftype*** C = nullptr;
-#else // Contiguous array (with pointers overhead)
   ftype**  Xu   = nullptr;
   ftype**  Yu   = nullptr;
   ftype**  Zu   = nullptr;
@@ -410,39 +403,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   ftype**  Cuv  = nullptr;
   ftype*   Nuvc = nullptr;
   ftype*   Cuvc = nullptr;
-#endif
 
   try {
-#if 0 // Ragged array (with allocator overhead)
-    {
-      X = new ftype* [nu]();
-      Y = new ftype* [nu]();
-      Z = new ftype* [nu]();
-      for (itype u = 0; u < nu; u++) {
-        X[u] = new ftype [nv]();
-        Y[u] = new ftype [nv]();
-        Z[u] = new ftype [nv]();
-      }
-    }
-    if (normalized) {
-      N = new ftype**[nu]();
-      for (itype u = 0; u < nu; u++) {
-        N[u] = new ftype*[nv]();
-        for (itype v = 0; v < nv; v++) {
-          N[u][v] = new ftype[nc]();
-        }
-      }
-    }
-    if (multicolored) {
-      C = new ftype**[nu]();
-      for (itype u = 0; u < nu; u++) {
-        C[u] = new ftype*[nv]();
-        for (itype v = 0; v < nv; v++) {
-          C[u][v] = new ftype[nc]();
-        }
-      }
-    }
-#else // Contiguous array (with pointers overhead)
     {
       Xu = new ftype* [nu];
       Yu = new ftype* [nu];
@@ -484,7 +446,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
       }
     }
-#endif
   } catch (const std::bad_alloc& ex) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                           QString(QObject::tr("Not enough memory to allocate vertices of surface \"%1\" (nu = %2, nv = %3): %4."))
@@ -494,58 +455,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                               .arg(ex.what()),
                                                           Helper::scriptingKind,
                                                           Helper::errorLevel));
-#if 0 // Ragged array (with allocator overhead)
-    if (C) {
-      for (itype u = 0; u < nu; u++) {
-        if (C[u]) {
-          for (itype v = 0; v < nv; v++) {
-            if (C[u][v]) {
-              delete[] C[u][v];
-            }
-          }
-          delete[] C[u];
-        }
-      }
-      delete[] C;
-    }
-    if (N) {
-      for (itype u = 0; u < nu; u++) {
-        if (N[u]) {
-          for (itype v = 0; v < nv; v++) {
-            if (N[u][v]) {
-              delete[] N[u][v];
-            }
-          }
-          delete[] N[u];
-        }
-      }
-      delete[] N;
-    }
-    if (Z) {
-      for (itype u = 0; u < nu; u++) {
-        if (Z[u]) {
-          delete[] Z[u];
-        }
-      }
-      delete[] Z;
-    }
-    if (Y) {
-      for (itype u = 0; u < nu; u++) {
-        if (Y[u]) {
-          delete[] Y[u];
-        }
-      }
-      delete[] Y;
-    }
-    if (X) {
-      for (itype u = 0; u < nu; u++) {
-        if (X[u]) {
-          delete[] X[u];
-        }
-      }
-      delete[] X;
-    }
-#else // Contiguous array (with pointers overhead)
     delete[] Cuvc;
     delete[] Nuvc;
     delete[] Cuv;
@@ -558,18 +467,14 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     delete[] Zu;
     delete[] Yu;
     delete[] Xu;
-#endif
     return geometry.release();
   }
 
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
   ftype**  X = Xu;
   ftype**  Y = Yu;
   ftype**  Z = Zu;
   ftype*** N = Nu;
   ftype*** C = Cu;
-#endif
 
   fakeTorus(nu, nv, X, Y, Z, N, C);
   // TODO: Fake multicolored surface
@@ -760,27 +665,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       ftype**** A = nullptr;
 
       if (!normalized && nw > 0) {
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
         ftype**** Au = nullptr;
         ftype*** Auv = nullptr;
         ftype** Auvw = nullptr;
         ftype* Auvwc = nullptr;
-#endif
 
         try {
-#if 0 // Ragged array (with allocator overhead)
-          A = new ftype***[nu]();
-          for (itype u = 0; u < nu; u++) {
-            A[u] = new ftype**[nv]();
-            for (itype v = 0; v < nv; v++) {
-              A[u][v] = new ftype*[nw]();
-              for (itype w = 0; w < nw; w++) {
-                A[u][v][w] = new ftype[nc]();
-              }
-            }
-          }
-#else // Contiguous array (with pointers overhead)
           Au = new ftype***[nu];
           Auv = new ftype**[nu * nv];
           Auvw = new ftype*[nu * nv * nw];
@@ -794,7 +684,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               }
             }
           }
-#endif
         } catch (const std::bad_alloc& ex) {
           MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                                 QString(QObject::tr("Not enough memory to allocate adjacent facets normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, nc = %5): %6."))
@@ -806,54 +695,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                                     .arg(ex.what()),
                                                                 Helper::scriptingKind,
                                                                 Helper::errorLevel));
-#if 0 // Ragged array (with allocator overhead)
-          if (A) {
-            for (itype u = 0; u < nu; u++) {
-              if (A[u]) {
-                for (itype v = 0; v < nv; v++) {
-                  if (A[u][v]) {
-                    for (itype w = 0; w < nw; w++) {
-                      if (A[u][v][w]) {
-                        delete[] A[u][v][w];
-                      }
-                    }
-                    delete[] A[u][v];
-                  }
-                }
-                delete[] A[u];
-              }
-            }
-            delete[] A;
-          }
-          if (multicolored) {
-            for (itype u = 0; u < nu; u++) {
-              for (itype v = 0; v < nv; v++) {
-                delete[] C[u][v];
-              }
-              delete[] C[u];
-            }
-            delete[] C;
-          }
-          if (normalized) {
-            for (itype u = 0; u < nu; u++) {
-              for (itype v = 0; v < nv; v++) {
-                delete[] N[u][v];
-              }
-              delete[] N[u];
-            }
-            delete[] N;
-          }
-          {
-            for (itype u = 0; u < nu; u++) {
-              delete[] Z[u];
-              delete[] Y[u];
-              delete[] X[u];
-            }
-            delete[] Z;
-            delete[] Y;
-            delete[] X;
-          }
-#else // Contiguous array (with pointers overhead)
           delete[] Auvwc;
           delete[] Auvw;
           delete[] Auv;
@@ -876,14 +717,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             delete[] Y;
             delete[] X;
           }
-#endif
           return geometry.release();
         }
 
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
         A = Au;
-#endif
       }
 
       itype na = 0; // TODO number of area/angle weights
@@ -902,27 +739,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       ftype**** W = nullptr; // FIXME allocate together with A as a whole contiguous array?
 
       if (!normalized && na > 0) {
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
         ftype**** Wu = nullptr;
         ftype*** Wuv = nullptr;
         ftype** Wuvw = nullptr;
         ftype* Wuvwa = nullptr;
-#endif
 
         try {
-#if 0 // Ragged array (with allocator overhead)
-          W = new ftype***[nu]();
-          for (itype u = 0; u < nu; u++) {
-            W[u] = new ftype**[nv]();
-            for (itype v = 0; v < nv; v++) {
-              W[u][v] = new ftype*[nw]();
-              for (itype w = 0; w < nw; w++) {
-                W[u][v][w] = new ftype[na]();
-              }
-            }
-          }
-#else // Contiguous array (with pointers overhead)
           Wu = new ftype***[nu];
           Wuv = new ftype**[nu * nv];
           Wuvw = new ftype*[nu * nv * nw];
@@ -936,7 +758,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               }
             }
           }
-#endif
         } catch (const std::bad_alloc& ex) {
           MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                                 QString(QObject::tr("Not enough memory to allocate weights for normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, na = %5): %6."))
@@ -948,66 +769,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                                     .arg(ex.what()),
                                                                 Helper::scriptingKind,
                                                                 Helper::errorLevel));
-#if 0 // Ragged array (with allocator overhead)
-          if (W) {
-            for (itype u = 0; u < nu; u++) {
-              if (W[u]) {
-                for (itype v = 0; v < nv; v++) {
-                  if (W[u][v]) {
-                    for (itype w = 0; w < nw; w++) {
-                      if (W[u][v][w]) {
-                        delete[] W[u][v][w];
-                      }
-                    }
-                    delete[] W[u][v];
-                  }
-                }
-                delete[] W[u];
-              }
-            }
-            delete[] W;
-          }
-          {
-            for (itype u = 0; u < nu; u++) {
-              for (itype v = 0; v < nv; v++) {
-                for (itype w = 0; w < nw; w++) {
-                  delete[] A[u][v][w];
-                }
-                delete[] A[u][v];
-              }
-              delete[] A[u];
-            }
-            delete[] A;
-          }
-          if (multicolored) {
-            for (itype u = 0; u < nu; u++) {
-              for (itype v = 0; v < nv; v++) {
-                delete[] C[u][v];
-              }
-              delete[] C[u];
-            }
-            delete[] C;
-          }
-          if (normalized) {
-            for (itype u = 0; u < nu; u++) {
-              for (itype v = 0; v < nv; v++) {
-                delete[] N[u][v];
-              }
-              delete[] N[u];
-            }
-            delete[] N;
-          }
-          {
-            for (itype u = 0; u < nu; u++) {
-              delete[] Z[u];
-              delete[] Y[u];
-              delete[] X[u];
-            }
-            delete[] Z;
-            delete[] Y;
-            delete[] X;
-          }
-#else // Contiguous array (with pointers overhead)
           delete[] Wuvwa;
           delete[] Wuvw;
           delete[] Wuv;
@@ -1036,14 +797,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             delete[] Y;
             delete[] X;
           }
-#endif
           return geometry.release();
         }
 
-#if 0 // Ragged array (with allocator overhead)
-#else // Contiguous array (with pointers overhead)
         W = Wu;
-#endif
       }
 
       constexpr itype i = 0; // TODO index of first adjacent facet for top right vertex
@@ -1257,42 +1014,16 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
 
         if (na > 0) {
-#if 0 // Ragged array (with allocator overhead)
-          for (itype u = 0; u < nu; u++) {
-            for (itype v = 0; v < nv; v++) {
-              for (itype w = 0; w < nw; w++) {
-                delete[] W[u][v][w];
-              }
-              delete[] W[u][v];
-            }
-            delete[] W[u];
-          }
-          delete[] W;
-#else // Contiguous array (with pointers overhead)
           delete[] W[0][0][0];
           delete[] W[0][0];
           delete[] W[0];
           delete[] W;
-#endif
         }
         if (nw > 0) {
-#if 0 // Ragged array (with allocator overhead)
-          for (itype u = 0; u < nu; u++) {
-            for (itype v = 0; v < nv; v++) {
-              for (itype w = 0; w < nw; w++) {
-                delete[] A[u][v][w];
-              }
-              delete[] A[u][v];
-            }
-            delete[] A[u];
-          }
-          delete[] A;
-#else // Contiguous array (with pointers overhead)
           delete[] A[0][0][0];
           delete[] A[0][0];
           delete[] A[0];
           delete[] A;
-#endif
         }
       }
     }
@@ -1469,36 +1200,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                         Helper::scriptingKind,
                                                         Helper::errorLevel));
 
-#if 0 // Ragged array (with allocator overhead)
-  if (multicolored) {
-    for (itype u = 0; u < nu; u++) {
-      for (itype v = 0; v < nv; v++) {
-        delete[] C[u][v];
-      }
-      delete[] C[u];
-    }
-    delete[] C;
-  }
-  if (normalized) {
-    for (itype u = 0; u < nu; u++) {
-      for (itype v = 0; v < nv; v++) {
-        delete[] N[u][v];
-      }
-      delete[] N[u];
-    }
-    delete[] N;
-  }
-  {
-    for (itype u = 0; u < nu; u++) {
-      delete[] Z[u];
-      delete[] Y[u];
-      delete[] X[u];
-    }
-    delete[] Z;
-    delete[] Y;
-    delete[] X;
-  }
-#else // Contiguous array (with pointers overhead)
   if (multicolored) {
     delete[] C[0][0];
     delete[] C[0];
@@ -1517,7 +1218,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     delete[] Y;
     delete[] X;
   }
-#endif
 
   return geometry.release();
 }
@@ -1587,4 +1287,5 @@ Allocating and passing multidimensional arrays on the heap:
 - https://c-faq.com/aryptr/pass2dary.html
 - https://c-faq.com/aryptr/fn33.html
 - https://stackoverflow.com/a/21944048 as well as https://c-faq.com/aryptr/dynmuldimary.html for contiguous multidimensional arrays (surely better!)
+Ragged array (with allocator overhead) vs. Contiguous array (with pointers overhead)
 */
