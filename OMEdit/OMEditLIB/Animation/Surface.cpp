@@ -1387,24 +1387,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
       osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
       strip->reserveElements(nIndices);
-#if 0
-      const itype opnum1tnv = o + num1 * nv;
-      const itype opnum2tnv = o + num2 * nv;
-      for (itype up0tnvpopv = o; up0tnvpopv < opnum1tnv;) {
-        const bool ug0    = up0tnvpopv > o;
-        const bool ulnum2 = up0tnvpopv < opnum2tnv;
-        if (ug0) {
-          SURFACE_FIRST_V()
-        }
-        {
-          const itype up1tnvpo = up0tnvpopv + nv;
-          SURFACE_LOOP_V()
-        }
-        if (ulnum2) {
-          SURFACE_LAST_V()
-        }
-      }
-#else
       const itype opnum2tnv = o + num2 * nv;
       const bool num2g0 = num2 > 0;
       itype up0tnvpopv = o;
@@ -1424,7 +1406,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         SURFACE_FIRST_V()
         SURFACE_LOOP_V()
       }
-#endif
     } else {
       indices = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, o, (itype)vertices->size() - o);
     }
