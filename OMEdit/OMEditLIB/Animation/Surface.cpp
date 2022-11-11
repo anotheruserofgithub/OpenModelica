@@ -112,14 +112,14 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
       X[u][v] = (R + r * std::cos(beta)) * std::sin(alpha);
       Y[u][v] =      r * std::sin(beta);
       if (N) {
-        N[u][v][2] = std::cos(beta) * std::cos(alpha);
-        N[u][v][0] = std::cos(beta) * std::sin(alpha);
-        N[u][v][1] = std::sin(beta);
+        N[2][u][v] = std::cos(beta) * std::cos(alpha);
+        N[0][u][v] = std::cos(beta) * std::sin(alpha);
+        N[1][u][v] = std::sin(beta);
       }
       if (C) {
-        C[u][v][0] = 0;
-        C[u][v][1] = 1;
-        C[u][v][2] = 0;
+        C[0][u][v] = 0;
+        C[1][u][v] = 1;
+        C[2][u][v] = 0;
       }
     }
   }
@@ -131,9 +131,9 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
         Y[u][nv - 1] = Y[u][0];
         Z[u][nv - 1] = Z[u][0];
         if (N) {
-          N[u][nv - 1][0] = N[u][0][0];
-          N[u][nv - 1][1] = N[u][0][1];
-          N[u][nv - 1][2] = N[u][0][2];
+          N[0][u][nv - 1] = N[0][u][0];
+          N[1][u][nv - 1] = N[1][u][0];
+          N[2][u][nv - 1] = N[2][u][0];
         }
       }
     }
@@ -143,9 +143,9 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
         Y[nu - 1][v] = Y[0][v];
         Z[nu - 1][v] = Z[0][v];
         if (N) {
-          N[nu - 1][v][0] = N[0][v][0];
-          N[nu - 1][v][1] = N[0][v][1];
-          N[nu - 1][v][2] = N[0][v][2];
+          N[0][nu - 1][v] = N[0][0][v];
+          N[1][nu - 1][v] = N[1][0][v];
+          N[2][nu - 1][v] = N[2][0][v];
         }
       }
     }
@@ -167,7 +167,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   if (nu < 1 || nv < 1) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                          QString(QObject::tr("A dimension of surface \"%1\" is empty (nu = %2, nv = %3)."))
+                                                          QString(QObject::tr("A dimension is empty for surface \"%1\" "
+                                                              "(nu = %2, nv = %3)."))
                                                               .arg(id)
                                                               .arg(nu)
                                                               .arg(nv),
@@ -304,7 +305,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                           Helper::errorLevel));
   } catch (const std::overflow_error& ex) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                          QString(QObject::tr("Too many vertices for surface \"%1\" (nu = %2, nv = %3): %4."))
+                                                          QString(QObject::tr("Too many vertices for surface \"%1\" "
+                                                              "(nu = %2, nv = %3): %4."))
                                                               .arg(id)
                                                               .arg(nu)
                                                               .arg(nv)
@@ -315,10 +317,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
 
   itype ne = 0; // TODO number of user-provided elements
-  itype nw = 0; // TODO number of adjacent facets/windings
-  itype na = 0; // TODO number of area/angle weights
+  itype na = 0; // TODO number of adjacent facets/windings
+  itype nw = 0; // TODO number of area/angle weights
 
-  ne++;
+  {
+    ne++;
+  }
   if (normalized) {
     ne++;
   }
@@ -329,154 +333,244 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   if (!degenerated && !normalized) {
     switch (mNormalsAverageWeights) {
       case SurfaceNormalsAverageWeights::none:
-        nw = 2;
+        na = 2;
         break;
       case SurfaceNormalsAverageWeights::equal:
       case SurfaceNormalsAverageWeights::area:
       case SurfaceNormalsAverageWeights::angle:
       case SurfaceNormalsAverageWeights::bothAreaAndAngle:
-        nw = 6;
-        break;
-      default:
+        na = 6;
         break;
     }
 
     switch (mNormalsAverageWeights) {
       case SurfaceNormalsAverageWeights::none:
       case SurfaceNormalsAverageWeights::equal:
-        na = 0;
+        nw = 0;
         break;
       case SurfaceNormalsAverageWeights::area:
       case SurfaceNormalsAverageWeights::angle:
-        na = 1;
+        nw = 1;
         break;
       case SurfaceNormalsAverageWeights::bothAreaAndAngle:
-        na = 2;
-        break;
-      default:
+        nw = 2;
         break;
     }
   }
-
-  const itype no = ne + nw + na; // TODO number of objects
 
   constexpr itype nc = 3; // TODO number of dimensions/coordinates
 
-  try {
-    const std::size_t smax = std::numeric_limits<std::size_t>::max();
-    const std::size_t notnc = no * nc;
-    const std::size_t notnctnu = no * nc * nu;
-    const std::size_t notnctnutnv = no * nc * nu * nv;
-    (void)notnctnutnv; // TODO use it or remove it
-    if (smax / nc < (std::size_t)no) {
-      throw std::overflow_error("Overflow of notnc");
+  const itype no = nc + nw; // TODO number of objects
+
+  const std::size_t smax = std::numeric_limits<std::size_t>::max();
+
+  const std::size_t netnc = ne * nc;
+  const std::size_t netnctnu = netnc * nu;
+  const std::size_t netnctnutnv = netnctnu * nv;
+
+  {
+    try {
+      if (smax / nc < (std::size_t)ne) {
+        throw std::overflow_error("Overflow of netnc");
+      }
+      if (smax / nu < netnc) {
+        throw std::overflow_error("Overflow of netnctnu");
+      }
+      if (smax / nv < netnctnu) {
+        throw std::overflow_error("Overflow of netnctnutnv");
+      }
+    } catch (const std::overflow_error& ex) {
+      MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                            QString(QObject::tr("Too many vertices for surface \"%1\" "
+                                                                "(ne = %2, nc = %3, nu = %4, nv = %5): %6."))
+                                                                .arg(id)
+                                                                .arg(ne)
+                                                                .arg(nc)
+                                                                .arg(nu)
+                                                                .arg(nv)
+                                                                .arg(ex.what()),
+                                                            Helper::scriptingKind,
+                                                            Helper::errorLevel));
+      return geometry.release();
     }
-    if (smax / nu < notnc) {
-      throw std::overflow_error("Overflow of notnctnu");
-    }
-    if (smax / nv < notnctnu) {
-      throw std::overflow_error("Overflow of notnctnutnv");
-    }
-  } catch (const std::overflow_error& ex) {
-    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                          QString(QObject::tr("Too many vertices for surface \"%1\" (no = %2, nc = %3, nu = %4, nv = %5): %6."))
-                                                              .arg(id)
-                                                              .arg(no)
-                                                              .arg(nc)
-                                                              .arg(nu)
-                                                              .arg(nv)
-                                                              .arg(ex.what()),
-                                                          Helper::scriptingKind,
-                                                          Helper::errorLevel));
-    return geometry.release();
   }
 
-  ftype**  Xu   = nullptr;
-  ftype**  Yu   = nullptr;
-  ftype**  Zu   = nullptr;
-  ftype*** Nu   = nullptr;
-  ftype*** Cu   = nullptr;
-  ftype*   Xuv  = nullptr;
-  ftype*   Yuv  = nullptr;
-  ftype*   Zuv  = nullptr;
-  ftype**  Nuv  = nullptr;
-  ftype**  Cuv  = nullptr;
-  ftype*   Nuvc = nullptr;
-  ftype*   Cuvc = nullptr;
+  const std::size_t notna = no * na;
+  const std::size_t notnatnu = notna * nu;
+  const std::size_t notnatnutnv = notnatnu * nv;
 
-  try {
-    {
-      Xu = new ftype* [nu];
-      Yu = new ftype* [nu];
-      Zu = new ftype* [nu];
-      Xuv = new ftype [nu * nv]{0};
-      Yuv = new ftype [nu * nv]{0};
-      Zuv = new ftype [nu * nv]{0};
-    }
-    if (normalized) {
-      Nu = new ftype**[nu];
-      Nuv = new ftype*[nu * nv];
-      Nuvc = new ftype[nu * nv * nc]{0};
-    }
-    if (multicolored) {
-      Cu = new ftype**[nu];
-      Cuv = new ftype*[nu * nv];
-      Cuvc = new ftype[nu * nv * nc]{0};
-    }
-    {
-      for (itype u = 0; u < nu; u++, Xuv += nv, Yuv += nv, Zuv += nv) {
-        Xu[u] = Xuv;
-        Yu[u] = Yuv;
-        Zu[u] = Zuv;
+  if (!degenerated && !normalized) {
+    try {
+      if (smax / na < (std::size_t)no) {
+        throw std::overflow_error("Overflow of notna");
       }
-    }
-    if (normalized) {
-      for (itype u = 0; u < nu; u++, Nuv += nv) {
-        Nu[u] = Nuv;
-        for (itype v = 0; v < nv; v++, Nuvc += nc) {
-          Nu[u][v] = Nuvc;
-        }
+      if (smax / nu < notna) {
+        throw std::overflow_error("Overflow of notnatnu");
       }
-    }
-    if (multicolored) {
-      for (itype u = 0; u < nu; u++, Cuv += nv) {
-        Cu[u] = Cuv;
-        for (itype v = 0; v < nv; v++, Cuvc += nc) {
-          Cu[u][v] = Cuvc;
-        }
+      if (smax / nv < notnatnu) {
+        throw std::overflow_error("Overflow of notnatnutnv");
       }
+    } catch (const std::overflow_error& ex) {
+      MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                            QString(QObject::tr("Too many vertices for surface \"%1\" "
+                                                                "(no = %2, na = %3, nu = %4, nv = %5): %6."))
+                                                                .arg(id)
+                                                                .arg(no)
+                                                                .arg(na)
+                                                                .arg(nu)
+                                                                .arg(nv)
+                                                                .arg(ex.what()),
+                                                            Helper::scriptingKind,
+                                                            Helper::errorLevel));
+      return geometry.release();
     }
-  } catch (const std::bad_alloc& ex) {
-    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                          QString(QObject::tr("Not enough memory to allocate vertices of surface \"%1\" (nu = %2, nv = %3): %4."))
-                                                              .arg(id)
-                                                              .arg(nu)
-                                                              .arg(nv)
-                                                              .arg(ex.what()),
-                                                          Helper::scriptingKind,
-                                                          Helper::errorLevel));
-    delete[] Cuvc;
-    delete[] Nuvc;
-    delete[] Cuv;
-    delete[] Nuv;
-    delete[] Zuv;
-    delete[] Yuv;
-    delete[] Xuv;
-    delete[] Cu;
-    delete[] Nu;
-    delete[] Zu;
-    delete[] Yu;
-    delete[] Xu;
-    return geometry.release();
   }
 
-  ftype**  X = Xu;
-  ftype**  Y = Yu;
-  ftype**  Z = Zu;
-  ftype*** N = Nu;
-  ftype*** C = Cu;
+  ftype**** E = nullptr;
+  ftype**** O = nullptr;
 
-  fakeTorus(nu, nv, X, Y, Z, N, C);
+  ftype**** A = nullptr;
+  ftype**** W = nullptr;
+
+  {
+    ftype**** Ee = nullptr;
+    ftype*** Eec = nullptr;
+    ftype** Eecu = nullptr;
+    ftype* Eecuv = nullptr;
+
+    try {
+      Ee = new ftype***[ne];
+      Eec = new ftype**[netnc];
+      Eecu = new ftype*[netnctnu];
+      Eecuv = new ftype[netnctnutnv]{0};
+      for (itype e = 0; e < ne; e++, Eec += nc) {
+        Ee[e] = Eec;
+        for (itype c = 0; c < nc; c++, Eecu += nu) {
+          Ee[e][c] = Eecu;
+          for (itype u = 0; u < nu; u++, Eecuv += nv) {
+            Ee[e][c][u] = Eecuv;
+          }
+        }
+      }
+    } catch (const std::bad_alloc& ex) {
+      MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                            QString(QObject::tr("Not enough memory to allocate elements for surface \"%1\" "
+                                                                "(ne = %2, nc = %3, nu = %4, nv = %5): %6."))
+                                                                .arg(id)
+                                                                .arg(ne)
+                                                                .arg(nc)
+                                                                .arg(nu)
+                                                                .arg(nv)
+                                                                .arg(ex.what()),
+                                                            Helper::scriptingKind,
+                                                            Helper::errorLevel));
+      delete[] Eecuv;
+      delete[] Eecu;
+      delete[] Eec;
+      delete[] Ee;
+      return geometry.release();
+    }
+
+    E = Ee;
+  }
+
+  if (!degenerated && !normalized) {
+    ftype**** Oo = nullptr;
+    ftype*** Ooa = nullptr;
+    ftype** Ooau = nullptr;
+    ftype* Ooauv = nullptr;
+
+    try {
+      Oo = new ftype***[no];
+      Ooa = new ftype**[notna];
+      Ooau = new ftype*[notnatnu];
+      Ooauv = new ftype[notnatnutnv]{0};
+      for (itype o = 0; o < no; o++, Ooa += na) {
+        Oo[o] = Ooa;
+        for (itype a = 0; a < na; a++, Ooau += nu) {
+          Oo[o][a] = Ooau;
+          for (itype u = 0; u < nu; u++, Ooauv += nv) {
+            Oo[o][a][u] = Ooauv;
+          }
+        }
+      }
+    } catch (const std::bad_alloc& ex) {
+      MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                            QString(QObject::tr("Not enough memory to allocate objects for surface \"%1\" "
+                                                                "(no = %2, na = %3, nu = %4, nv = %5): %6."))
+                                                                .arg(id)
+                                                                .arg(no)
+                                                                .arg(na)
+                                                                .arg(nu)
+                                                                .arg(nv)
+                                                                .arg(ex.what()),
+                                                            Helper::scriptingKind,
+                                                            Helper::errorLevel));
+      delete[] Ooauv;
+      delete[] Ooau;
+      delete[] Ooa;
+      delete[] Oo;
+      delete[] E[0][0][0];
+      delete[] E[0][0];
+      delete[] E[0];
+      delete[] E;
+      return geometry.release();
+    }
+
+    O = Oo;
+
+    A = O;
+    W = A + nc;
+  }
+
+  ftype*** V = nullptr;
+  ftype*** N = nullptr;
+  ftype*** C = nullptr;
+
+  itype e = 0;
+  {
+    V = E[e++];
+  }
+  if (normalized) {
+    N = E[e++];
+  }
+  if (multicolored) {
+    C = E[e++];
+  }
+
+  constexpr itype x = 0; // Index of 1st coordinate
+  constexpr itype y = 1; // Index of 2nd coordinate
+  constexpr itype z = 2; // Index of 3rd coordinate
+
+  ftype** Vx = nullptr;
+  ftype** Vy = nullptr;
+  ftype** Vz = nullptr;
+
+  ftype** Nx = nullptr;
+  ftype** Ny = nullptr;
+  ftype** Nz = nullptr;
+
+  ftype** Cx = nullptr;
+  ftype** Cy = nullptr;
+  ftype** Cz = nullptr;
+
+  {
+    Vx = V[x];
+    Vy = V[y];
+    Vz = V[z];
+  }
+  if (normalized) {
+    Nx = N[x];
+    Ny = N[y];
+    Nz = N[z];
+  }
+  if (multicolored) {
+    Cx = C[x];
+    Cy = C[y];
+    Cz = C[z];
+  }
+
+  fakeTorus(nu, nv, Vx, Vy, Vz, N, C);
   // TODO: Fake multicolored surface
 
   constexpr ftype ps = 1; // Point size // FIXME vendor-specific annotation
@@ -484,10 +578,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   constexpr ftype ns = 0.25; // Normal scale // FIXME vendor-specific annotation
 
   constexpr itype ri = 0; // Restart index
-
-  constexpr itype x = 0; // Index of 1st coordinate
-  constexpr itype y = 1; // Index of 2nd coordinate
-  constexpr itype z = 2; // Index of 3rd coordinate
 
   const bool lines = nu == 1 || nv == 1; // Surface degenerated to a line strip
   const bool point = nu == 1 && nv == 1; // Surface degenerated to a single point
@@ -550,16 +640,16 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
     for (itype u = 0; u < nu; u++) {
       for (itype v = 0; v < nv; v++) {
-        vertices->push_back(Vec3(X[u][v], Y[u][v], Z[u][v]));
+        vertices->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
 
         if (normalized) {
-          normals->push_back(Vec3(N[u][v][x], N[u][v][y], N[u][v][z]));
+          normals->push_back(Vec3(Nx[u][v], Ny[u][v], Nz[u][v]));
         } else {
-          normals->push_back(Vec3(X[u][v], Y[u][v], Z[u][v]));
+          normals->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
         }
 
         if (multicolored) {
-          colors->push_back(Vec4(C[u][v][x], C[u][v][y], C[u][v][z], opacity));
+          colors->push_back(Vec4(Cx[u][v], Cy[u][v], Cz[u][v], opacity));
         } else {
           colors->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
         }
@@ -612,7 +702,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
       for (itype u = 0; u < nu; u++) {
         for (itype v = 0; v < nv; v++) {
-          vertices->push_back(Vec3(X[u][v], Y[u][v], Z[u][v]));
+          vertices->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
         }
       }
     } else {
@@ -622,24 +712,24 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         for (itype v = 0; v < nvm1; v++) {
           const itype vp0 = v;
           const itype vp1 = v + 1;
-          const ftype X00 = X[up0][vp0];
-          const ftype Y00 = Y[up0][vp0];
-          const ftype Z00 = Z[up0][vp0];
-          const ftype X01 = X[up0][vp1];
-          const ftype Y01 = Y[up0][vp1];
-          const ftype Z01 = Z[up0][vp1];
-          const ftype X10 = X[up1][vp0];
-          const ftype Y10 = Y[up1][vp0];
-          const ftype Z10 = Z[up1][vp0];
-          const ftype X11 = X[up1][vp1];
-          const ftype Y11 = Y[up1][vp1];
-          const ftype Z11 = Z[up1][vp1];
-          vertices->push_back(Vec3(X00, Y00, Z00));
-          vertices->push_back(Vec3(X10, Y10, Z10));
-          vertices->push_back(Vec3(X01, Y01, Z01));
-          vertices->push_back(Vec3(X10, Y10, Z10));
-          vertices->push_back(Vec3(X11, Y11, Z11));
-          vertices->push_back(Vec3(X01, Y01, Z01));
+          const ftype Vx00 = Vx[up0][vp0];
+          const ftype Vy00 = Vy[up0][vp0];
+          const ftype Vz00 = Vz[up0][vp0];
+          const ftype Vx01 = Vx[up0][vp1];
+          const ftype Vy01 = Vy[up0][vp1];
+          const ftype Vz01 = Vz[up0][vp1];
+          const ftype Vx10 = Vx[up1][vp0];
+          const ftype Vy10 = Vy[up1][vp0];
+          const ftype Vz10 = Vz[up1][vp0];
+          const ftype Vx11 = Vx[up1][vp1];
+          const ftype Vy11 = Vy[up1][vp1];
+          const ftype Vz11 = Vz[up1][vp1];
+          vertices->push_back(Vec3(Vx00, Vy00, Vz00));
+          vertices->push_back(Vec3(Vx10, Vy10, Vz10));
+          vertices->push_back(Vec3(Vx01, Vy01, Vz01));
+          vertices->push_back(Vec3(Vx10, Vy10, Vz10));
+          vertices->push_back(Vec3(Vx11, Vy11, Vz11));
+          vertices->push_back(Vec3(Vx01, Vy01, Vz01));
         }
       }
     }
@@ -648,161 +738,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     if (normalized) {
       for (itype u = 0; u < nu; u++) {
         for (itype v = 0; v < nv; v++) {
-          normals->push_back(Vec3(N[u][v][x], N[u][v][y], N[u][v][z]));
+          normals->push_back(Vec3(Nx[u][v], Ny[u][v], Nz[u][v]));
         }
       }
     }
     if (!normalized || mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
-      itype nw = 6; // TODO number of adjacent facets/windings
-      switch (mNormalsAverageWeights) {
-        case SurfaceNormalsAverageWeights::none:
-          nw = 2;
-          break;
-        default:
-          break;
-      }
-
-      ftype**** A = nullptr;
-
-      if (!normalized && nw > 0) {
-        ftype**** Au = nullptr;
-        ftype*** Auv = nullptr;
-        ftype** Auvw = nullptr;
-        ftype* Auvwc = nullptr;
-
-        try {
-          Au = new ftype***[nu];
-          Auv = new ftype**[nu * nv];
-          Auvw = new ftype*[nu * nv * nw];
-          Auvwc = new ftype[nu * nv * nw * nc]{0};
-          for (itype u = 0; u < nu; u++, Auv += nv) {
-            Au[u] = Auv;
-            for (itype v = 0; v < nv; v++, Auvw += nw) {
-              Au[u][v] = Auvw;
-              for (itype w = 0; w < nw; w++, Auvwc += nc) {
-                Au[u][v][w] = Auvwc;
-              }
-            }
-          }
-        } catch (const std::bad_alloc& ex) {
-          MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                                QString(QObject::tr("Not enough memory to allocate adjacent facets normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, nc = %5): %6."))
-                                                                    .arg(id)
-                                                                    .arg(nu)
-                                                                    .arg(nv)
-                                                                    .arg(nw)
-                                                                    .arg(nc)
-                                                                    .arg(ex.what()),
-                                                                Helper::scriptingKind,
-                                                                Helper::errorLevel));
-          delete[] Auvwc;
-          delete[] Auvw;
-          delete[] Auv;
-          delete[] Au;
-          if (multicolored) {
-            delete[] C[0][0];
-            delete[] C[0];
-            delete[] C;
-          }
-          if (normalized) {
-            delete[] N[0][0];
-            delete[] N[0];
-            delete[] N;
-          }
-          {
-            delete[] Z[0];
-            delete[] Y[0];
-            delete[] X[0];
-            delete[] Z;
-            delete[] Y;
-            delete[] X;
-          }
-          return geometry.release();
-        }
-
-        A = Au;
-      }
-
-      itype na = 0; // TODO number of area/angle weights
-      switch (mNormalsAverageWeights) {
-        case SurfaceNormalsAverageWeights::area:
-        case SurfaceNormalsAverageWeights::angle:
-          na = 1;
-          break;
-        case SurfaceNormalsAverageWeights::bothAreaAndAngle:
-          na = 2;
-          break;
-        default:
-          break;
-      }
-
-      ftype**** W = nullptr; // FIXME allocate together with A as a whole contiguous array?
-
-      if (!normalized && na > 0) {
-        ftype**** Wu = nullptr;
-        ftype*** Wuv = nullptr;
-        ftype** Wuvw = nullptr;
-        ftype* Wuvwa = nullptr;
-
-        try {
-          Wu = new ftype***[nu];
-          Wuv = new ftype**[nu * nv];
-          Wuvw = new ftype*[nu * nv * nw];
-          Wuvwa = new ftype[nu * nv * nw * na]{0};
-          for (itype u = 0; u < nu; u++, Wuv += nv) {
-            Wu[u] = Wuv;
-            for (itype v = 0; v < nv; v++, Wuvw += nw) {
-              Wu[u][v] = Wuvw;
-              for (itype w = 0; w < nw; w++, Wuvwa += na) {
-                Wu[u][v][w] = Wuvwa;
-              }
-            }
-          }
-        } catch (const std::bad_alloc& ex) {
-          MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                                QString(QObject::tr("Not enough memory to allocate weights for normals of surface \"%1\" (nu = %2, nv = %3, nw = %4, na = %5): %6."))
-                                                                    .arg(id)
-                                                                    .arg(nu)
-                                                                    .arg(nv)
-                                                                    .arg(nw)
-                                                                    .arg(na)
-                                                                    .arg(ex.what()),
-                                                                Helper::scriptingKind,
-                                                                Helper::errorLevel));
-          delete[] Wuvwa;
-          delete[] Wuvw;
-          delete[] Wuv;
-          delete[] Wu;
-          {
-            delete[] A[0][0][0];
-            delete[] A[0][0];
-            delete[] A[0];
-            delete[] A;
-          }
-          if (multicolored) {
-            delete[] C[0][0];
-            delete[] C[0];
-            delete[] C;
-          }
-          if (normalized) {
-            delete[] N[0][0];
-            delete[] N[0];
-            delete[] N;
-          }
-          {
-            delete[] Z[0];
-            delete[] Y[0];
-            delete[] X[0];
-            delete[] Z;
-            delete[] Y;
-            delete[] X;
-          }
-          return geometry.release();
-        }
-
-        W = Wu;
-      }
-
       constexpr itype i = 0; // TODO index of first adjacent facet for top right vertex
       constexpr itype j = 2; // TODO index of first adjacent facet for top left vertex
       constexpr itype k = 4; // TODO index of first adjacent facet for bottom right vertex
@@ -816,22 +756,22 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         for (itype v = 0; v < nvm1; v++) {
           const itype vp0 = v;
           const itype vp1 = v + 1;
-          const ftype X00 = X[up0][vp0];
-          const ftype Y00 = Y[up0][vp0];
-          const ftype Z00 = Z[up0][vp0];
-          const ftype X01 = X[up0][vp1];
-          const ftype Y01 = Y[up0][vp1];
-          const ftype Z01 = Z[up0][vp1];
-          const ftype X10 = X[up1][vp0];
-          const ftype Y10 = Y[up1][vp0];
-          const ftype Z10 = Z[up1][vp0];
-          const ftype X11 = X[up1][vp1];
-          const ftype Y11 = Y[up1][vp1];
-          const ftype Z11 = Z[up1][vp1];
-          const ftype du1[nc] = {X10 - X00, Y10 - Y00, Z10 - Z00};
-          const ftype du2[nc] = {X01 - X11, Y01 - Y11, Z01 - Z11};
-          const ftype dv1[nc] = {X01 - X00, Y01 - Y00, Z01 - Z00};
-          const ftype dv2[nc] = {X10 - X11, Y10 - Y11, Z10 - Z11};
+          const ftype Vx00 = Vx[up0][vp0];
+          const ftype Vy00 = Vy[up0][vp0];
+          const ftype Vz00 = Vz[up0][vp0];
+          const ftype Vx01 = Vx[up0][vp1];
+          const ftype Vy01 = Vy[up0][vp1];
+          const ftype Vz01 = Vz[up0][vp1];
+          const ftype Vx10 = Vx[up1][vp0];
+          const ftype Vy10 = Vy[up1][vp0];
+          const ftype Vz10 = Vz[up1][vp0];
+          const ftype Vx11 = Vx[up1][vp1];
+          const ftype Vy11 = Vy[up1][vp1];
+          const ftype Vz11 = Vz[up1][vp1];
+          const ftype du1[nc] = {Vx10 - Vx00, Vy10 - Vy00, Vz10 - Vz00};
+          const ftype du2[nc] = {Vx01 - Vx11, Vy01 - Vy11, Vz01 - Vz11};
+          const ftype dv1[nc] = {Vx01 - Vx00, Vy01 - Vy00, Vz01 - Vz00};
+          const ftype dv2[nc] = {Vx10 - Vx11, Vy10 - Vy11, Vz10 - Vz11};
           const ftype cross1[nc] = {du1[y] * dv1[z] - du1[z] * dv1[y], du1[z] * dv1[x] - du1[x] * dv1[z], du1[x] * dv1[y] - du1[y] * dv1[x]};
           const ftype cross2[nc] = {du2[y] * dv2[z] - du2[z] * dv2[y], du2[z] * dv2[x] - du2[x] * dv2[z], du2[x] * dv2[y] - du2[y] * dv2[x]};
           const ftype length1 = std::sqrt(cross1[x] * cross1[x] + cross1[y] * cross1[y] + cross1[z] * cross1[z]);
@@ -841,8 +781,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           const ftype normal1[nc] = {cross1[x] * invnorm1, cross1[y] * invnorm1, cross1[z] * invnorm1};
           const ftype normal2[nc] = {cross2[x] * invnorm2, cross2[y] * invnorm2, cross2[z] * invnorm2};
           if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
-            const ftype center1[nc] = {(X00 + X10 + X01) / 3, (Y00 + Y10 + Y01) / 3, (Z00 + Z10 + Z01) / 3};
-            const ftype center2[nc] = {(X10 + X11 + X01) / 3, (Y10 + Y11 + Y01) / 3, (Z10 + Z11 + Z01) / 3};
+            const ftype center1[nc] = {(Vx00 + Vx10 + Vx01) / 3, (Vy00 + Vy10 + Vy01) / 3, (Vz00 + Vz10 + Vz01) / 3};
+            const ftype center2[nc] = {(Vx10 + Vx11 + Vx01) / 3, (Vy10 + Vy11 + Vy01) / 3, (Vz10 + Vz11 + Vz01) / 3};
             facetsCenters->push_back(Vec3(center1[x], center1[y], center1[z]));
             facetsCenters->push_back(Vec3(center2[x], center2[y], center2[z]));
             facetsNormals->push_back(Vec3(normal1[x], normal1[y], normal1[z]));
@@ -850,46 +790,36 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           }
           if (!normalized) {
             if (mNormalsAverageWeights == SurfaceNormalsAverageWeights::none) {
-              ftype** A00 = A[up0][vp0];
-              ftype** A11 = A[up1][vp1];
               for (itype c = 0; c < nc; c++) {
-                A00[i][c] = normal1[c];
-                A11[l][c] = normal2[c];
+                A[c][i][up0][vp0] = normal1[c];
+                A[c][l][up1][vp1] = normal2[c];
               }
             } else {
-              ftype** A00 = A[up0][vp0];
-              ftype** A01 = A[up0][vp1];
-              ftype** A10 = A[up1][vp0];
-              ftype** A11 = A[up1][vp1];
               for (itype c = 0; c < nc; c++) {
-                A00[i][c] = normal1[c];
-                A10[j][c] = normal1[c];
-                A01[k][c] = normal1[c];
-                A10[l][c] = normal2[c];
-                A11[m][c] = normal2[c];
-                A01[n][c] = normal2[c];
+                A[c][i][up0][vp0] = normal1[c];
+                A[c][j][up1][vp0] = normal1[c];
+                A[c][k][up0][vp1] = normal1[c];
+                A[c][l][up1][vp0] = normal2[c];
+                A[c][m][up1][vp1] = normal2[c];
+                A[c][n][up0][vp1] = normal2[c];
               }
             }
             if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::bothAreaAndAngle) {
-              itype a = 0;
-              ftype** W00 = W[up0][vp0];
-              ftype** W01 = W[up0][vp1];
-              ftype** W10 = W[up1][vp0];
-              ftype** W11 = W[up1][vp1];
+              itype w = 0;
               if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::area) {
                 const ftype area1 = length1 / 2; // TODO surface area = triangle area = half the norm of the cross product
                 const ftype area2 = length2 / 2; // TODO surface area = triangle area = half the norm of the cross product
-                W00[i][a] = area1;
-                W10[j][a] = area1;
-                W01[k][a] = area1;
-                W10[l][a] = area2;
-                W11[m][a] = area2;
-                W01[n][a] = area2;
-                a++;
+                W[w][i][up0][vp0] = area1;
+                W[w][j][up1][vp0] = area1;
+                W[w][k][up0][vp1] = area1;
+                W[w][l][up1][vp0] = area2;
+                W[w][m][up1][vp1] = area2;
+                W[w][n][up0][vp1] = area2;
+                w++;
               }
               if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle) {
-                const ftype duv[nc] = {X01 - X10, Y01 - Y10, Z01 - Z10};
-                const ftype dvu[nc] = {X10 - X01, Y10 - Y01, Z10 - Z01};
+                const ftype duv[nc] = {Vx01 - Vx10, Vy01 - Vy10, Vz01 - Vz10};
+                const ftype dvu[nc] = {Vx10 - Vx01, Vy10 - Vy01, Vz10 - Vz01};
                 const ftype dot11 = dv1[x] * du1[x] + dv1[y] * du1[y] + dv1[z] * du1[z];
                 const ftype dot12 = du1[x] * dvu[x] + du1[y] * dvu[y] + du1[z] * dvu[z];
                 const ftype dot13 = duv[x] * dv1[x] + duv[y] * dv1[y] + duv[z] * dv1[z];
@@ -914,13 +844,13 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                 const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
                 const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
                 const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-                W00[i][a] = angle11;
-                W10[j][a] = angle12;
-                W01[k][a] = angle13;
-                W10[l][a] = angle21;
-                W11[m][a] = angle22;
-                W01[n][a] = angle23;
-                a++;
+                W[w][i][up0][vp0] = angle11;
+                W[w][j][up1][vp0] = angle12;
+                W[w][k][up0][vp1] = angle13;
+                W[w][l][up1][vp0] = angle21;
+                W[w][m][up1][vp1] = angle22;
+                W[w][n][up0][vp1] = angle23;
+                w++;
               }
             }
           }
@@ -933,46 +863,46 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             constexpr itype nut0 = 0;
             constexpr itype nvt0 = 0;
             for (itype u = 0; u < nu; u++) {
-              if (X[u][nvt0] == X[u][nvm1] &&
-                  Y[u][nvt0] == Y[u][nvm1] &&
-                  Z[u][nvt0] == Z[u][nvm1]) {
+              if (Vx[u][nvt0] == Vx[u][nvm1] &&
+                  Vy[u][nvt0] == Vy[u][nvm1] &&
+                  Vz[u][nvt0] == Vz[u][nvm1]) {
                 for (itype c = 0; c < nc; c++) {
-                  A[u][nvm1][i][c] = A[u][nvt0][i][c];
-                  A[u][nvm1][l][c] = A[u][nvt0][l][c];
-                  A[u][nvm1][j][c] = A[u][nvt0][j][c];
-                  A[u][nvt0][m][c] = A[u][nvm1][m][c];
-                  A[u][nvt0][k][c] = A[u][nvm1][k][c];
-                  A[u][nvt0][n][c] = A[u][nvm1][n][c];
+                  A[c][i][u][nvm1] = A[c][i][u][nvt0];
+                  A[c][l][u][nvm1] = A[c][l][u][nvt0];
+                  A[c][j][u][nvm1] = A[c][j][u][nvt0];
+                  A[c][m][u][nvt0] = A[c][m][u][nvm1];
+                  A[c][k][u][nvt0] = A[c][k][u][nvm1];
+                  A[c][n][u][nvt0] = A[c][n][u][nvm1];
                 }
-                for (itype a = 0; a < na; a++) {
-                  W[u][nvm1][i][a] = W[u][nvt0][i][a];
-                  W[u][nvm1][l][a] = W[u][nvt0][l][a];
-                  W[u][nvm1][j][a] = W[u][nvt0][j][a];
-                  W[u][nvt0][m][a] = W[u][nvm1][m][a];
-                  W[u][nvt0][k][a] = W[u][nvm1][k][a];
-                  W[u][nvt0][n][a] = W[u][nvm1][n][a];
+                for (itype w = 0; w < nw; w++) {
+                  W[w][i][u][nvm1] = W[w][i][u][nvt0];
+                  W[w][l][u][nvm1] = W[w][l][u][nvt0];
+                  W[w][j][u][nvm1] = W[w][j][u][nvt0];
+                  W[w][m][u][nvt0] = W[w][m][u][nvm1];
+                  W[w][k][u][nvt0] = W[w][k][u][nvm1];
+                  W[w][n][u][nvt0] = W[w][n][u][nvm1];
                 }
               }
             }
             for (itype v = 0; v < nv; v++) {
-              if (X[nut0][v] == X[num1][v] &&
-                  Y[nut0][v] == Y[num1][v] &&
-                  Z[nut0][v] == Z[num1][v]) {
+              if (Vx[nut0][v] == Vx[num1][v] &&
+                  Vy[nut0][v] == Vy[num1][v] &&
+                  Vz[nut0][v] == Vz[num1][v]) {
                 for (itype c = 0; c < nc; c++) {
-                  A[num1][v][i][c] = A[nut0][v][i][c];
-                  A[num1][v][k][c] = A[nut0][v][k][c];
-                  A[num1][v][n][c] = A[nut0][v][n][c];
-                  A[nut0][v][l][c] = A[num1][v][l][c];
-                  A[nut0][v][j][c] = A[num1][v][j][c];
-                  A[nut0][v][m][c] = A[num1][v][m][c];
+                  A[c][i][num1][v] = A[c][i][nut0][v];
+                  A[c][k][num1][v] = A[c][k][nut0][v];
+                  A[c][n][num1][v] = A[c][n][nut0][v];
+                  A[c][l][nut0][v] = A[c][l][num1][v];
+                  A[c][j][nut0][v] = A[c][j][num1][v];
+                  A[c][m][nut0][v] = A[c][m][num1][v];
                 }
-                for (itype a = 0; a < na; a++) {
-                  W[num1][v][i][a] = W[nut0][v][i][a];
-                  W[num1][v][k][a] = W[nut0][v][k][a];
-                  W[num1][v][n][a] = W[nut0][v][n][a];
-                  W[nut0][v][l][a] = W[num1][v][l][a];
-                  W[nut0][v][j][a] = W[num1][v][j][a];
-                  W[nut0][v][m][a] = W[num1][v][m][a];
+                for (itype w = 0; w < nw; w++) {
+                  W[w][i][num1][v] = W[w][i][nut0][v];
+                  W[w][k][num1][v] = W[w][k][nut0][v];
+                  W[w][n][num1][v] = W[w][n][nut0][v];
+                  W[w][l][nut0][v] = W[w][l][num1][v];
+                  W[w][j][nut0][v] = W[w][j][num1][v];
+                  W[w][m][nut0][v] = W[w][m][num1][v];
                 }
               }
             }
@@ -981,20 +911,20 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           for (itype u = 0; u < nu; u++) {
             for (itype v = 0; v < nv; v++) {
               ftype normal[nc] = {0};
-              for (itype w = 0; w < nw; w++) {
+              for (itype a = 0; a < na; a++) {
                 ftype weight = 1;
-                for (itype a = 0; a < na; a++) {
-                  weight *= W[u][v][w][a];
+                for (itype w = 0; w < nw; w++) {
+                  weight *= W[w][a][u][v];
                 }
-                normal[x] += A[u][v][w][x] * weight;
-                normal[y] += A[u][v][w][y] * weight;
-                normal[z] += A[u][v][w][z] * weight;
+                for (itype c = 0; c < nc; c++) {
+                  normal[c] += A[c][a][u][v] * weight;
+                }
               }
               const ftype length = std::sqrt(normal[x] * normal[x] + normal[y] * normal[y] + normal[z] * normal[z]);
               const ftype invnorm = length > 0 ? 1 / length : 0;
-              normal[x] *= invnorm;
-              normal[y] *= invnorm;
-              normal[z] *= invnorm;
+              for (itype c = 0; c < nc; c++) {
+                normal[c] *= invnorm;
+              }
               normals->push_back(Vec3(normal[x], normal[y], normal[z]));
             }
           }
@@ -1005,25 +935,16 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             for (itype v = 0; v < nvm1; v++) {
               const itype vp0 = v;
               const itype vp1 = v + 1;
-              ftype* normal1 = A[up0][vp0][i];
-              ftype* normal2 = A[up1][vp1][l];
+              ftype normal1[nc] = {0};
+              ftype normal2[nc] = {0};
+              for (itype c = 0; c < nc; c++) {
+                normal1[c] += A[c][i][up0][vp0];
+                normal2[c] += A[c][l][up1][vp1];
+              }
               normals->insert(normals->end(), 3, Vec3(normal1[x], normal1[y], normal1[z]));
               normals->insert(normals->end(), 3, Vec3(normal2[x], normal2[y], normal2[z]));
             }
           }
-        }
-
-        if (na > 0) {
-          delete[] W[0][0][0];
-          delete[] W[0][0];
-          delete[] W[0];
-          delete[] W;
-        }
-        if (nw > 0) {
-          delete[] A[0][0][0];
-          delete[] A[0][0];
-          delete[] A[0];
-          delete[] A;
         }
       }
     }
@@ -1033,7 +954,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
         for (itype u = 0; u < nu; u++) {
           for (itype v = 0; v < nv; v++) {
-            colors->push_back(Vec4(C[u][v][x], C[u][v][y], C[u][v][z], opacity));
+            colors->push_back(Vec4(Cx[u][v], Cy[u][v], Cz[u][v], opacity));
           }
         }
       } else {
@@ -1043,16 +964,24 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           for (itype v = 0; v < nvm1; v++) {
             const itype vp0 = v;
             const itype vp1 = v + 1;
-            ftype* C00 = C[up0][vp0];
-            ftype* C01 = C[up0][vp1];
-            ftype* C10 = C[up1][vp0];
-            ftype* C11 = C[up1][vp1];
-            colors->push_back(Vec4(C00[x], C00[y], C00[z], opacity));
-            colors->push_back(Vec4(C10[x], C10[y], C10[z], opacity));
-            colors->push_back(Vec4(C01[x], C01[y], C01[z], opacity));
-            colors->push_back(Vec4(C10[x], C10[y], C10[z], opacity));
-            colors->push_back(Vec4(C11[x], C11[y], C11[z], opacity));
-            colors->push_back(Vec4(C01[x], C01[y], C01[z], opacity));
+            const ftype Cx00 = Cx[up0][vp0];
+            const ftype Cy00 = Cy[up0][vp0];
+            const ftype Cz00 = Cz[up0][vp0];
+            const ftype Cx01 = Cx[up0][vp1];
+            const ftype Cy01 = Cy[up0][vp1];
+            const ftype Cz01 = Cz[up0][vp1];
+            const ftype Cx10 = Cx[up1][vp0];
+            const ftype Cy10 = Cy[up1][vp0];
+            const ftype Cz10 = Cz[up1][vp0];
+            const ftype Cx11 = Cx[up1][vp1];
+            const ftype Cy11 = Cy[up1][vp1];
+            const ftype Cz11 = Cz[up1][vp1];
+            colors->push_back(Vec4(Cx00, Cy00, Cz00, opacity));
+            colors->push_back(Vec4(Cx10, Cy10, Cz10, opacity));
+            colors->push_back(Vec4(Cx01, Cy01, Cz01, opacity));
+            colors->push_back(Vec4(Cx10, Cy10, Cz10, opacity));
+            colors->push_back(Vec4(Cx11, Cy11, Cz11, opacity));
+            colors->push_back(Vec4(Cx01, Cy01, Cz01, opacity));
           }
         }
       }
@@ -1087,6 +1016,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
 
     /* Indices */
+    if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+      indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
+      osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
+      strip->reserveElements(nIndices);
 #define SURFACE_FIRST_V()                       \
   if (degenerate) {                             \
     strip->addElement(up0tnvpopv);              \
@@ -1102,10 +1035,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   } else if (restart) {                         \
     strip->addElement(ri);                      \
   }
-    if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
-      indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
-      osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
-      strip->reserveElements(nIndices);
       const itype opnum2tnv = o + num2 * nv;
       const bool num2g0 = num2 > 0;
       itype up0tnvpopv = o;
@@ -1200,23 +1129,18 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                         Helper::scriptingKind,
                                                         Helper::errorLevel));
 
-  if (multicolored) {
-    delete[] C[0][0];
-    delete[] C[0];
-    delete[] C;
+  if (!degenerated && !normalized) {
+    delete[] O[0][0][0];
+    delete[] O[0][0];
+    delete[] O[0];
+    delete[] O;
   }
-  if (normalized) {
-    delete[] N[0][0];
-    delete[] N[0];
-    delete[] N;
-  }
+
   {
-    delete[] Z[0];
-    delete[] Y[0];
-    delete[] X[0];
-    delete[] Z;
-    delete[] Y;
-    delete[] X;
+    delete[] E[0][0][0];
+    delete[] E[0][0];
+    delete[] E[0];
+    delete[] E;
   }
 
   return geometry.release();
