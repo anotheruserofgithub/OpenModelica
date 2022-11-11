@@ -60,7 +60,7 @@ public:
   void dumpVisualizerAttributes() override;
   osg::Geometry* drawGeometry() const;
 private:
-  typedef /*unsigned*/int itype; // FIXME: Unsigned integers use modulo arithmetic (for wrapping) which is slower than undefined behavior of under/overflow with signed integers, and anyway the last bit is not needed in practice especially because Modelica Integer type maps to a C signed int type
+  typedef /*unsigned*/int itype; // FIXME: Unsigned integers use modulo arithmetic (for wrapping) which is slower than undefined behavior of under/overflow with signed integers, and anyway the last bit is not needed in practice especially because Modelica Integer type maps to a C signed int type // FIXME: Must fit in OSG & OpenGL array types (i.e., conservatively, int)
   typedef /*float*/double ftype; // FIXME: Should be double since Modelica Real primitive type is equivalent to a C double primitive type
   typedef osg::Vec2Array Vec2Array;
   typedef osg::Vec3Array Vec3Array;
