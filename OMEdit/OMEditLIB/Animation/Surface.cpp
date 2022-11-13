@@ -31,7 +31,28 @@
 
 #include "Surface.h"
 
+#include <cmath>
+#include <limits>
+#include <new>
+#include <stdexcept>
 #include <type_traits>
+
+#include <QOpenGLContext> // must be included before OSG headers
+
+#include <osg/ref_ptr>
+#include <osg/Array>
+#include <osg/Geometry>
+#include <osg/LightModel>
+#include <osg/LineWidth>
+#include <osg/Point>
+#include <osg/PolygonMode>
+#include <osg/PrimitiveRestartIndex>
+#include <osg/PrimitiveSet>
+#include <osg/StateAttribute>
+#include <osg/StateSet>
+
+#include "Modeling/MessagesWidget.h"
+#include "Util/Helper.h"
 
 std::underlying_type<SurfaceNormalsAverageWeights>::type operator&(const SurfaceNormalsAverageWeights& lhs, const SurfaceNormalsAverageWeights& rhs)
 {
@@ -77,28 +98,6 @@ void SurfaceObject::dumpVisualizerAttributes()
   std::cout << "multicolored " << _multicolored.getValueString() << std::endl;
   std::cout << "transparency " << _transparency.getValueString() << std::endl;
 }
-
-#include <cmath>
-#include <limits>
-#include <new>
-#include <stdexcept>
-
-#include <QOpenGLContext> // must be included before OSG headers
-
-#include <osg/ref_ptr>
-#include <osg/Array>
-#include <osg/Geometry>
-#include <osg/LightModel>
-#include <osg/LineWidth>
-#include <osg/Point>
-#include <osg/PolygonMode>
-#include <osg/PrimitiveRestartIndex>
-#include <osg/PrimitiveSet>
-#include <osg/StateAttribute>
-#include <osg/StateSet>
-
-#include "Modeling/MessagesWidget.h"
-#include "Util/Helper.h"
 
 void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype** Y, ftype** Z, ftype*** N, ftype*** C) const
 {
@@ -761,7 +760,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       constexpr itype l = 1; // TODO index of second adjacent facet for top left vertex
       constexpr itype m = 3; // TODO index of second adjacent facet for bottom left vertex
       constexpr itype n = 5; // TODO index of second adjacent facet for bottom right vertex
-
       for (itype u = 0; u < num1; u++) {
         const itype up0 = u;
         const itype up1 = u + 1;
@@ -868,7 +866,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           }
         }
       }
-
       if (!normalized) {
         if (mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
           if (mClosenessCheckState == SurfaceClosenessCheckState::active) {
@@ -919,7 +916,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               }
             }
           }
-
           for (itype u = 0; u < nu; u++) {
             for (itype v = 0; v < nv; v++) {
               ftype normal[nc] = {0};
@@ -1147,7 +1143,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     delete[] O[0];
     delete[] O;
   }
-
   {
     delete[] E[0][0][0];
     delete[] E[0][0];
