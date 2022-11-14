@@ -188,24 +188,40 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     return geometry.release();
   }
 
+  constexpr ftype ps = 1; // Point size // FIXME vendor-specific annotation
+  constexpr ftype lw = 1; // Line width // FIXME vendor-specific annotation
+  constexpr ftype ns = 0.25; // Normal scale // FIXME vendor-specific annotation
+
+  constexpr itype ri = 0; // Restart index
+
+  const bool lines = nu == 1 || nv == 1; // Surface degenerated to a line strip
+  const bool point = nu == 1 && nv == 1; // Surface degenerated to a single point
+
+  const bool degenerate = mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
+  const bool restart    = mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
+
   const bool degenerated = nu == 1 || nv == 1;
   const bool faceted = !normalized && mNormalsAverageWeights == SurfaceNormalsAverageWeights::none;
+
+  const itype o = restart && !lines && (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) ? ri + 1 : 0; // Index offset
+
+  const itype imax = std::numeric_limits<itype>::max();
+  const ltype lmax = std::numeric_limits<ltype>::max();
+
+  const itype num1 = nu - 1;
+  const itype nvm1 = nv - 1;
+  const itype num2 = nu - 2;
 
   try {
     itype nVerticesBefore = 0;
     itype nIn_dicesBefore = 0;
     itype nLinesElVBefore = 0;
     itype nLinesElFBefore = 0;
-    const itype imax = std::numeric_limits<itype>::max();
-    const itype nPoints = nu * nv; // Number of surface points
-    const itype nMLines = nu - 2; // Number of middle lines directed along v-dimension
-    const itype nIStrip = 2 * (nu - 1) * nv; // Number of indices in triangle strip (not counting degenerate triangles)
-    const itype nFacets = 2 * (nu - 1) * (nv - 1); // Number of triangular facets
-    const itype iOffset = 1; // Index offset
     if (degenerated) {
       if (imax / nu < nv) {
         throw std::overflow_error("Overflow of nPoints (surface degenerated to line or point)");
       }
+      const itype nPoints = nu * nv; // Number of surface points
       const itype capacity = imax - nPoints;
       if (capacity < nVerticesBefore) {
         throw std::overflow_error("Overflow of vertices (surface degenerated to line or point)");
@@ -216,9 +232,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nVerticesBefore += nPoints;
       nIn_dicesBefore += nPoints;
     } else if (faceted) {
-      if (imax / (nu - 1) < (nv - 1) || imax / 2 < (nu - 1) * (nv - 1)) {
+      if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
         throw std::overflow_error("Overflow of nFacets (faceted rendering)");
       }
+      const itype nFacets = 2 * num1 * nvm1; // Number of triangular facets
       if (imax / 3 < nFacets) {
         throw std::overflow_error("Overflow of nFacetsTripled (faceted rendering)");
       }
@@ -236,9 +253,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       if (imax / nu < nv) {
         throw std::overflow_error("Overflow of nPoints (averaged rendering)");
       }
-      if (imax / (nu - 1) < nv || imax / 2 < (nu - 1) * nv) {
+      const itype nPoints = nu * nv; // Number of surface points
+      if (imax / num1 < nv || imax / 2 < num1 * nv) {
         throw std::overflow_error("Overflow of nIStrip (averaged rendering)");
       }
+      const itype nIStrip = 2 * num1 * nv; // Number of indices in triangle strip (not counting degenerate triangles)
       const itype capacityV = imax - nPoints;
       const itype capacityI = imax - nIStrip;
       if (capacityV < nVerticesBefore) {
@@ -266,9 +285,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nLinesElVBefore += nVerticesDoubled;
     }
     if (!degenerated && mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
-      if (imax / (nu - 1) < (nv - 1) || imax / 2 < (nu - 1) * (nv - 1)) {
+      if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
         throw std::overflow_error("Overflow of nFacets (animation of facet normals)");
       }
+      const itype nFacets = 2 * num1 * nvm1; // Number of triangular facets
       if (imax / 2 < nFacets) {
         throw std::overflow_error("Overflow of nFacetsDoubled (animation of facet normals)");
       }
@@ -284,6 +304,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nLinesElFBefore += nFacetsDoubled;
     }
     if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart) {
+      const itype iOffset = o; // Index offset
+      const itype nMLines = num2; // Number of middle lines directed along v-dimension
       const itype capacityV = imax - iOffset;
       const itype capacityI = imax - nMLines;
       if (capacityV < nVerticesBefore) {
@@ -296,6 +318,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nIn_dicesBefore += nMLines;
     }
     if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate) {
+      const itype nMLines = num2; // Number of middle lines directed along v-dimension
       if (imax / 2 < nMLines) {
         throw std::overflow_error("Overflow of nMLinesDoubled (degenerate triangles)");
       }
@@ -373,21 +396,17 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   const itype no = nc + nw; // TODO number of objects
 
-  const std::size_t smax = std::numeric_limits<std::size_t>::max();
-
-  const std::size_t netnc = ne * nc;
-  const std::size_t netnctnu = netnc * nu;
-  const std::size_t netnctnutnv = netnctnu * nv;
-
   {
     try {
-      if (smax / nc < (std::size_t)ne) {
+      if (lmax / nc < (ltype)ne) {
         throw std::overflow_error("Overflow of netnc");
       }
-      if (smax / nu < netnc) {
+      const ltype netnc = ne * nc;
+      if (lmax / nu < netnc) {
         throw std::overflow_error("Overflow of netnctnu");
       }
-      if (smax / nv < netnctnu) {
+      const ltype netnctnu = netnc * nu;
+      if (lmax / nv < netnctnu) {
         throw std::overflow_error("Overflow of netnctnutnv");
       }
     } catch (const std::overflow_error& ex) {
@@ -406,19 +425,17 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
   }
 
-  const std::size_t notna = no * na;
-  const std::size_t notnatnu = notna * nu;
-  const std::size_t notnatnutnv = notnatnu * nv;
-
   if (!degenerated && !normalized) {
     try {
-      if (smax / na < (std::size_t)no) {
+      if (lmax / na < (ltype)no) {
         throw std::overflow_error("Overflow of notna");
       }
-      if (smax / nu < notna) {
+      const ltype notna = no * na;
+      if (lmax / nu < notna) {
         throw std::overflow_error("Overflow of notnatnu");
       }
-      if (smax / nv < notnatnu) {
+      const ltype notnatnu = notna * nu;
+      if (lmax / nv < notnatnu) {
         throw std::overflow_error("Overflow of notnatnutnv");
       }
     } catch (const std::overflow_error& ex) {
@@ -444,6 +461,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   ftype**** W = nullptr;
 
   {
+    const ltype netnc = ne * nc;
+    const ltype netnctnu = netnc * nu;
+    const ltype netnctnutnv = netnctnu * nv;
+
     ftype**** Ee = nullptr;
     ftype*** Eec = nullptr;
     ftype** Eecu = nullptr;
@@ -486,6 +507,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
 
   if (!degenerated && !normalized) {
+    const ltype notna = no * na;
+    const ltype notnatnu = notna * nu;
+    const ltype notnatnutnv = notnatnu * nv;
+
     ftype**** Oo = nullptr;
     ftype*** Ooa = nullptr;
     ftype** Ooau = nullptr;
@@ -584,20 +609,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   fakeTorus(nu, nv, Vx, Vy, Vz, N, C);
   // TODO: Fake multicolored surface
 
-  constexpr ftype ps = 1; // Point size // FIXME vendor-specific annotation
-  constexpr ftype lw = 1; // Line width // FIXME vendor-specific annotation
-  constexpr ftype ns = 0.25; // Normal scale // FIXME vendor-specific annotation
-
-  constexpr itype ri = 0; // Restart index
-
-  const bool lines = nu == 1 || nv == 1; // Surface degenerated to a line strip
-  const bool point = nu == 1 && nv == 1; // Surface degenerated to a single point
-
-  const bool degenerate = mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
-  const bool restart    = mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
-
-  const itype o = restart && !lines && (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) ? ri + 1 : 0; // Index offset
-
   /* Attributes */
   constexpr osg::StateAttribute::GLModeValue mode = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
   osg::ref_ptr<osg::StateSet> ss = geometry->getOrCreateStateSet();
@@ -675,9 +686,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
     indices = new osg::DrawArrays(point ? osg::PrimitiveSet::POINTS : osg::PrimitiveSet::LINE_STRIP, 0, nIndices);
   } else {
-    const itype num1 = nu - 1;
-    const itype nvm1 = nv - 1;
-    const itype num2 = nu - 2;
     const ftype fnum1 = (ftype)num1;
     const ftype fnvm1 = (ftype)nvm1;
     const itype num1tnvm1t2 = (num1 * nvm1) << 1;
