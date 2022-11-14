@@ -60,6 +60,7 @@ public:
 public:
   typedef /*unsigned*/int itype; // FIXME: Unsigned integers use modulo arithmetic (for wrapping) which is slower than undefined behavior of under/overflow with signed integers, and anyway the last bit is not needed in practice especially because Modelica Integer type maps to a C signed int type // FIXME: Must fit in OSG & OpenGL array types (i.e., conservatively, int)
   typedef /*float*/double ftype; // FIXME: Should be double since Modelica Real primitive type is equivalent to a C double primitive type
+  typedef std::size_t ltype;
   typedef osg::Vec2Array Vec2Array;
   typedef osg::Vec3Array Vec3Array;
   typedef osg::Vec4Array Vec4Array;
