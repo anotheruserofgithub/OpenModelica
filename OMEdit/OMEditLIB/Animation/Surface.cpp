@@ -202,15 +202,15 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const itype num2 = nu - 2;
 
   try {
-    itype nVerticesBefore = 0;
-    itype nIn_dicesBefore = 0;
+    itype nVertices = 0;
+    itype nIndices  = 0;
     if (degenerated) {
       if (imax / nu < nv) {
         throw std::overflow_error("[Surface degenerated to a line or a point] Overflow of the number of surface points");
       }
       const itype nPoints = nu * nv;
-      nVerticesBefore = nPoints;
-      nIn_dicesBefore = nPoints;
+      nVertices = nPoints;
+      nIndices  = nPoints;
     } else if (faceted) {
       if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
         throw std::overflow_error("[Faceted rendering] Overflow of the number of triangular facets");
@@ -220,8 +220,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         throw std::overflow_error("[Faceted rendering] Overflow of the number of triangular facets tripled");
       }
       const itype nFacetsTripled = 3 * nFacets;
-      nVerticesBefore = nFacetsTripled;
-      nIn_dicesBefore = nFacetsTripled;
+      nVertices = nFacetsTripled;
+      nIndices  = nFacetsTripled;
     } else {
       if (imax / nu < nv) {
         throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of surface points");
@@ -231,19 +231,18 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       const itype nPoints = nu * nv;
       const itype nIStrip = 2 * num1 * nv;
-      nVerticesBefore = nPoints;
-      nIn_dicesBefore = nIStrip;
+      nVertices = nPoints;
+      nIndices  = nIStrip;
     }
     if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices) {
-      if (imax / 2 < nVerticesBefore) {
+      if (imax / 2 < nVertices) {
         throw std::overflow_error("[Animation of vertex normals] Overflow of the number of vertices doubled");
       }
-      const itype nVerticesDoubled = 2 * nVerticesBefore;
-      const itype capacity = imax - nVerticesDoubled;
-      if (capacity < nVerticesBefore) {
+      const itype nVerticesDoubled = 2 * nVertices;
+      if (imax - nVerticesDoubled < nVertices) {
         throw std::overflow_error("[Animation of vertex normals] Overflow of the number of vertices");
       }
-      nVerticesBefore += nVerticesDoubled;
+      nVertices += nVerticesDoubled;
     }
     if (!degenerated && mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
       if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
@@ -254,25 +253,22 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         throw std::overflow_error("[Animation of facet normals] Overflow of the number of triangular facets doubled");
       }
       const itype nFacetsDoubled = 2 * nFacets;
-      const itype capacity = imax - nFacetsDoubled;
-      if (capacity < nVerticesBefore) {
+      if (imax - nFacetsDoubled < nVertices) {
         throw std::overflow_error("[Animation of facet normals] Overflow of the number of vertices");
       }
-      nVerticesBefore += nFacetsDoubled;
+      nVertices += nFacetsDoubled;
     }
     if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart) {
       const itype iOffset = o;
       const itype nMLines = num2;
-      const itype capacityV = imax - iOffset;
-      const itype capacityI = imax - nMLines;
-      if (capacityV < nVerticesBefore) {
+      if (imax - iOffset < nVertices) {
         throw std::overflow_error("[Primitive restart index] Overflow of the number of vertices");
       }
-      if (capacityI < nIn_dicesBefore) {
+      if (imax - nMLines < nIndices) {
         throw std::overflow_error("[Primitive restart index] Overflow of the number of indices");
       }
-      nVerticesBefore += iOffset;
-      nIn_dicesBefore += nMLines;
+      nVertices += iOffset;
+      nIndices  += nMLines;
     }
     if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate) {
       const itype nMLines = num2;
@@ -280,11 +276,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         throw std::overflow_error("[Degenerate triangles] Overflow of the number of middle lines (directed along v-dimension) doubled");
       }
       const itype nMLinesDoubled = 2 * nMLines;
-      const itype capacity = imax - nMLinesDoubled;
-      if (capacity < nIn_dicesBefore) {
+      if (imax - nMLinesDoubled < nIndices) {
         throw std::overflow_error("[Degenerate triangles] Overflow of the number of indices");
       }
-      nIn_dicesBefore += nMLinesDoubled;
+      nIndices += nMLinesDoubled;
     }
   } catch (const std::overflow_error& ex) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
