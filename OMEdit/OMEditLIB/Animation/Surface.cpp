@@ -219,113 +219,113 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     itype nLinesElFBefore = 0;
     if (degenerated) {
       if (imax / nu < nv) {
-        throw std::overflow_error("Overflow of nPoints (surface degenerated to line or point)");
+        throw std::overflow_error("[Surface degenerated to a line or a point] Overflow of the number of surface points");
       }
-      const itype nPoints = nu * nv; // Number of surface points
+      const itype nPoints = nu * nv;
       const itype capacity = imax - nPoints;
       if (capacity < nVerticesBefore) {
-        throw std::overflow_error("Overflow of vertices (surface degenerated to line or point)");
+        throw std::overflow_error("[Surface degenerated to a line or a point] Overflow of the number of vertices");
       }
       if (capacity < nIn_dicesBefore) {
-        throw std::overflow_error("Overflow of indices (surface degenerated to line or point)");
+        throw std::overflow_error("[Surface degenerated to a line or a point] Overflow of the number of indices");
       }
       nVerticesBefore += nPoints;
       nIn_dicesBefore += nPoints;
     } else if (faceted) {
       if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
-        throw std::overflow_error("Overflow of nFacets (faceted rendering)");
+        throw std::overflow_error("[Faceted rendering] Overflow of the number of triangular facets");
       }
-      const itype nFacets = 2 * num1 * nvm1; // Number of triangular facets
+      const itype nFacets = 2 * num1 * nvm1;
       if (imax / 3 < nFacets) {
-        throw std::overflow_error("Overflow of nFacetsTripled (faceted rendering)");
+        throw std::overflow_error("[Faceted rendering] Overflow of the number of triangular facets tripled");
       }
       const itype nFacetsTripled = 3 * nFacets;
       const itype capacity = imax - nFacetsTripled;
       if (capacity < nVerticesBefore) {
-        throw std::overflow_error("Overflow of vertices (faceted rendering)");
+        throw std::overflow_error("[Faceted rendering] Overflow of the number of vertices");
       }
       if (capacity < nIn_dicesBefore) {
-        throw std::overflow_error("Overflow of indices (faceted rendering)");
+        throw std::overflow_error("[Faceted rendering] Overflow of the number of indices");
       }
       nVerticesBefore += nFacetsTripled;
       nIn_dicesBefore += nFacetsTripled;
     } else {
       if (imax / nu < nv) {
-        throw std::overflow_error("Overflow of nPoints (averaged rendering)");
+        throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of surface points");
       }
-      const itype nPoints = nu * nv; // Number of surface points
+      const itype nPoints = nu * nv;
       if (imax / num1 < nv || imax / 2 < num1 * nv) {
-        throw std::overflow_error("Overflow of nIStrip (averaged rendering)");
+        throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of indices in the triangle strip (not counting breaks)");
       }
-      const itype nIStrip = 2 * num1 * nv; // Number of indices in triangle strip (not counting degenerate triangles)
+      const itype nIStrip = 2 * num1 * nv;
       const itype capacityV = imax - nPoints;
       const itype capacityI = imax - nIStrip;
       if (capacityV < nVerticesBefore) {
-        throw std::overflow_error("Overflow of vertices (averaged rendering)");
+        throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of vertices");
       }
       if (capacityI < nIn_dicesBefore) {
-        throw std::overflow_error("Overflow of indices (averaged rendering)");
+        throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of indices");
       }
       nVerticesBefore += nPoints;
       nIn_dicesBefore += nIStrip;
     }
     if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices) {
       if (imax / 2 < nVerticesBefore) {
-        throw std::overflow_error("Overflow of nVerticesDoubled (animation of vertex normals)");
+        throw std::overflow_error("[Animation of vertex normals] Overflow of the number of vertices doubled");
       }
       const itype nVerticesDoubled = 2 * nVerticesBefore;
       const itype capacity = imax - nVerticesDoubled;
       if (capacity < nVerticesBefore) {
-        throw std::overflow_error("Overflow of vertices (animation of vertex normals)");
+        throw std::overflow_error("[Animation of vertex normals] Overflow of the number of vertices");
       }
       if (capacity < nLinesElVBefore) {
-        throw std::overflow_error("Overflow of indices of vertex normals (animation of vertex normals)");
+        throw std::overflow_error("[Animation of vertex normals] Overflow of the number of indices of vertex normals");
       }
       nVerticesBefore += nVerticesDoubled;
       nLinesElVBefore += nVerticesDoubled;
     }
     if (!degenerated && mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
       if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
-        throw std::overflow_error("Overflow of nFacets (animation of facet normals)");
+        throw std::overflow_error("[Animation of facet normals] Overflow of the number of triangular facets");
       }
-      const itype nFacets = 2 * num1 * nvm1; // Number of triangular facets
+      const itype nFacets = 2 * num1 * nvm1;
       if (imax / 2 < nFacets) {
-        throw std::overflow_error("Overflow of nFacetsDoubled (animation of facet normals)");
+        throw std::overflow_error("[Animation of facet normals] Overflow of the number of triangular facets doubled");
       }
       const itype nFacetsDoubled = 2 * nFacets;
       const itype capacity = imax - nFacetsDoubled;
       if (capacity < nVerticesBefore) {
-        throw std::overflow_error("Overflow of vertices (animation of facet normals)");
+        throw std::overflow_error("[Animation of facet normals] Overflow of the number of vertices");
       }
       if (capacity < nLinesElFBefore) {
-        throw std::overflow_error("Overflow of indices of facet normals (animation of facet normals)");
+        throw std::overflow_error("[Animation of facet normals] Overflow of the number of indices of facet normals");
       }
       nVerticesBefore += nFacetsDoubled;
       nLinesElFBefore += nFacetsDoubled;
     }
     if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart) {
-      const itype iOffset = o; // Index offset
-      const itype nMLines = num2; // Number of middle lines directed along v-dimension
+      const itype iOffset = o;
+      const itype nMLines = num2;
       const itype capacityV = imax - iOffset;
       const itype capacityI = imax - nMLines;
       if (capacityV < nVerticesBefore) {
-        throw std::overflow_error("Overflow of vertices (primitive restart index)");
+        throw std::overflow_error("[Primitive restart index] Overflow of the number of vertices");
       }
       if (capacityI < nIn_dicesBefore) {
-        throw std::overflow_error("Overflow of indices (primitive restart index)");
+        throw std::overflow_error("[Primitive restart index] Overflow of the number of indices");
       }
       nVerticesBefore += iOffset;
       nIn_dicesBefore += nMLines;
     }
     if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate) {
-      const itype nMLines = num2; // Number of middle lines directed along v-dimension
+      const itype nMLines = num2;
       if (imax / 2 < nMLines) {
-        throw std::overflow_error("Overflow of nMLinesDoubled (degenerate triangles)");
+        throw std::overflow_error("[Degenerate triangles] Overflow of the number of middle lines (directed along v-dimension) doubled");
       }
       const itype nMLinesDoubled = 2 * nMLines;
       const itype capacity = imax - nMLinesDoubled;
       if (capacity < nIn_dicesBefore) {
-        throw std::overflow_error("Overflow of indices (degenerate triangles)");
+        throw std::overflow_error("[Degenerate triangles] Overflow of the number of indices");
       }
       nIn_dicesBefore += nMLinesDoubled;
     }
@@ -340,7 +340,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   } catch (const std::overflow_error& ex) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                           QString(QObject::tr("Too many vertices for surface \"%1\" "
-                                                              "(nu = %2, nv = %3): %4."))
+                                                              "(nu = %2, nv = %3):\n%4."))
                                                               .arg(id)
                                                               .arg(nu)
                                                               .arg(nv)
@@ -399,20 +399,20 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   {
     try {
       if (lmax / nc < (ltype)ne) {
-        throw std::overflow_error("Overflow of netnc");
+        throw std::overflow_error("[Array size for elements] Overflow of ne * nc");
       }
       const ltype netnc = ne * nc;
       if (lmax / nu < netnc) {
-        throw std::overflow_error("Overflow of netnctnu");
+        throw std::overflow_error("[Array size for elements] Overflow of ne * nc * nu");
       }
       const ltype netnctnu = netnc * nu;
       if (lmax / nv < netnctnu) {
-        throw std::overflow_error("Overflow of netnctnutnv");
+        throw std::overflow_error("[Array size for elements] Overflow of ne * nc * nu * nv");
       }
     } catch (const std::overflow_error& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QString(QObject::tr("Too many vertices for surface \"%1\" "
-                                                                "(ne = %2, nc = %3, nu = %4, nv = %5): %6."))
+                                                                "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6."))
                                                                 .arg(id)
                                                                 .arg(ne)
                                                                 .arg(nc)
@@ -428,20 +428,20 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   if (!degenerated && !normalized) {
     try {
       if (lmax / na < (ltype)no) {
-        throw std::overflow_error("Overflow of notna");
+        throw std::overflow_error("[Array size for objects] Overflow of no * na");
       }
       const ltype notna = no * na;
       if (lmax / nu < notna) {
-        throw std::overflow_error("Overflow of notnatnu");
+        throw std::overflow_error("[Array size for objects] Overflow of no * na * nu");
       }
       const ltype notnatnu = notna * nu;
       if (lmax / nv < notnatnu) {
-        throw std::overflow_error("Overflow of notnatnutnv");
+        throw std::overflow_error("[Array size for objects] Overflow of no * na * nu * nv");
       }
     } catch (const std::overflow_error& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QString(QObject::tr("Too many vertices for surface \"%1\" "
-                                                                "(no = %2, na = %3, nu = %4, nv = %5): %6."))
+                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6."))
                                                                 .arg(id)
                                                                 .arg(no)
                                                                 .arg(na)
@@ -487,7 +487,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     } catch (const std::bad_alloc& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QString(QObject::tr("Not enough memory to allocate elements for surface \"%1\" "
-                                                                "(ne = %2, nc = %3, nu = %4, nv = %5): %6."))
+                                                                "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6."))
                                                                 .arg(id)
                                                                 .arg(ne)
                                                                 .arg(nc)
@@ -533,7 +533,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     } catch (const std::bad_alloc& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QString(QObject::tr("Not enough memory to allocate objects for surface \"%1\" "
-                                                                "(no = %2, na = %3, nu = %4, nv = %5): %6."))
+                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6."))
                                                                 .arg(id)
                                                                 .arg(no)
                                                                 .arg(na)
