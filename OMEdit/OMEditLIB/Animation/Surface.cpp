@@ -204,22 +204,13 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   try {
     itype nVerticesBefore = 0;
     itype nIn_dicesBefore = 0;
-    itype nLinesElVBefore = 0;
-    itype nLinesElFBefore = 0;
     if (degenerated) {
       if (imax / nu < nv) {
         throw std::overflow_error("[Surface degenerated to a line or a point] Overflow of the number of surface points");
       }
       const itype nPoints = nu * nv;
-      const itype capacity = imax - nPoints;
-      if (capacity < nVerticesBefore) {
-        throw std::overflow_error("[Surface degenerated to a line or a point] Overflow of the number of vertices");
-      }
-      if (capacity < nIn_dicesBefore) {
-        throw std::overflow_error("[Surface degenerated to a line or a point] Overflow of the number of indices");
-      }
-      nVerticesBefore += nPoints;
-      nIn_dicesBefore += nPoints;
+      nVerticesBefore = nPoints;
+      nIn_dicesBefore = nPoints;
     } else if (faceted) {
       if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
         throw std::overflow_error("[Faceted rendering] Overflow of the number of triangular facets");
@@ -229,34 +220,19 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         throw std::overflow_error("[Faceted rendering] Overflow of the number of triangular facets tripled");
       }
       const itype nFacetsTripled = 3 * nFacets;
-      const itype capacity = imax - nFacetsTripled;
-      if (capacity < nVerticesBefore) {
-        throw std::overflow_error("[Faceted rendering] Overflow of the number of vertices");
-      }
-      if (capacity < nIn_dicesBefore) {
-        throw std::overflow_error("[Faceted rendering] Overflow of the number of indices");
-      }
-      nVerticesBefore += nFacetsTripled;
-      nIn_dicesBefore += nFacetsTripled;
+      nVerticesBefore = nFacetsTripled;
+      nIn_dicesBefore = nFacetsTripled;
     } else {
       if (imax / nu < nv) {
         throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of surface points");
       }
-      const itype nPoints = nu * nv;
       if (imax / num1 < nv || imax / 2 < num1 * nv) {
         throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of indices in the triangle strip (not counting breaks)");
       }
+      const itype nPoints = nu * nv;
       const itype nIStrip = 2 * num1 * nv;
-      const itype capacityV = imax - nPoints;
-      const itype capacityI = imax - nIStrip;
-      if (capacityV < nVerticesBefore) {
-        throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of vertices");
-      }
-      if (capacityI < nIn_dicesBefore) {
-        throw std::overflow_error("[Normalized or averaged rendering] Overflow of the number of indices");
-      }
-      nVerticesBefore += nPoints;
-      nIn_dicesBefore += nIStrip;
+      nVerticesBefore = nPoints;
+      nIn_dicesBefore = nIStrip;
     }
     if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices) {
       if (imax / 2 < nVerticesBefore) {
@@ -267,11 +243,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       if (capacity < nVerticesBefore) {
         throw std::overflow_error("[Animation of vertex normals] Overflow of the number of vertices");
       }
-      if (capacity < nLinesElVBefore) {
-        throw std::overflow_error("[Animation of vertex normals] Overflow of the number of indices of vertex normals");
-      }
       nVerticesBefore += nVerticesDoubled;
-      nLinesElVBefore += nVerticesDoubled;
     }
     if (!degenerated && mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
       if (imax / num1 < nvm1 || imax / 2 < num1 * nvm1) {
@@ -286,11 +258,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       if (capacity < nVerticesBefore) {
         throw std::overflow_error("[Animation of facet normals] Overflow of the number of vertices");
       }
-      if (capacity < nLinesElFBefore) {
-        throw std::overflow_error("[Animation of facet normals] Overflow of the number of indices of facet normals");
-      }
       nVerticesBefore += nFacetsDoubled;
-      nLinesElFBefore += nFacetsDoubled;
     }
     if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart) {
       const itype iOffset = o;
@@ -318,14 +286,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       nIn_dicesBefore += nMLinesDoubled;
     }
-    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                          QString("nVerticesBefore = %1, nIn_dicesBefore = %2, nLinesElVBefore = %3, nLinesElFBefore = %4")
-                                                              .arg(nVerticesBefore)
-                                                              .arg(nIn_dicesBefore)
-                                                              .arg(nLinesElVBefore)
-                                                              .arg(nLinesElFBefore),
-                                                          Helper::scriptingKind,
-                                                          Helper::errorLevel));
   } catch (const std::overflow_error& ex) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                           QString(QObject::tr("Too many vertices for surface \"%1\" "
@@ -387,9 +347,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   {
     try {
-      if (lmax / nc < (ltype)ne) {
-        throw std::overflow_error("[Array size for elements] Overflow of ne * nc");
-      }
       const ltype netnc = ne * nc;
       if (lmax / nu < netnc) {
         throw std::overflow_error("[Array size for elements] Overflow of ne * nc * nu");
@@ -416,9 +373,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   if (!degenerated && !normalized) {
     try {
-      if (lmax / na < (ltype)no) {
-        throw std::overflow_error("[Array size for objects] Overflow of no * na");
-      }
       const ltype notna = no * na;
       if (lmax / nu < notna) {
         throw std::overflow_error("[Array size for objects] Overflow of no * na * nu");
@@ -1114,25 +1068,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   geometry->setColorArray(colors.get());
   geometry->setTexCoordArray(0, texels.get());
   geometry->addPrimitiveSet(indices.get());
-
-  const itype idxV = mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices ? 0 : -1;
-  const itype idxF = mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets
-                   ? mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices ? 1 : 0 : -1;
-  const itype idxT = mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets
-                   ? mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices ? 2 : 1
-                   : mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices ? 1 : 0;
-  const itype nLinesElVAfter = idxV < 0 ? 0 : geometry->getPrimitiveSet(idxV)->getNumIndices();
-  const itype nLinesElFAfter = idxF < 0 ? 0 : geometry->getPrimitiveSet(idxF)->getNumIndices();
-  const itype nIn_dicesAfter = idxT < 0 ? 0 : geometry->getPrimitiveSet(idxT)->getNumIndices();
-  const itype nVerticesAfter = geometry->getVertexArray()->getNumElements();
-  MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                        QString("nVerticesAfter = %1, nIn_dicesAfter = %2, nLinesElVAfter = %3, nLinesElFAfter = %4")
-                                                            .arg(nVerticesAfter)
-                                                            .arg(nIn_dicesAfter)
-                                                            .arg(nLinesElVAfter)
-                                                            .arg(nLinesElFAfter),
-                                                        Helper::scriptingKind,
-                                                        Helper::errorLevel));
 
   if (!degenerated && !normalized) {
     delete[] O[0][0][0];
