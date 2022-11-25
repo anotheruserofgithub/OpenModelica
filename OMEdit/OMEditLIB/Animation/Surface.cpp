@@ -188,16 +188,25 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   constexpr itype ri = 0; // Restart index
 
-  const bool lines = nu == one || nv == one; // Surface degenerated to a line strip
-  const bool point = nu == one && nv == one; // Surface degenerated to a single point
+  const bool point = nu == one && nv == one;            // Surface degenerated to a single point
+  const bool line = (nu == one || nv == one) && !point; // Surface degenerated to a line strip
+
+  const bool degenerated = point || line; // Surface degenerated to a point or a line
+  const bool closed = mClosenessCheckState == SurfaceClosenessCheckState::active; // Surface checked for closeness
+  const bool averaged = mNormalsAverageWeights != SurfaceNormalsAverageWeights::none; // Averaged rendering
+  const bool faceted = !normalized && !averaged; // Faceted rendering
+  const bool objects = !normalized && !degenerated; // Objects allocation
+
+  const bool area  = mNormalsAverageWeights & SurfaceNormalsAverageWeights::area;  // Normals averaged with area
+  const bool angle = mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle; // Normals averaged with angle
+
+  const bool vertexes = mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices; // Normals animated for vertices
+  const bool facets   = mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets;   // Normals animated for facets
 
   const bool degenerate = mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
   const bool restart    = mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
 
-  const bool degenerated = nu == one || nv == one;
-  const bool faceted = !normalized && mNormalsAverageWeights == SurfaceNormalsAverageWeights::none;
-
-  const itype o = restart && !lines && (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) ? ri + one : zero; // Index offset
+  const itype o = restart && !faceted && !degenerated ? ri + one : zero; // Index offset
 
   const itype imax = std::numeric_limits<itype>::max();
   const ltype lmax = std::numeric_limits<ltype>::max();
@@ -218,7 +227,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       nPoints = nu * nv;
     }
-    if (!degenerated && (faceted || mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets)) {
+    if (!degenerated && (faceted || facets)) {
       if (imax / num1 < nvm1 || imax / two < num1 * nvm1) {
         throw std::overflow_error("[Facets counting] Overflow of the number of triangular facets");
       }
@@ -242,7 +251,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nVertices = nPoints;
       nIndices  = nIStrip;
     }
-    if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices) {
+    if (vertexes) {
       if (imax / two < nVertices) {
         throw std::overflow_error("[Animation of vertex normals] Overflow of the number of vertices doubled");
       }
@@ -252,7 +261,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       nVertices += nVerticesDoubled;
     }
-    if (!degenerated && mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+    if (!degenerated && facets) {
       if (imax / two < nFacets) {
         throw std::overflow_error("[Animation of facet normals] Overflow of the number of triangular facets doubled");
       }
@@ -262,7 +271,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       nVertices += nFacetsDoubled;
     }
-    if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart) {
+    if (!degenerated && !faceted && restart) {
       const itype iOffset = o;
       const itype nMLines = num2;
       if (imax - iOffset < nVertices) {
@@ -274,7 +283,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nVertices += iOffset;
       nIndices  += nMLines;
     }
-    if (!degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate) {
+    if (!degenerated && !faceted && degenerate) {
       const itype nMLines = num2;
       if (imax / two < nMLines) {
         throw std::overflow_error("[Degenerate triangles] Overflow of the number of middle lines (directed along v-dimension) doubled");
@@ -312,7 +321,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     ne++;
   }
 
-  if (!degenerated && !normalized) {
+  if (objects) {
     switch (mNormalsAverageWeights) {
       case SurfaceNormalsAverageWeights::none:
         na = 2;
@@ -370,7 +379,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
   }
 
-  if (!degenerated && !normalized) {
+  if (objects) {
     try {
       const ltype notna = no * na;
       if (lmax / nu < notna) {
@@ -448,7 +457,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     E = Ee;
   }
 
-  if (!degenerated && !normalized) {
+  if (objects) {
     const ltype notna = no * na;
     const ltype notnatnu = notna * nu;
     const ltype notnatnutnv = notnatnu * nv;
@@ -557,10 +566,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   if (point) {
     ss->setAttributeAndModes(new osg::Point(ps), mode);
   }
-  if ((lines && !point) || wireframe || mNormalsAnimationTypes != SurfaceNormalsAnimationTypes::none) {
+  if (line || wireframe || vertexes || facets) {
     ss->setAttributeAndModes(new osg::LineWidth(lw), mode);
   }
-  if (restart && !lines && (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none)) {
+  if (restart && !faceted && !degenerated) {
     ss->setAttributeAndModes(new osg::PrimitiveRestartIndex(ri), mode);
     ss->setMode(GL_PRIMITIVE_RESTART, mode);
   }
@@ -581,7 +590,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   osg::ref_ptr<osg::PrimitiveSet> indices;
   osg::ref_ptr<Vec3Array> facetsCenters;
   osg::ref_ptr<Vec3Array> facetsNormals;
-  if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+  if (facets) {
     facetsCenters = new Vec3Array();
     facetsNormals = new Vec3Array();
   }
@@ -590,12 +599,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   normals ->reserve(nVertices);
   colors  ->reserve(nVertices);
   texels  ->reserve(nVertices);
-  if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+  if (facets) {
     facetsCenters->reserve(nFacets);
     facetsNormals->reserve(nFacets);
   }
 
-  if (lines) {
+  if (degenerated) {
     const ftype fnutnvm1 = (ftype)(nPoints - one);
 
     for (itype u = 0; u < nu; u++) {
@@ -637,7 +646,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
 
     /* Vertices */
-    if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+    if (!faceted) {
       for (itype u = 0; u < nu; u++) {
         for (itype v = 0; v < nv; v++) {
           vertices->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
@@ -680,7 +689,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
       }
     }
-    if (!normalized || mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+    if (!normalized || facets) {
       constexpr itype i = 0; // TODO index of first adjacent facet for top right vertex
       constexpr itype j = 2; // TODO index of first adjacent facet for top left vertex
       constexpr itype k = 4; // TODO index of first adjacent facet for bottom right vertex
@@ -717,7 +726,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           const ftype invnorm2 = length2 > 0 ? 1 / length2 : 0;
           const ftype normal1[nc] = {cross1[x] * invnorm1, cross1[y] * invnorm1, cross1[z] * invnorm1};
           const ftype normal2[nc] = {cross2[x] * invnorm2, cross2[y] * invnorm2, cross2[z] * invnorm2};
-          if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+          if (facets) {
             const ftype center1[nc] = {(Vx00 + Vx10 + Vx01) / 3, (Vy00 + Vy10 + Vy01) / 3, (Vz00 + Vz10 + Vz01) / 3};
             const ftype center2[nc] = {(Vx10 + Vx11 + Vx01) / 3, (Vy10 + Vy11 + Vy01) / 3, (Vz10 + Vz11 + Vz01) / 3};
             facetsCenters->push_back(Vec3(center1[x], center1[y], center1[z]));
@@ -726,7 +735,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             facetsNormals->push_back(Vec3(normal2[x], normal2[y], normal2[z]));
           }
           if (!normalized) {
-            if (mNormalsAverageWeights == SurfaceNormalsAverageWeights::none) {
+            if (!averaged) {
               for (itype c = 0; c < nc; c++) {
                 A[c][i][up0][vp0] = normal1[c];
                 A[c][l][up1][vp1] = normal2[c];
@@ -740,10 +749,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                 A[c][m][up1][vp1] = normal2[c];
                 A[c][n][up0][vp1] = normal2[c];
               }
-            }
-            if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::bothAreaAndAngle) {
               itype w = 0;
-              if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::area) {
+              if (area) {
                 const ftype area1 = length1 / 2; // TODO surface area = triangle area = half the norm of the cross product
                 const ftype area2 = length2 / 2; // TODO surface area = triangle area = half the norm of the cross product
                 W[w][i][up0][vp0] = area1;
@@ -754,7 +761,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                 W[w][n][up0][vp1] = area2;
                 w++;
               }
-              if (mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle) {
+              if (angle) {
                 const ftype duv[nc] = {Vx01 - Vx10, Vy01 - Vy10, Vz01 - Vz10};
                 const ftype dvu[nc] = {Vx10 - Vx01, Vy10 - Vy01, Vz10 - Vz01};
                 const ftype dot11 = dv1[x] * du1[x] + dv1[y] * du1[y] + dv1[z] * du1[z];
@@ -794,8 +801,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
       }
       if (!normalized) {
-        if (mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
-          if (mClosenessCheckState == SurfaceClosenessCheckState::active) {
+        if (averaged) {
+          if (closed) {
             constexpr itype nut0 = 0;
             constexpr itype nvt0 = 0;
             for (itype u = 0; u < nu; u++) {
@@ -886,7 +893,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
     /* Colors */
     if (multicolored) {
-      if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+      if (!faceted) {
         for (itype u = 0; u < nu; u++) {
           for (itype v = 0; v < nv; v++) {
             colors->push_back(Vec4(Cx[u][v], Cy[u][v], Cz[u][v], opacity));
@@ -927,7 +934,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
 
     /* Texels */
-    if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+    if (!faceted) {
       for (itype u = 0; u < nu; u++) {
         for (itype v = 0; v < nv; v++) {
           texels->push_back(Vec2(u / fnum1, v / fnvm1));
@@ -951,7 +958,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
 
     /* Indices */
-    if (normalized || mNormalsAverageWeights != SurfaceNormalsAverageWeights::none) {
+    if (!faceted) {
       indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
       osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
       strip->reserveElements(nIndices);
@@ -1018,7 +1025,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       new osg::DrawArrays(                      \
           osg::PrimitiveSet::LINES, l, c);      \
   geometry->addPrimitiveSet(lines.get());
-  if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices) {
+  if (vertexes) {
     const itype offset = o;
     const itype size = vertices->size();
     SURFACE_DEBUG_N(
@@ -1027,7 +1034,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         normals,
         1, 0, 0);
   }
-  if (mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets) {
+  if (facets) {
     const itype offset = 0;
     const itype size = facetsCenters->size();
     SURFACE_DEBUG_N(
@@ -1045,7 +1052,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   geometry->setTexCoordArray(zero, texels.get());
   geometry->addPrimitiveSet(indices.get());
 
-  if (!degenerated && !normalized) {
+  if (objects) {
     delete[] O[0][0][0];
     delete[] O[0][0];
     delete[] O[0];
