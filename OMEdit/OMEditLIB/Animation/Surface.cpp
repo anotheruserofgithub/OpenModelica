@@ -181,6 +181,76 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
  *
  * const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // corner angle = angle of the corner of the polygon at the vertex
  *
+//
+List of relevant references:
+
+https://subscription.packtpub.com/book/game-development/9781849512824/4/ch04lvl1sec09/indexing-primitives Book OpenSceneGraph 3.0: Beginner's Guide
+https://books.google.ch/books?id=UaRkiFd_yokC Same for free!
+http://olmozavala.com/Custom/OpenGL/Tutorials/ProyectoHuracanOpenSceneGraph/Documentos/Documentos_Curso/OSGQSG_Martz.pdf Quick Start Guide for free!
+https://weber.itn.liu.se/~karlu20/courses/TNM086-2021/labs/models/openscenegraph_quick_start_guide.pdf Quick Start Guide for free! (3rd revision)
+
+https://github.com/openscenegraph/OpenSceneGraph/blob/34a1d8bc9bba5c415c4ff590b3ea5229fa876ba8/src/osgPlugins/obj/ReaderWriterOBJ.cpp#L528-L771
+https://www.khronos.org/opengl/wiki/Vertex_Rendering#Primitive_Restart
+https://github.com/openscenegraph/OpenSceneGraph/blob/34a1d8bc9bba5c415c4ff590b3ea5229fa876ba8/include/osg/PrimitiveRestartIndex#L22
+https://github.com/openscenegraph/OpenSceneGraph/blob/34a1d8bc9bba5c415c4ff590b3ea5229fa876ba8/src/osg/PrimitiveRestartIndex.cpp#L63
+https://github.com/openscenegraph/OpenSceneGraph/tree/master/examples/osgdepthpeeling
+https://github.com/openscenegraph/OpenSceneGraph/tree/master/examples/osgoit
+
+https://github.com/openscenegraph/OpenSceneGraph/blob/master/examples/osggeometry/osggeometry.cpp#L139-L141
+https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osg/Shape.cpp#L287
+
+https://learnopengl.com/Getting-started/Hello-Triangle
+https://www.glprogramming.com/red/appendixe.html#name2
+https://www.glprogramming.com/red/chapter07.html#name2
+https://www.glprogramming.com/red/chapter12.html
+https://www.glprogramming.com/red/chapter02.html
+//
+
+//
+See https://www.glprogramming.com/red/chapter07.html#name2 for an example torus drawn with GL_QUAD_STRIP
+//
+
+//
+See https://www.glprogramming.com/red/chapter02.html#name2 for examples of invalid quadrilaterals
+and https://www.glprogramming.com/red/chapter02.html#name8 for some hints to approximate surfaces
+"Since OpenGL vertices are always three-dimensional, the points forming the boundary of a particular polygon don't necessarily lie on the same plane in space. (Of course, they do in many cases - if all the z coordinates are zero, for example, or if the polygon is a triangle.) If a polygon's vertices don't lie in the same plane, then after various rotations in space, changes in the viewpoint, and projection onto the display screen, the points might no longer form a simple convex polygon. For example, imagine a four-point quadrilateral where the points are slightly out of plane, and look at it almost edge-on. You can get a nonsimple polygon that resembles a bow tie, as shown in Figure 2-4, which isn't guaranteed to be rendered correctly. This situation isn't all that unusual if you approximate curved surfaces by quadrilaterals made of points lying on the true surface. You can always avoid the problem by using triangles, since any three points always lie on a plane."
+=> Do not use GL_QUAD_STRIP but GL_TRIANGLE_STRIP instead (with primitive restart index if necessary)
+//
+
+//
+See https://www.glprogramming.com/red/appendixe.html#name2 for computing approximate normals
+=> Images in MSL documentation seem to just be faceted (otherwise this needs to be done after setting all vertices to have access to neighboring facets' normals)
+//
+
+//
+See https://www.learnopengles.com/tag/triangle-strips to making use of index buffer objects
+=> They suggest using degenerate triangles to connect consecutive row strips, but primitive restart index is an alternative (not available in GLES until 3.1)
+//
+
+//
+Enum for two methods to connect consecutive row strips: degenerate triangles, primitive restart index
+Enum for two methods to compute surface normal vectors: faceted, averaged (average with unit weights or weighted by angle between each face and current vertex BUT this requires the true normal which we do not have since this is what we are trying to approximate, so just average with equal weights
+=> Ah! In fact there are some methods out there to do that:
+ - https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.534.7649&rep=rep1&type=pdf
+ - https://www.bytehazard.com/articles/vertnorm.html
+ - https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2022/ENU/Maya-Modeling/files/GUID-232E99F8-96B4-4870-8BA0-4887C1C8F0F2-htm.html
+ - https://github.com/pmnuckels/wnormals
+ - https://en.wikipedia.org/wiki/Vertex_normal
+)
+Note that since we do indexed vertex rendering we have each vertex only once in existence (and pick it multiple times through its index) so we cannot have multiple normals per vertex (which would be necessary to actually set the facet normal to all the vertices of the corresponding face, and each vertex belonging to several faces) but only one normal per vertex, therefore we are forced to average the normal vectors one way or another!
+=> By default, unit weights; other weighing possibilities are: area only, angle only, area and angle
+//
+
+//
+Allocating and passing multidimensional arrays on the heap:
+- https://c-faq.com/aryptr/dynmuldimary.html
+- https://c-faq.com/aryptr/ary2dfunc3.html
+- https://c-faq.com/aryptr/pass2dary.html
+- https://c-faq.com/aryptr/fn33.html
+- https://stackoverflow.com/a/21944048 as well as https://c-faq.com/aryptr/dynmuldimary.html for contiguous multidimensional arrays (surely better!)
+Ragged array (with allocator overhead) vs. Contiguous array (with pointers overhead)
+//
+ *
  * @return osg::Geometry* The geometry representing this surface.
  */
 osg::Geometry* SurfaceObject::drawGeometry() const
@@ -1101,71 +1171,3 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   return geometry.release();
 }
-
-/*
-List of relevant references:
-
-https://subscription.packtpub.com/book/game-development/9781849512824/4/ch04lvl1sec09/indexing-primitives Book OpenSceneGraph 3.0: Beginner's Guide
-https://books.google.ch/books?id=UaRkiFd_yokC Same for free!
-http://olmozavala.com/Custom/OpenGL/Tutorials/ProyectoHuracanOpenSceneGraph/Documentos/Documentos_Curso/OSGQSG_Martz.pdf Quick Start Guide for free!
-https://weber.itn.liu.se/~karlu20/courses/TNM086-2021/labs/models/openscenegraph_quick_start_guide.pdf Quick Start Guide for free! (3rd revision)
-
-https://github.com/openscenegraph/OpenSceneGraph/blob/34a1d8bc9bba5c415c4ff590b3ea5229fa876ba8/src/osgPlugins/obj/ReaderWriterOBJ.cpp#L528-L771
-https://www.khronos.org/opengl/wiki/Vertex_Rendering#Primitive_Restart
-https://github.com/openscenegraph/OpenSceneGraph/blob/34a1d8bc9bba5c415c4ff590b3ea5229fa876ba8/include/osg/PrimitiveRestartIndex#L22
-https://github.com/openscenegraph/OpenSceneGraph/blob/34a1d8bc9bba5c415c4ff590b3ea5229fa876ba8/src/osg/PrimitiveRestartIndex.cpp#L63
-https://github.com/openscenegraph/OpenSceneGraph/tree/master/examples/osgdepthpeeling
-https://github.com/openscenegraph/OpenSceneGraph/tree/master/examples/osgoit
-
-https://github.com/openscenegraph/OpenSceneGraph/blob/master/examples/osggeometry/osggeometry.cpp#L139-L141
-https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osg/Shape.cpp#L287
-
-https://learnopengl.com/Getting-started/Hello-Triangle
-https://www.glprogramming.com/red/appendixe.html#name2
-https://www.glprogramming.com/red/chapter07.html#name2
-https://www.glprogramming.com/red/chapter12.html
-https://www.glprogramming.com/red/chapter02.html
-*/
-
-/*
-See https://www.glprogramming.com/red/chapter07.html#name2 for an example torus drawn with GL_QUAD_STRIP
-*/
-
-/*
-See https://www.glprogramming.com/red/chapter02.html#name2 for examples of invalid quadrilaterals
-and https://www.glprogramming.com/red/chapter02.html#name8 for some hints to approximate surfaces
-"Since OpenGL vertices are always three-dimensional, the points forming the boundary of a particular polygon don't necessarily lie on the same plane in space. (Of course, they do in many cases - if all the z coordinates are zero, for example, or if the polygon is a triangle.) If a polygon's vertices don't lie in the same plane, then after various rotations in space, changes in the viewpoint, and projection onto the display screen, the points might no longer form a simple convex polygon. For example, imagine a four-point quadrilateral where the points are slightly out of plane, and look at it almost edge-on. You can get a nonsimple polygon that resembles a bow tie, as shown in Figure 2-4, which isn't guaranteed to be rendered correctly. This situation isn't all that unusual if you approximate curved surfaces by quadrilaterals made of points lying on the true surface. You can always avoid the problem by using triangles, since any three points always lie on a plane."
-=> Do not use GL_QUAD_STRIP but GL_TRIANGLE_STRIP instead (with primitive restart index if necessary)
-*/
-
-/*
-See https://www.glprogramming.com/red/appendixe.html#name2 for computing approximate normals
-=> Images in MSL documentation seem to just be faceted (otherwise this needs to be done after setting all vertices to have access to neighboring facets' normals)
-*/
-
-/*
-See https://www.learnopengles.com/tag/triangle-strips to making use of index buffer objects
-=> They suggest using degenerate triangles to connect consecutive row strips, but primitive restart index is an alternative (not available in GLES until 3.1)
-*/
-
-/*
-Enum for two methods to connect consecutive row strips: degenerate triangles, primitive restart index
-Enum for two methods to compute surface normal vectors: faceted, averaged (average with unit weights or weighted by angle between each face and current vertex BUT this requires the true normal which we do not have since this is what we are trying to approximate, so just average with equal weights
-=> Ah! In fact there are some methods out there to do that:
- - https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.534.7649&rep=rep1&type=pdf
- - https://www.bytehazard.com/articles/vertnorm.html
- - https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2022/ENU/Maya-Modeling/files/GUID-232E99F8-96B4-4870-8BA0-4887C1C8F0F2-htm.html
- - https://github.com/pmnuckels/wnormals
- - https://en.wikipedia.org/wiki/Vertex_normal
-)
-NOTE: Since we do indexed vertex rendering we have each vertex only once in existence (and pick it multiple times through its index) so we cannot have multiple normals per vertex (which would be necessary to actually set the facet normal to all the vertices of the corresponding face, and each vertex belonging to several faces) but only one normal per vertex, therefore we are forced to average the normal vectors one way or another!
-=> By default, unit weights; other weighing possibilities are: area only, angle only, area and angle
-
-Allocating and passing multidimensional arrays on the heap:
-- https://c-faq.com/aryptr/dynmuldimary.html
-- https://c-faq.com/aryptr/ary2dfunc3.html
-- https://c-faq.com/aryptr/pass2dary.html
-- https://c-faq.com/aryptr/fn33.html
-- https://stackoverflow.com/a/21944048 as well as https://c-faq.com/aryptr/dynmuldimary.html for contiguous multidimensional arrays (surely better!)
-Ragged array (with allocator overhead) vs. Contiguous array (with pointers overhead)
-*/
