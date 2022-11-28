@@ -166,6 +166,23 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
   }
 }
 
+/**
+ * @brief Draw the geometry representing this surface.
+ * @details TODO
+ *
+ * constexpr itype i = 0; // index of first adjacent facet for top right vertex
+ * constexpr itype j = 2; // index of first adjacent facet for top left vertex
+ * constexpr itype k = 4; // index of first adjacent facet for bottom right vertex
+ * constexpr itype l = 1; // index of second adjacent facet for top left vertex
+ * constexpr itype m = 3; // index of second adjacent facet for bottom left vertex
+ * constexpr itype n = 5; // index of second adjacent facet for bottom right vertex
+ *
+ * const ftype area1 = length1 / 2; // surface area = triangle area = half the norm of the cross product
+ *
+ * const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // corner angle = angle of the corner of the polygon at the vertex
+ *
+ * @return osg::Geometry* The geometry representing this surface.
+ */
 osg::Geometry* SurfaceObject::drawGeometry() const
 {
   osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
@@ -321,9 +338,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     return geometry.release();
   }
 
-  itype ne = 0; // TODO number of user-provided elements
-  itype na = 0; // TODO number of adjacent facets/windings
-  itype nw = 0; // TODO number of area/angle weights
+  itype ne = 0; // Number of user-provided elements
+  itype na = 0; // Number of used adjacent facets
+  itype nw = 0; // Number of area|angle weights
 
   {
     ne++;
@@ -363,9 +380,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
   }
 
-  constexpr itype nc = 3; // TODO number of dimensions/coordinates
+  constexpr itype nc = 3; // Number of coordinates
 
-  const itype no = nc + nw; // TODO number of objects
+  const itype no = nc + nw; // Number of objects
 
   {
     try {
@@ -571,6 +588,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     Cz = C[z];
   }
 
+  // TODO: Interface with omc instead of drawing fake surfaces
   // TODO: Fake multicolored surface
   fakeTorus(nu, nv, Vx, Vy, Vz, N, C);
 
@@ -706,12 +724,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
     }
     if (!normalized || facets) {
-      constexpr itype i = 0; // TODO index of first adjacent facet for top right vertex
-      constexpr itype j = 2; // TODO index of first adjacent facet for top left vertex
-      constexpr itype k = 4; // TODO index of first adjacent facet for bottom right vertex
-      constexpr itype l = 1; // TODO index of second adjacent facet for top left vertex
-      constexpr itype m = 3; // TODO index of second adjacent facet for bottom left vertex
-      constexpr itype n = 5; // TODO index of second adjacent facet for bottom right vertex
+      constexpr itype i = 0;
+      constexpr itype j = 2;
+      constexpr itype k = 4;
+      constexpr itype l = 1;
+      constexpr itype m = 3;
+      constexpr itype n = 5;
       for (itype u = 0; u < num1; u++) {
         const itype up0 = u;
         const itype up1 = u + one;
@@ -767,8 +785,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               }
               itype w = 0;
               if (area) {
-                const ftype area1 = length1 / 2; // TODO surface area = triangle area = half the norm of the cross product
-                const ftype area2 = length2 / 2; // TODO surface area = triangle area = half the norm of the cross product
+                const ftype area1 = length1 / 2;
+                const ftype area2 = length2 / 2;
                 W[w][i][up0][vp0] = area1;
                 W[w][j][up1][vp0] = area1;
                 W[w][k][up0][vp1] = area1;
@@ -798,12 +816,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                 const ftype length21 = lvu * lv2;
                 const ftype length22 = lv2 * lu2;
                 const ftype length23 = lu2 * luv;
-                const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-                const ftype angle12 = std::acos(length12 > 0 ? dot12 / length12 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-                const ftype angle13 = std::acos(length13 > 0 ? dot13 / length13 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-                const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-                const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
-                const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0); // TODO corner angle = angle of the corner of the polygon at the vertex
+                const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0);
+                const ftype angle12 = std::acos(length12 > 0 ? dot12 / length12 : 0);
+                const ftype angle13 = std::acos(length13 > 0 ? dot13 / length13 : 0);
+                const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0);
+                const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0);
+                const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0);
                 W[w][i][up0][vp0] = angle11;
                 W[w][j][up1][vp0] = angle12;
                 W[w][k][up0][vp1] = angle13;
