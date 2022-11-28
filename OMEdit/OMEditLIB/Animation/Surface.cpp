@@ -964,6 +964,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
       osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
       strip->reserveElements(nIndices);
+      const bool num2g0 = num2 > 0;
+      const itype num2tnvpo = num2 * nv + o;
+      itype up0tnvpopv = o;
+      itype up1tnvpo = nv + o;
 #define SURFACE_INDICES_V_FIRST()               \
   if (degenerate) {                             \
     strip->addElement(up0tnvpopv);              \
@@ -979,10 +983,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   } else if (restart) {                         \
     strip->addElement(ri);                      \
   }
-      const itype num2tnvpo = num2 * nv + o;
-      const bool num2g0 = num2 > 0;
-      itype up0tnvpopv = o;
-      itype up1tnvpo = nv + o;
       {
         SURFACE_INDICES_V_LOOP();
       }
