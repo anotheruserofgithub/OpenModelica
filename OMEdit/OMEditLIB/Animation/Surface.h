@@ -80,6 +80,9 @@ private:
   SurfaceStripsWrappingMethod mStripsWrappingMethod;
   SurfaceNormalsAverageWeights mNormalsAverageWeights;
   SurfaceNormalsAnimationTypes mNormalsAnimationTypes;
+  ftype mPointSize;
+  ftype mLineWidth;
+  ftype mNormalScale;
 public:
   VisualizerAttribute _nu;
   VisualizerAttribute _nv;
