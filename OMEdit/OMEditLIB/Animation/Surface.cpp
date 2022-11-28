@@ -990,7 +990,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   } else if (restart) {                         \
     strip->addElement(ri);                      \
   }
-      const itype opnum2tnv = o + num2 * nv;
+      const itype num2tnvpo = num2 * nv + o;
       const bool num2g0 = num2 > 0;
       itype up0tnvpopv = o;
       itype up1tnvpo = nv + o;
@@ -1000,7 +1000,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       if (num2g0) {
         SURFACE_INDICES_V_LAST();
       }
-      for (up1tnvpo += nv; up0tnvpopv < opnum2tnv; up1tnvpo += nv) {
+      for (up1tnvpo += nv; up0tnvpopv < num2tnvpo; up1tnvpo += nv) {
         SURFACE_INDICES_V_FIRST();
         SURFACE_INDICES_V_LOOP();
         SURFACE_INDICES_V_LAST();
