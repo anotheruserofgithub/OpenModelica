@@ -76,7 +76,7 @@ SurfaceObject::SurfaceObject()
       mClosenessCheckState(SurfaceClosenessCheckState::active),
       mStripsWrappingMethod(SurfaceStripsWrappingMethod::degenerate),
       mNormalsAverageWeights(SurfaceNormalsAverageWeights::bothAreaAndAngle),
-      mNormalsAnimationTypes(SurfaceNormalsAnimationTypes::bothVerticesAndFacets), // FIXME should be none by default
+      mNormalsAnimationTypes(SurfaceNormalsAnimationTypes::none),
       mPointSize(1.0),
       mLineWidth(1.0),
       mNormalScale(1.0),
