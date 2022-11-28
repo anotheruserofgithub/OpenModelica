@@ -66,6 +66,9 @@ SurfaceObject::SurfaceObject()
       mStripsWrappingMethod(SurfaceStripsWrappingMethod::degenerate),
       mNormalsAverageWeights(SurfaceNormalsAverageWeights::bothAreaAndAngle),
       mNormalsAnimationTypes(SurfaceNormalsAnimationTypes::bothVerticesAndFacets), // FIXME should be none by default
+      mPointSize(1.0),
+      mLineWidth(1.0),
+      mNormalScale(0.25),
       _nu(VisualizerAttribute(0.0)),
       _nv(VisualizerAttribute(0.0)),
       _wireframe(VisualizerAttribute(0.0)),
@@ -182,11 +185,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     return geometry.release();
   }
 
-  constexpr ftype ps = 1; // Point size // FIXME vendor-specific annotation
-  constexpr ftype lw = 1; // Line width // FIXME vendor-specific annotation
-  constexpr ftype ns = 0.25; // Normal scale // FIXME vendor-specific annotation
-
   constexpr itype ri = 0; // Restart index
+
+  const ftype ps = mPointSize; // Point size
+  const ftype lw = mLineWidth; // Line width
+  const ftype ns = mNormalScale; // Normal scale
 
   const bool point = nu == one && nv == one;            // Surface degenerated to a single point
   const bool line = (nu == one || nv == one) && !point; // Surface degenerated to a line strip
