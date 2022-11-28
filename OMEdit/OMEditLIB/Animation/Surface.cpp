@@ -408,50 +408,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     return geometry.release();
   }
 
-  itype ne = 0; // Number of user-provided elements
-  itype na = 0; // Number of used adjacent facets
-  itype nw = 0; // Number of area|angle weights
-
-  {
-    ne++;
-  }
-  if (normalized) {
-    ne++;
-  }
-  if (multicolored) {
-    ne++;
-  }
-
-  if (objects) {
-    switch (mNormalsAverageWeights) {
-      case SurfaceNormalsAverageWeights::none:
-        na = 2;
-        break;
-      case SurfaceNormalsAverageWeights::equal:
-      case SurfaceNormalsAverageWeights::area:
-      case SurfaceNormalsAverageWeights::angle:
-      case SurfaceNormalsAverageWeights::bothAreaAndAngle:
-        na = 6;
-        break;
-    }
-
-    switch (mNormalsAverageWeights) {
-      case SurfaceNormalsAverageWeights::none:
-      case SurfaceNormalsAverageWeights::equal:
-        nw = 0;
-        break;
-      case SurfaceNormalsAverageWeights::area:
-      case SurfaceNormalsAverageWeights::angle:
-        nw = 1;
-        break;
-      case SurfaceNormalsAverageWeights::bothAreaAndAngle:
-        nw = 2;
-        break;
-    }
-  }
-
   constexpr itype nc = 3; // Number of coordinates
 
+  const itype ne = 1 + normalized + multicolored; // Number of user-provided elements
+  const itype na = averaged ? 6 : 2; // Number of considered adjacent facets
+  const itype nw = area && angle ? 2 : area || angle ? 1 : 0; // Number of area|angle weights
   const itype no = nc + nw; // Number of objects
 
   {
