@@ -975,16 +975,16 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
       osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
       strip->reserveElements(nIndices);
-#define SURFACE_FIRST_V()                       \
+#define SURFACE_INDICES_V_FIRST()               \
   if (degenerate) {                             \
     strip->addElement(up0tnvpopv);              \
   }
-#define SURFACE_LOOP_V()                        \
+#define SURFACE_INDICES_V_LOOP()                \
   for (; up0tnvpopv < up1tnvpo; up0tnvpopv++) { \
     strip->addElement(up0tnvpopv);              \
     strip->addElement(up0tnvpopv + nv);         \
   }
-#define SURFACE_LAST_V()                        \
+#define SURFACE_INDICES_V_LAST()                \
   if (degenerate) {                             \
     strip->addElement(up0tnvpopv + nvm1);       \
   } else if (restart) {                         \
@@ -995,19 +995,19 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       itype up0tnvpopv = o;
       itype up1tnvpo = nv + o;
       {
-        SURFACE_LOOP_V()
+        SURFACE_INDICES_V_LOOP();
       }
       if (num2g0) {
-        SURFACE_LAST_V()
+        SURFACE_INDICES_V_LAST();
       }
       for (up1tnvpo += nv; up0tnvpopv < opnum2tnv; up1tnvpo += nv) {
-        SURFACE_FIRST_V()
-        SURFACE_LOOP_V()
-        SURFACE_LAST_V()
+        SURFACE_INDICES_V_FIRST();
+        SURFACE_INDICES_V_LOOP();
+        SURFACE_INDICES_V_LAST();
       }
       if (num2g0) {
-        SURFACE_FIRST_V()
-        SURFACE_LOOP_V()
+        SURFACE_INDICES_V_FIRST();
+        SURFACE_INDICES_V_LOOP();
       }
     } else {
       indices = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, o, nIndices);
