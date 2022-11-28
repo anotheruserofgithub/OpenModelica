@@ -620,24 +620,26 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
     for (itype u = 0; u < nu; u++) {
       for (itype v = 0; v < nv; v++) {
-        vertices->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
+        {
+          vertices->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
+        }
 
         if (normalized) {
-          normals->push_back(Vec3(Nx[u][v], Ny[u][v], Nz[u][v]));
+          normals ->push_back(Vec3(Nx[u][v], Ny[u][v], Nz[u][v]));
         } else {
-          normals->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
+          normals ->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
         }
 
         if (multicolored) {
-          colors->push_back(Vec4(Cx[u][v], Cy[u][v], Cz[u][v], opacity));
+          colors  ->push_back(Vec4(Cx[u][v], Cy[u][v], Cz[u][v], opacity));
         } else {
-          colors->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
+          colors  ->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
         }
 
         if (point) {
-          texels->push_back(Vec2(u, v));
+          texels  ->push_back(Vec2(u, v));
         } else {
-          texels->push_back(Vec2(u / fnutnvm1, v / fnutnvm1));
+          texels  ->push_back(Vec2(u / fnutnvm1, v / fnutnvm1));
         }
       }
     }
