@@ -72,7 +72,7 @@ public:
   // It still does in latest version, however it might be something else around this cast that leads to a segmentation fault
   // https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osgUtil/LineSegmentIntersector.cpp#L530
 private:
-  void fakeTorus(const itype nu, const itype nv, ftype** X, ftype** Y, ftype** Z, ftype*** N, ftype*** C) const; // TODO: Remove
+  void fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const; // TODO: Remove
 private:
   SurfaceClosenessCheckState mClosenessCheckState;
   SurfaceStripsWrappingMethod mStripsWrappingMethod;
