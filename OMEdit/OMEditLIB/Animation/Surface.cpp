@@ -102,7 +102,7 @@ void SurfaceObject::dumpVisualizerAttributes()
   std::cout << "transparency " << _transparency.getValueString() << std::endl;
 }
 
-void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype** Y, ftype** Z, ftype*** N, ftype*** C) const
+void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
 {
   constexpr ftype pi = M_PI;
 
@@ -122,18 +122,18 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
     alpha = startAngle + (nu > 1 ? (stopAngle - startAngle) * u / (nu - 1) : 0);
     for (itype v = 0; v < nv; v++) {
       beta = phi_start + (nv > 1 ? (phi_stop - phi_start) * v / (nv - 1) : 0);
-      Z[u][v] = (R + r * std::cos(beta)) * std::cos(alpha);
-      X[u][v] = (R + r * std::cos(beta)) * std::sin(alpha);
-      Y[u][v] =      r * std::sin(beta);
+      Z[nv * u + v] = (R + r * std::cos(beta)) * std::cos(alpha);
+      X[nv * u + v] = (R + r * std::cos(beta)) * std::sin(alpha);
+      Y[nv * u + v] =      r * std::sin(beta);
       if (N) {
-        N[2][u][v] = std::cos(beta) * std::cos(alpha);
-        N[0][u][v] = std::cos(beta) * std::sin(alpha);
-        N[1][u][v] = std::sin(beta);
+        N[2][nv * u + v] = std::cos(beta) * std::cos(alpha);
+        N[0][nv * u + v] = std::cos(beta) * std::sin(alpha);
+        N[1][nv * u + v] = std::sin(beta);
       }
       if (C) {
-        C[0][u][v] = 0;
-        C[1][u][v] = 1;
-        C[2][u][v] = 0;
+        C[0][nv * u + v] = 0;
+        C[1][nv * u + v] = 1;
+        C[2][nv * u + v] = 0;
       }
     }
   }
@@ -141,25 +141,25 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
   if (mClosenessCheckState == SurfaceClosenessCheckState::active) {
     if (phi_stop - pi == phi_start + pi) {
       for (itype u = 0; u < nu; u++) {
-        X[u][nv - 1] = X[u][0];
-        Y[u][nv - 1] = Y[u][0];
-        Z[u][nv - 1] = Z[u][0];
+        X[nv * u + (nv - 1)] = X[nv * u + 0];
+        Y[nv * u + (nv - 1)] = Y[nv * u + 0];
+        Z[nv * u + (nv - 1)] = Z[nv * u + 0];
         if (N) {
-          N[0][u][nv - 1] = N[0][u][0];
-          N[1][u][nv - 1] = N[1][u][0];
-          N[2][u][nv - 1] = N[2][u][0];
+          N[0][nv * u + (nv - 1)] = N[0][nv * u + 0];
+          N[1][nv * u + (nv - 1)] = N[1][nv * u + 0];
+          N[2][nv * u + (nv - 1)] = N[2][nv * u + 0];
         }
       }
     }
     if (stopAngle - pi == startAngle + pi) {
       for (itype v = 0; v < nv; v++) {
-        X[nu - 1][v] = X[0][v];
-        Y[nu - 1][v] = Y[0][v];
-        Z[nu - 1][v] = Z[0][v];
+        X[nv * (nu - 1) + v] = X[nv * 0 + v];
+        Y[nv * (nu - 1) + v] = Y[nv * 0 + v];
+        Z[nv * (nu - 1) + v] = Z[nv * 0 + v];
         if (N) {
-          N[0][nu - 1][v] = N[0][0][v];
-          N[1][nu - 1][v] = N[1][0][v];
-          N[2][nu - 1][v] = N[2][0][v];
+          N[0][nv * (nu - 1) + v] = N[0][nv * 0 + v];
+          N[1][nv * (nu - 1) + v] = N[1][nv * 0 + v];
+          N[2][nv * (nu - 1) + v] = N[2][nv * 0 + v];
         }
       }
     }
@@ -180,6 +180,9 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype** X, ftype**
  * const ftype area1 = length1 / 2; // surface area = triangle area = half the norm of the cross product
  *
  * const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // corner angle = angle of the corner of the polygon at the vertex
+ *
+ * @note @c nutnv = nu * nv never overflows because @c nPoints < @c nFacetsTripled, i.e. nu * nv < 3 * 2 * (nu - 1) * (nv - 1),
+ * and one/both of them is/are checked for overflow of the same integer type.
  *
 //
 List of relevant references:
@@ -467,34 +470,30 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
   }
 
-  ftype**** E = nullptr;
-  ftype**** O = nullptr;
+  const itype nutnv = nu * nv;
 
-  ftype**** A = nullptr;
-  ftype**** W = nullptr;
+  ftype*** E = nullptr;
+  ftype*** O = nullptr;
+
+  ftype*** A = nullptr;
+  ftype*** W = nullptr;
 
   {
     const ltype netnc = ne * nc;
-    const ltype netnctnu = netnc * nu;
-    const ltype netnctnutnv = netnctnu * nv;
+    const ltype netnctnutnv = netnc * nutnv;
 
-    ftype**** Ee = nullptr;
-    ftype*** Eec = nullptr;
-    ftype** Eecu = nullptr;
+    ftype*** Ee  = nullptr;
+    ftype** Eec  = nullptr;
     ftype* Eecuv = nullptr;
 
     try {
-      Ee = new ftype***[ne];
-      Eec = new ftype**[netnc];
-      Eecu = new ftype*[netnctnu];
+      Ee  = new ftype**[ne];
+      Eec  = new ftype*[netnc];
       Eecuv = new ftype[netnctnutnv]{0};
       for (itype e = 0; e < ne; e++, Eec += nc) {
         Ee[e] = Eec;
-        for (itype c = 0; c < nc; c++, Eecu += nu) {
-          Ee[e][c] = Eecu;
-          for (itype u = 0; u < nu; u++, Eecuv += nv) {
-            Ee[e][c][u] = Eecuv;
-          }
+        for (itype c = 0; c < nc; c++, Eecuv += nutnv) {
+          Ee[e][c] = Eecuv;
         }
       }
     } catch (const std::bad_alloc& ex) {
@@ -510,7 +509,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
       delete[] Eecuv;
-      delete[] Eecu;
       delete[] Eec;
       delete[] Ee;
       return geometry.release();
@@ -521,26 +519,20 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   if (objects) {
     const ltype notna = no * na;
-    const ltype notnatnu = notna * nu;
-    const ltype notnatnutnv = notnatnu * nv;
+    const ltype notnatnutnv = notna * nutnv;
 
-    ftype**** Oo = nullptr;
-    ftype*** Ooa = nullptr;
-    ftype** Ooau = nullptr;
+    ftype*** Oo  = nullptr;
+    ftype** Ooa  = nullptr;
     ftype* Ooauv = nullptr;
 
     try {
-      Oo = new ftype***[no];
-      Ooa = new ftype**[notna];
-      Ooau = new ftype*[notnatnu];
+      Oo  = new ftype**[no];
+      Ooa  = new ftype*[notna];
       Ooauv = new ftype[notnatnutnv]{0};
       for (itype o = 0; o < no; o++, Ooa += na) {
         Oo[o] = Ooa;
-        for (itype a = 0; a < na; a++, Ooau += nu) {
-          Oo[o][a] = Ooau;
-          for (itype u = 0; u < nu; u++, Ooauv += nv) {
-            Oo[o][a][u] = Ooauv;
-          }
+        for (itype a = 0; a < na; a++, Ooauv += nutnv) {
+          Oo[o][a] = Ooauv;
         }
       }
     } catch (const std::bad_alloc& ex) {
@@ -556,10 +548,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
       delete[] Ooauv;
-      delete[] Ooau;
       delete[] Ooa;
       delete[] Oo;
-      delete[] E[0][0][0];
       delete[] E[0][0];
       delete[] E[0];
       delete[] E;
@@ -572,9 +562,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     W = A + nc;
   }
 
-  ftype*** V = nullptr;
-  ftype*** N = nullptr;
-  ftype*** C = nullptr;
+  ftype** V = nullptr;
+  ftype** N = nullptr;
+  ftype** C = nullptr;
 
   itype e = 0;
   {
@@ -591,17 +581,17 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   constexpr itype y = 1; // Index of 2nd coordinate
   constexpr itype z = 2; // Index of 3rd coordinate
 
-  ftype** Vx = nullptr;
-  ftype** Vy = nullptr;
-  ftype** Vz = nullptr;
+  ftype* Vx = nullptr;
+  ftype* Vy = nullptr;
+  ftype* Vz = nullptr;
 
-  ftype** Nx = nullptr;
-  ftype** Ny = nullptr;
-  ftype** Nz = nullptr;
+  ftype* Nx = nullptr;
+  ftype* Ny = nullptr;
+  ftype* Nz = nullptr;
 
-  ftype** Cx = nullptr;
-  ftype** Cy = nullptr;
-  ftype** Cz = nullptr;
+  ftype* Cx = nullptr;
+  ftype* Cy = nullptr;
+  ftype* Cz = nullptr;
 
   {
     Vx = V[x];
@@ -673,17 +663,17 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     for (itype u = 0; u < nu; u++) {
       for (itype v = 0; v < nv; v++) {
         {
-          vertices->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
+          vertices->push_back(Vec3(Vx[nv * u + v], Vy[nv * u + v], Vz[nv * u + v]));
         }
 
         if (normalized) {
-          normals ->push_back(Vec3(Nx[u][v], Ny[u][v], Nz[u][v]));
+          normals ->push_back(Vec3(Nx[nv * u + v], Ny[nv * u + v], Nz[nv * u + v]));
         } else {
-          normals ->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
+          normals ->push_back(Vec3(Vx[nv * u + v], Vy[nv * u + v], Vz[nv * u + v]));
         }
 
         if (multicolored) {
-          colors  ->push_back(Vec4(Cx[u][v], Cy[u][v], Cz[u][v], opacity));
+          colors  ->push_back(Vec4(Cx[nv * u + v], Cy[nv * u + v], Cz[nv * u + v], opacity));
         } else {
           colors  ->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
         }
@@ -714,7 +704,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     if (!faceted) {
       for (itype u = 0; u < nu; u++) {
         for (itype v = 0; v < nv; v++) {
-          vertices->push_back(Vec3(Vx[u][v], Vy[u][v], Vz[u][v]));
+          vertices->push_back(Vec3(Vx[nv * u + v], Vy[nv * u + v], Vz[nv * u + v]));
         }
       }
     } else {
@@ -724,18 +714,18 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         for (itype v = 0; v < nvm1; v++) {
           const itype vp0 = v;
           const itype vp1 = v + one;
-          const ftype Vx00 = Vx[up0][vp0];
-          const ftype Vy00 = Vy[up0][vp0];
-          const ftype Vz00 = Vz[up0][vp0];
-          const ftype Vx01 = Vx[up0][vp1];
-          const ftype Vy01 = Vy[up0][vp1];
-          const ftype Vz01 = Vz[up0][vp1];
-          const ftype Vx10 = Vx[up1][vp0];
-          const ftype Vy10 = Vy[up1][vp0];
-          const ftype Vz10 = Vz[up1][vp0];
-          const ftype Vx11 = Vx[up1][vp1];
-          const ftype Vy11 = Vy[up1][vp1];
-          const ftype Vz11 = Vz[up1][vp1];
+          const ftype Vx00 = Vx[nv * up0 + vp0];
+          const ftype Vy00 = Vy[nv * up0 + vp0];
+          const ftype Vz00 = Vz[nv * up0 + vp0];
+          const ftype Vx01 = Vx[nv * up0 + vp1];
+          const ftype Vy01 = Vy[nv * up0 + vp1];
+          const ftype Vz01 = Vz[nv * up0 + vp1];
+          const ftype Vx10 = Vx[nv * up1 + vp0];
+          const ftype Vy10 = Vy[nv * up1 + vp0];
+          const ftype Vz10 = Vz[nv * up1 + vp0];
+          const ftype Vx11 = Vx[nv * up1 + vp1];
+          const ftype Vy11 = Vy[nv * up1 + vp1];
+          const ftype Vz11 = Vz[nv * up1 + vp1];
           vertices->push_back(Vec3(Vx00, Vy00, Vz00));
           vertices->push_back(Vec3(Vx10, Vy10, Vz10));
           vertices->push_back(Vec3(Vx01, Vy01, Vz01));
@@ -750,7 +740,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     if (normalized) {
       for (itype u = 0; u < nu; u++) {
         for (itype v = 0; v < nv; v++) {
-          normals->push_back(Vec3(Nx[u][v], Ny[u][v], Nz[u][v]));
+          normals->push_back(Vec3(Nx[nv * u + v], Ny[nv * u + v], Nz[nv * u + v]));
         }
       }
     }
@@ -767,18 +757,18 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         for (itype v = 0; v < nvm1; v++) {
           const itype vp0 = v;
           const itype vp1 = v + one;
-          const ftype Vx00 = Vx[up0][vp0];
-          const ftype Vy00 = Vy[up0][vp0];
-          const ftype Vz00 = Vz[up0][vp0];
-          const ftype Vx01 = Vx[up0][vp1];
-          const ftype Vy01 = Vy[up0][vp1];
-          const ftype Vz01 = Vz[up0][vp1];
-          const ftype Vx10 = Vx[up1][vp0];
-          const ftype Vy10 = Vy[up1][vp0];
-          const ftype Vz10 = Vz[up1][vp0];
-          const ftype Vx11 = Vx[up1][vp1];
-          const ftype Vy11 = Vy[up1][vp1];
-          const ftype Vz11 = Vz[up1][vp1];
+          const ftype Vx00 = Vx[nv * up0 + vp0];
+          const ftype Vy00 = Vy[nv * up0 + vp0];
+          const ftype Vz00 = Vz[nv * up0 + vp0];
+          const ftype Vx01 = Vx[nv * up0 + vp1];
+          const ftype Vy01 = Vy[nv * up0 + vp1];
+          const ftype Vz01 = Vz[nv * up0 + vp1];
+          const ftype Vx10 = Vx[nv * up1 + vp0];
+          const ftype Vy10 = Vy[nv * up1 + vp0];
+          const ftype Vz10 = Vz[nv * up1 + vp0];
+          const ftype Vx11 = Vx[nv * up1 + vp1];
+          const ftype Vy11 = Vy[nv * up1 + vp1];
+          const ftype Vz11 = Vz[nv * up1 + vp1];
           const ftype du1[nc] = {Vx10 - Vx00, Vy10 - Vy00, Vz10 - Vz00};
           const ftype du2[nc] = {Vx01 - Vx11, Vy01 - Vy11, Vz01 - Vz11};
           const ftype dv1[nc] = {Vx01 - Vx00, Vy01 - Vy00, Vz01 - Vz00};
@@ -802,28 +792,28 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           if (!normalized) {
             if (!averaged) {
               for (itype c = 0; c < nc; c++) {
-                A[c][i][up0][vp0] = normal1[c];
-                A[c][l][up1][vp1] = normal2[c];
+                A[c][i][nv * up0 + vp0] = normal1[c];
+                A[c][l][nv * up1 + vp1] = normal2[c];
               }
             } else {
               for (itype c = 0; c < nc; c++) {
-                A[c][i][up0][vp0] = normal1[c];
-                A[c][j][up1][vp0] = normal1[c];
-                A[c][k][up0][vp1] = normal1[c];
-                A[c][l][up1][vp0] = normal2[c];
-                A[c][m][up1][vp1] = normal2[c];
-                A[c][n][up0][vp1] = normal2[c];
+                A[c][i][nv * up0 + vp0] = normal1[c];
+                A[c][j][nv * up1 + vp0] = normal1[c];
+                A[c][k][nv * up0 + vp1] = normal1[c];
+                A[c][l][nv * up1 + vp0] = normal2[c];
+                A[c][m][nv * up1 + vp1] = normal2[c];
+                A[c][n][nv * up0 + vp1] = normal2[c];
               }
               itype w = 0;
               if (area) {
                 const ftype area1 = length1 / 2;
                 const ftype area2 = length2 / 2;
-                W[w][i][up0][vp0] = area1;
-                W[w][j][up1][vp0] = area1;
-                W[w][k][up0][vp1] = area1;
-                W[w][l][up1][vp0] = area2;
-                W[w][m][up1][vp1] = area2;
-                W[w][n][up0][vp1] = area2;
+                W[w][i][nv * up0 + vp0] = area1;
+                W[w][j][nv * up1 + vp0] = area1;
+                W[w][k][nv * up0 + vp1] = area1;
+                W[w][l][nv * up1 + vp0] = area2;
+                W[w][m][nv * up1 + vp1] = area2;
+                W[w][n][nv * up0 + vp1] = area2;
                 w++;
               }
               if (angle) {
@@ -853,12 +843,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                 const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0);
                 const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0);
                 const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0);
-                W[w][i][up0][vp0] = angle11;
-                W[w][j][up1][vp0] = angle12;
-                W[w][k][up0][vp1] = angle13;
-                W[w][l][up1][vp0] = angle21;
-                W[w][m][up1][vp1] = angle22;
-                W[w][n][up0][vp1] = angle23;
+                W[w][i][nv * up0 + vp0] = angle11;
+                W[w][j][nv * up1 + vp0] = angle12;
+                W[w][k][nv * up0 + vp1] = angle13;
+                W[w][l][nv * up1 + vp0] = angle21;
+                W[w][m][nv * up1 + vp1] = angle22;
+                W[w][n][nv * up0 + vp1] = angle23;
                 w++;
               }
             }
@@ -871,46 +861,46 @@ osg::Geometry* SurfaceObject::drawGeometry() const
             constexpr itype nut0 = 0;
             constexpr itype nvt0 = 0;
             for (itype u = 0; u < nu; u++) {
-              if (Vx[u][nvt0] == Vx[u][nvm1] &&
-                  Vy[u][nvt0] == Vy[u][nvm1] &&
-                  Vz[u][nvt0] == Vz[u][nvm1]) {
+              if (Vx[nv * u + nvt0] == Vx[nv * u + nvm1] &&
+                  Vy[nv * u + nvt0] == Vy[nv * u + nvm1] &&
+                  Vz[nv * u + nvt0] == Vz[nv * u + nvm1]) {
                 for (itype c = 0; c < nc; c++) {
-                  A[c][i][u][nvm1] = A[c][i][u][nvt0];
-                  A[c][l][u][nvm1] = A[c][l][u][nvt0];
-                  A[c][j][u][nvm1] = A[c][j][u][nvt0];
-                  A[c][m][u][nvt0] = A[c][m][u][nvm1];
-                  A[c][k][u][nvt0] = A[c][k][u][nvm1];
-                  A[c][n][u][nvt0] = A[c][n][u][nvm1];
+                  A[c][i][nv * u + nvm1] = A[c][i][nv * u + nvt0];
+                  A[c][l][nv * u + nvm1] = A[c][l][nv * u + nvt0];
+                  A[c][j][nv * u + nvm1] = A[c][j][nv * u + nvt0];
+                  A[c][m][nv * u + nvt0] = A[c][m][nv * u + nvm1];
+                  A[c][k][nv * u + nvt0] = A[c][k][nv * u + nvm1];
+                  A[c][n][nv * u + nvt0] = A[c][n][nv * u + nvm1];
                 }
                 for (itype w = 0; w < nw; w++) {
-                  W[w][i][u][nvm1] = W[w][i][u][nvt0];
-                  W[w][l][u][nvm1] = W[w][l][u][nvt0];
-                  W[w][j][u][nvm1] = W[w][j][u][nvt0];
-                  W[w][m][u][nvt0] = W[w][m][u][nvm1];
-                  W[w][k][u][nvt0] = W[w][k][u][nvm1];
-                  W[w][n][u][nvt0] = W[w][n][u][nvm1];
+                  W[w][i][nv * u + nvm1] = W[w][i][nv * u + nvt0];
+                  W[w][l][nv * u + nvm1] = W[w][l][nv * u + nvt0];
+                  W[w][j][nv * u + nvm1] = W[w][j][nv * u + nvt0];
+                  W[w][m][nv * u + nvt0] = W[w][m][nv * u + nvm1];
+                  W[w][k][nv * u + nvt0] = W[w][k][nv * u + nvm1];
+                  W[w][n][nv * u + nvt0] = W[w][n][nv * u + nvm1];
                 }
               }
             }
             for (itype v = 0; v < nv; v++) {
-              if (Vx[nut0][v] == Vx[num1][v] &&
-                  Vy[nut0][v] == Vy[num1][v] &&
-                  Vz[nut0][v] == Vz[num1][v]) {
+              if (Vx[nv * nut0 + v] == Vx[nv * num1 + v] &&
+                  Vy[nv * nut0 + v] == Vy[nv * num1 + v] &&
+                  Vz[nv * nut0 + v] == Vz[nv * num1 + v]) {
                 for (itype c = 0; c < nc; c++) {
-                  A[c][i][num1][v] = A[c][i][nut0][v];
-                  A[c][k][num1][v] = A[c][k][nut0][v];
-                  A[c][n][num1][v] = A[c][n][nut0][v];
-                  A[c][l][nut0][v] = A[c][l][num1][v];
-                  A[c][j][nut0][v] = A[c][j][num1][v];
-                  A[c][m][nut0][v] = A[c][m][num1][v];
+                  A[c][i][nv * num1 + v] = A[c][i][nv * nut0 + v];
+                  A[c][k][nv * num1 + v] = A[c][k][nv * nut0 + v];
+                  A[c][n][nv * num1 + v] = A[c][n][nv * nut0 + v];
+                  A[c][l][nv * nut0 + v] = A[c][l][nv * num1 + v];
+                  A[c][j][nv * nut0 + v] = A[c][j][nv * num1 + v];
+                  A[c][m][nv * nut0 + v] = A[c][m][nv * num1 + v];
                 }
                 for (itype w = 0; w < nw; w++) {
-                  W[w][i][num1][v] = W[w][i][nut0][v];
-                  W[w][k][num1][v] = W[w][k][nut0][v];
-                  W[w][n][num1][v] = W[w][n][nut0][v];
-                  W[w][l][nut0][v] = W[w][l][num1][v];
-                  W[w][j][nut0][v] = W[w][j][num1][v];
-                  W[w][m][nut0][v] = W[w][m][num1][v];
+                  W[w][i][nv * num1 + v] = W[w][i][nv * nut0 + v];
+                  W[w][k][nv * num1 + v] = W[w][k][nv * nut0 + v];
+                  W[w][n][nv * num1 + v] = W[w][n][nv * nut0 + v];
+                  W[w][l][nv * nut0 + v] = W[w][l][nv * num1 + v];
+                  W[w][j][nv * nut0 + v] = W[w][j][nv * num1 + v];
+                  W[w][m][nv * nut0 + v] = W[w][m][nv * num1 + v];
                 }
               }
             }
@@ -921,10 +911,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               for (itype a = 0; a < na; a++) {
                 ftype weight = 1;
                 for (itype w = 0; w < nw; w++) {
-                  weight *= W[w][a][u][v];
+                  weight *= W[w][a][nv * u + v];
                 }
                 for (itype c = 0; c < nc; c++) {
-                  normal[c] += A[c][a][u][v] * weight;
+                  normal[c] += A[c][a][nv * u + v] * weight;
                 }
               }
               const ftype length = std::sqrt(normal[x] * normal[x] + normal[y] * normal[y] + normal[z] * normal[z]);
@@ -945,8 +935,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
               ftype normal1[nc] = {0};
               ftype normal2[nc] = {0};
               for (itype c = 0; c < nc; c++) {
-                normal1[c] += A[c][i][up0][vp0];
-                normal2[c] += A[c][l][up1][vp1];
+                normal1[c] += A[c][i][nv * up0 + vp0];
+                normal2[c] += A[c][l][nv * up1 + vp1];
               }
               normals->insert(normals->end(), three, Vec3(normal1[x], normal1[y], normal1[z]));
               normals->insert(normals->end(), three, Vec3(normal2[x], normal2[y], normal2[z]));
@@ -961,7 +951,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       if (!faceted) {
         for (itype u = 0; u < nu; u++) {
           for (itype v = 0; v < nv; v++) {
-            colors->push_back(Vec4(Cx[u][v], Cy[u][v], Cz[u][v], opacity));
+            colors->push_back(Vec4(Cx[nv * u + v], Cy[nv * u + v], Cz[nv * u + v], opacity));
           }
         }
       } else {
@@ -971,18 +961,18 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           for (itype v = 0; v < nvm1; v++) {
             const itype vp0 = v;
             const itype vp1 = v + one;
-            const ftype Cx00 = Cx[up0][vp0];
-            const ftype Cy00 = Cy[up0][vp0];
-            const ftype Cz00 = Cz[up0][vp0];
-            const ftype Cx01 = Cx[up0][vp1];
-            const ftype Cy01 = Cy[up0][vp1];
-            const ftype Cz01 = Cz[up0][vp1];
-            const ftype Cx10 = Cx[up1][vp0];
-            const ftype Cy10 = Cy[up1][vp0];
-            const ftype Cz10 = Cz[up1][vp0];
-            const ftype Cx11 = Cx[up1][vp1];
-            const ftype Cy11 = Cy[up1][vp1];
-            const ftype Cz11 = Cz[up1][vp1];
+            const ftype Cx00 = Cx[nv * up0 + vp0];
+            const ftype Cy00 = Cy[nv * up0 + vp0];
+            const ftype Cz00 = Cz[nv * up0 + vp0];
+            const ftype Cx01 = Cx[nv * up0 + vp1];
+            const ftype Cy01 = Cy[nv * up0 + vp1];
+            const ftype Cz01 = Cz[nv * up0 + vp1];
+            const ftype Cx10 = Cx[nv * up1 + vp0];
+            const ftype Cy10 = Cy[nv * up1 + vp0];
+            const ftype Cz10 = Cz[nv * up1 + vp0];
+            const ftype Cx11 = Cx[nv * up1 + vp1];
+            const ftype Cy11 = Cy[nv * up1 + vp1];
+            const ftype Cz11 = Cz[nv * up1 + vp1];
             colors->push_back(Vec4(Cx00, Cy00, Cz00, opacity));
             colors->push_back(Vec4(Cx10, Cy10, Cz10, opacity));
             colors->push_back(Vec4(Cx01, Cy01, Cz01, opacity));
@@ -1118,13 +1108,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   geometry->addPrimitiveSet(indices.get());
 
   if (objects) {
-    delete[] O[0][0][0];
     delete[] O[0][0];
     delete[] O[0];
     delete[] O;
   }
   {
-    delete[] E[0][0][0];
     delete[] E[0][0];
     delete[] E[0];
     delete[] E;
