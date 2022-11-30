@@ -69,8 +69,9 @@ private:
   typedef Vec2Array::ElementDataType Vec2;
   typedef Vec3Array::ElementDataType Vec3;
   typedef Vec4Array::ElementDataType Vec4;
-private:
-  void fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const; // TODO: Remove
+private: // TODO: Remove
+  void fakeTorus       (const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const;
+  void fakeSphericalArc(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const;
 private:
   SurfaceClosenessCheckState mClosenessCheckState;
   SurfaceStripsWrappingMethod mStripsWrappingMethod;
