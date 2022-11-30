@@ -155,6 +155,11 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
   }
 }
 
+void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
+{
+  fakeTorus(nu, nv, X, Y, Z, N, C); // TODO: Implement
+}
+
 /**
  * @brief Draw the geometry representing this surface.
  *
@@ -613,8 +618,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
 
   // TODO: Interface with omc instead of drawing fake surfaces
-  // TODO: Fake multicolored surface
-  fakeTorus(nu, nv, Vx, Vy, Vz, N, C);
+#if 0
+  fakeTorus       (nu, nv, Vx, Vy, Vz, N, C);
+#else
+  fakeSphericalArc(nu, nv, Vx, Vy, Vz, N, C);
+#endif
 
   /* Attributes */
   constexpr osg::StateAttribute::GLModeValue mode = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
