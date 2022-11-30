@@ -1876,7 +1876,7 @@ void UpdateVisitor::changeTransparency(const osg::Geode::DrawableList& drawables
       if (drawable) {
         osg::Geometry* geometry = drawable->asGeometry();
         if (geometry) {
-          SurfaceObject::Vec4Array* colors = dynamic_cast<osg::Vec4Array*>(geometry->getColorArray());
+          SurfaceObject::Vec4Array* colors = dynamic_cast<SurfaceObject::Vec4Array*>(geometry->getColorArray());
           if (colors) {
             for (SurfaceObject::Vec4& color : colors->asVector()) {
               color.a() = opacity;

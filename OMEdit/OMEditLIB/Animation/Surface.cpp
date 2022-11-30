@@ -157,7 +157,8 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
 
 /**
  * @brief Draw the geometry representing this surface.
- * @details TODO
+ *
+ * @details Surface geometry // TODO: Document
  *
  * constexpr itype i = 0; // index of first adjacent facet for top right vertex
  * constexpr itype j = 2; // index of first adjacent facet for top left vertex
@@ -172,6 +173,19 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
  *
  * @note @c nutnv = nu * nv never overflows because @c nPoints < @c nFacetsTripled, i.e. nu * nv < 3 * 2 * (nu - 1) * (nv - 1),
  * and one/both of them is/are checked for overflow of the same integer type.
+ *
+ * @note @c itype, @c ftype, @c ltype typedefs are not arbitrary, they must satisfy the following constraints:
+ * typedef int itype; // Unsigned integers use modulo arithmetic (for wrapping) which is slower than undefined behavior of under/overflow with signed integers,
+ * and anyway the last bit is not needed in practice especially because Modelica Integer type maps to a C signed int type
+ * but also it must fit in OSG & OpenGL array types (i.e., conservatively, int)
+ * typedef double ftype; // Should be double since Modelica Real primitive type is equivalent to a C double primitive type
+ * typedef std::size_t ltype; // Max size is size of address (i.e., pointer size)
+ *
+ * @note @c Vec2Array, @c Vec3Array, @c Vec4Array are in single precision instead of double precision
+ * because @ref osgUtil::LineSegmentIntersector segfaults with @ref osg::Vec3dArray for vertices (it tries to cast it to @ref osg::Vec3Array)
+ * https://github.com/openscenegraph/OpenSceneGraph/commit/6e1866ac1857d3466a236a8ad63f91be39e19c71#diff-e5c13d448896b8697db1363ad34ad746a07e66512af001c8d27b087e334281b4L444
+ * It still does in latest version, however it might be something else around this cast that leads to a segmentation fault
+ * https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osgUtil/LineSegmentIntersector.cpp#L530
  *
 //
 List of relevant references:

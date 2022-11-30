@@ -58,8 +58,8 @@ public:
   void dumpVisualizerAttributes() const override;
   osg::Geometry* drawGeometry() const;
 public:
-  typedef /*unsigned*/int itype; // FIXME: Unsigned integers use modulo arithmetic (for wrapping) which is slower than undefined behavior of under/overflow with signed integers, and anyway the last bit is not needed in practice especially because Modelica Integer type maps to a C signed int type // FIXME: Must fit in OSG & OpenGL array types (i.e., conservatively, int)
-  typedef /*float*/double ftype; // FIXME: Should be double since Modelica Real primitive type is equivalent to a C double primitive type
+  typedef int itype;
+  typedef double ftype;
   typedef std::size_t ltype;
   typedef osg::Vec2Array Vec2Array;
   typedef osg::Vec3Array Vec3Array;
@@ -67,10 +67,6 @@ public:
   typedef Vec2Array::ElementDataType Vec2;
   typedef Vec3Array::ElementDataType Vec3;
   typedef Vec4Array::ElementDataType Vec4;
-  // FIXME: LineSegmentIntersector segfaults with Vec3dArray for vertices (it tries to cast it to Vec3Array) ...
-  // https://github.com/openscenegraph/OpenSceneGraph/commit/6e1866ac1857d3466a236a8ad63f91be39e19c71#diff-e5c13d448896b8697db1363ad34ad746a07e66512af001c8d27b087e334281b4L444
-  // It still does in latest version, however it might be something else around this cast that leads to a segmentation fault
-  // https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osgUtil/LineSegmentIntersector.cpp#L530
 private:
   void fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const; // TODO: Remove
 private:
