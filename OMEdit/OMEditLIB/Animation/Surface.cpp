@@ -414,6 +414,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     return geometry.release();
   }
 
+  constexpr itype x = 0; // Index of 1st coordinate
+  constexpr itype y = 1; // Index of 2nd coordinate
+  constexpr itype z = 2; // Index of 3rd coordinate
+
   constexpr itype nc = 3; // Number of coordinates
 
   const itype ne = 1 + normalized + multicolored; // Number of user-provided elements
@@ -579,10 +583,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   if (multicolored) {
     C = E[e++];
   }
-
-  constexpr itype x = 0; // Index of 1st coordinate
-  constexpr itype y = 1; // Index of 2nd coordinate
-  constexpr itype z = 2; // Index of 3rd coordinate
 
   ftype* Vx = nullptr;
   ftype* Vy = nullptr;
