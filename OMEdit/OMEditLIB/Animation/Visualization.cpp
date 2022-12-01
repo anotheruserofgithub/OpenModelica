@@ -2085,34 +2085,8 @@ rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r)
 {
   rAndT res;
 
-  // Assuming Modelica main direction is along x-axis while OSG's is along z-axis
-  // TODO: Simplify all the below computations since all directions are known and normalized and canonical
-  osg::Vec3f dir = osg::Vec3f(1, 0, 0);
-
-  // See https://math.stackexchange.com/a/413235
-  int i = dir[0] ? 0 : dir[1] ? 1 : 2;
-  int j = (i + 1) % 3;
-
-  osg::Vec3f lDir = dir;
-  osg::Vec3f wDir = osg::Vec3f();
-  wDir[i] = -lDir[j];
-  wDir[j] = +lDir[i];
-
-  Directions dirs = fixDirections(lDir, wDir);
-  osg::Vec3f hDir = dirs._lDir ^ dirs._wDir;
-  //std::cout << "lDir " << dirs._lDir[0] << ", " << dirs._lDir[1] << ", " << dirs._lDir[2] << std::endl;
-  //std::cout << "wDir " << dirs._wDir[0] << ", " << dirs._wDir[1] << ", " << dirs._wDir[2] << std::endl;
-  //std::cout << "hDir " <<       hDir[0] << ", " <<       hDir[1] << ", " <<       hDir[2] << std::endl;
-
-  osg::Matrix3 T0 = osg::Matrix3(dirs._wDir[0], dirs._wDir[1], dirs._wDir[2],
-                                       hDir[0],       hDir[1],       hDir[2],
-                                 dirs._lDir[0], dirs._lDir[1], dirs._lDir[2]);
-  //std::cout << "T0 " << T0[0] << ", " << T0[1] << ", " << T0[2] << std::endl;
-  //std::cout << "   " << T0[3] << ", " << T0[4] << ", " << T0[5] << std::endl;
-  //std::cout << "   " << T0[6] << ", " << T0[7] << ", " << T0[8] << std::endl;
-
   res._r = r;
-  res._T = Mat3mulMat3(T0, T);
+  res._T = T;
 
   return res;
 }
