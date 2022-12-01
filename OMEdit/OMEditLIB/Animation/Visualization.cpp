@@ -1707,11 +1707,7 @@ void UpdateVisitor::apply(osg::Geode& node)
      {
       SurfaceObject* surface = _visualizer->asSurface();
 
-      osg::ref_ptr<osg::Drawable> draw = node.getDrawable(0); // FIXME: Not required since the below two statements are useless?
-      draw->dirtyBound(); // FIXME: Automatically done since the drawable itself (and not its underlying shape) is sure to be changed?
-      draw->dirtyDisplayList(); // FIXME: Automatically done since the drawable itself (and not its underlying shape) is sure to be changed?
       node.setDrawable(0, surface->drawGeometry());
-      //std::cout<<"SURFACE "<<draw->getShape()->className()<<std::endl; // FIXME: This is not a shape but a geometry!
 
       node.setCullingActive(
           node.getDrawable(0) == nullptr ||
@@ -1732,9 +1728,9 @@ void UpdateVisitor::apply(osg::Geode& node)
 
   case StateSetAction::modify:
    {
-     //apply texture
-     applyTexture(node.getOrCreateStateSet(), _visualizer->getTextureImagePath());
-     break;
+    //apply texture
+    applyTexture(node.getOrCreateStateSet(), _visualizer->getTextureImagePath());
+    break;
    }//end case action modify
 
   default:
