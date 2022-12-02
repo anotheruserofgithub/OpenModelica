@@ -1789,7 +1789,7 @@ void UpdateVisitor::apply(osg::Geode& node)
           node.getDrawable(0) == nullptr ||
           node.getDrawable(0)->asGeometry() == nullptr ||
           node.getDrawable(0)->asGeometry()->getVertexArray() == nullptr ||
-          node.getDrawable(0)->asGeometry()->getVertexArray()->getNumElements() != 1); // FIXME: Surface degenerated to a single point
+          node.getDrawable(0)->asGeometry()->getVertexArray()->getNumElements() != 1); // Disable culling if there is only one point drawn
       break;
      }//end case type surface
 
