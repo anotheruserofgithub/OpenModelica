@@ -1713,9 +1713,9 @@ void UpdateVisitor::apply(osg::Geode& node)
           node.getDrawable(0) == nullptr ||
           node.getDrawable(0)->asGeometry() == nullptr ||
           node.getDrawable(0)->asGeometry()->getVertexArray() == nullptr ||
-          node.getDrawable(0)->asGeometry()->getVertexArray()->getNumElements() != 1); // FIXME: Surface degenerated to a single point
+          node.getDrawable(0)->asGeometry()->getVertexArray()->getNumElements() != 1); // Disable culling if there is only one point drawn
 
-      surface->setTransparency(surface->_transparency.exp); // FIXME: Work-around for transparency input dumped in visual.xml file only for surface visualizer
+      surface->setTransparency(surface->_transparency.exp); // Forward transparency input that is dumped in _visual.xml file only for surface visualizers
       break;
      }//end case type surface
 
