@@ -166,9 +166,14 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
   }
 }
 
+void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
+{
+  fakeTorus(nu, nv, X, Y, Z, N, C); // TODO: Implement (see https://stackoverflow.com/a/65961094)
+}
+
 void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
 {
-  fakeTorus(nu, nv, X, Y, Z, N, C); // TODO: Implement
+  fakeRectangularBox(nu, nv, X, Y, Z, N, C); // TODO: Implement
 }
 
 /**
@@ -280,8 +285,16 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
 
   const char* id = _id.c_str();
+#if 0 // Torus
   const itype nu = _nu.exp;
   const itype nv = _nv.exp;
+#elif 1 // Rectangular Box
+  const itype nu = 2;
+  const itype nv = 7;
+#else // Spherical arc
+  const itype nu = 2;
+  const itype nv = 7;
+#endif
   const bool wireframe = _wireframe.exp;
   const bool normalized = _normalized.exp;
   const bool doublesided = _doublesided.exp;
@@ -630,9 +643,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   // TODO: Interface with omc instead of drawing fake surfaces
 #if 0
-  fakeTorus       (nu, nv, Vx, Vy, Vz, N, C);
+  fakeTorus         (nu, nv, Vx, Vy, Vz, N, C);
+#elif 1
+  fakeRectangularBox(nu, nv, Vx, Vy, Vz, N, C);
 #else
-  fakeSphericalArc(nu, nv, Vx, Vy, Vz, N, C);
+  fakeSphericalArc  (nu, nv, Vx, Vy, Vz, N, C);
 #endif
 
   /* Attributes */
