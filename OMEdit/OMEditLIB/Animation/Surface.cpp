@@ -289,6 +289,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const bool doublesided = _doublesided.exp;
   const bool multicolored = _multicolored.exp;
   const ftype opacity = 1.0 - _transparency.exp;
+  const ftype colorR = _color[0].exp;
+  const ftype colorG = _color[1].exp;
+  const ftype colorB = _color[2].exp;
 
   constexpr itype zero  = 0;
   constexpr itype one   = 1;
@@ -701,7 +704,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         if (multicolored) {
           colors  ->push_back(Vec4(Cx[nv * u + v], Cy[nv * u + v], Cz[nv * u + v], opacity));
         } else {
-          colors  ->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
+          colors  ->push_back(Vec4(colorR, colorG, colorB, opacity));
         }
 
         if (point) {
@@ -1011,7 +1014,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     } else {
       colors->clear();
       colors->setBinding(osg::Array::BIND_OVERALL);
-      colors->push_back(Vec4(_color[x].exp, _color[y].exp, _color[z].exp, opacity));
+      colors->push_back(Vec4(colorR, colorG, colorB, opacity));
     }
 
     /* Texels */
