@@ -71,15 +71,15 @@ private: // TODO: Remove
   void fakeTorus         (const itype nu, const itype nv,
                           ftype* Vx, ftype* Vy, ftype* Vz,
                           ftype* Nx, ftype* Ny, ftype* Nz,
-                          ftype* Cx, ftype* Cy, ftype* Cz) const;
+                          ftype* Cr, ftype* Cg, ftype* Cb) const;
   void fakeRectangularBox(const itype nu, const itype nv,
                           ftype* Vx, ftype* Vy, ftype* Vz,
                           ftype* Nx, ftype* Ny, ftype* Nz,
-                          ftype* Cx, ftype* Cy, ftype* Cz) const;
+                          ftype* Cr, ftype* Cg, ftype* Cb) const;
   void fakeSphericalArc  (const itype nu, const itype nv,
                           ftype* Vx, ftype* Vy, ftype* Vz,
                           ftype* Nx, ftype* Ny, ftype* Nz,
-                          ftype* Cx, ftype* Cy, ftype* Cz) const;
+                          ftype* Cr, ftype* Cg, ftype* Cb) const;
 private:
   SurfaceClosenessCheckState mClosenessCheckState;
   SurfaceStripsWrappingMethod mStripsWrappingMethod;
