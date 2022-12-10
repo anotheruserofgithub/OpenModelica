@@ -105,7 +105,7 @@ void SurfaceObject::dumpVisualizerAttributes()
 void SurfaceObject::fakeTorus(const itype nu, const itype nv,
                               ftype* Vx, ftype* Vy, ftype* Vz,
                               ftype* Nx, ftype* Ny, ftype* Nz,
-                              ftype* Cx, ftype* Cy, ftype* Cz) const
+                              ftype* Cr, ftype* Cg, ftype* Cb) const
 {
   constexpr ftype pi = M_PI;
 
@@ -139,9 +139,9 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv,
         Ny[nv * u + v] = std::sin(beta);
       }
       if (multicolored) {
-        Cx[nv * u + v] = 0;
-        Cy[nv * u + v] = 1;
-        Cz[nv * u + v] = 0;
+        Cr[nv * u + v] = 0;
+        Cg[nv * u + v] = 1;
+        Cb[nv * u + v] = 0;
       }
     }
   }
@@ -181,7 +181,7 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv,
 void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
                                        ftype* Vx, ftype* Vy, ftype* Vz,
                                        ftype* Nx, ftype* Ny, ftype* Nz,
-                                       ftype* Cx, ftype* Cy, ftype* Cz) const
+                                       ftype* Cr, ftype* Cg, ftype* Cb) const
 {
   /* Inspired by https://stackoverflow.com/a/65961094 */
   // Dimensions
@@ -241,9 +241,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = -1;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colorR;
-          Cy[nv * u + v] = colorG;
-          Cz[nv * u + v] = colorB;
+          Cr[nv * u + v] = colorR;
+          Cg[nv * u + v] = colorG;
+          Cb[nv * u + v] = colorB;
         }
       }
     }
@@ -264,9 +264,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = 0;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colorR;
-          Cy[nv * u + v] = colorG;
-          Cz[nv * u + v] = colorB;
+          Cr[nv * u + v] = colorR;
+          Cg[nv * u + v] = colorG;
+          Cb[nv * u + v] = colorB;
         }
       }
     }
@@ -289,9 +289,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = -1;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colors[0][0];
-          Cy[nv * u + v] = colors[0][1];
-          Cz[nv * u + v] = colors[0][2];
+          Cr[nv * u + v] = colors[0][0];
+          Cg[nv * u + v] = colors[0][1];
+          Cb[nv * u + v] = colors[0][2];
         }
       }
       // +X right face above half
@@ -307,9 +307,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = 0;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colors[5][0];
-          Cy[nv * u + v] = colors[5][1];
-          Cz[nv * u + v] = colors[5][2];
+          Cr[nv * u + v] = colors[5][0];
+          Cg[nv * u + v] = colors[5][1];
+          Cb[nv * u + v] = colors[5][2];
         }
       }
       // +Y top face
@@ -325,9 +325,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = 0;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colors[3][0];
-          Cy[nv * u + v] = colors[3][1];
-          Cz[nv * u + v] = colors[3][2];
+          Cr[nv * u + v] = colors[3][0];
+          Cg[nv * u + v] = colors[3][1];
+          Cb[nv * u + v] = colors[3][2];
         }
       }
       // -X left face
@@ -343,9 +343,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = 0;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colors[4][0];
-          Cy[nv * u + v] = colors[4][1];
-          Cz[nv * u + v] = colors[4][2];
+          Cr[nv * u + v] = colors[4][0];
+          Cg[nv * u + v] = colors[4][1];
+          Cb[nv * u + v] = colors[4][2];
         }
       }
       // -Y bottom face
@@ -361,9 +361,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = 0;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colors[1][0];
-          Cy[nv * u + v] = colors[1][1];
-          Cz[nv * u + v] = colors[1][2];
+          Cr[nv * u + v] = colors[1][0];
+          Cg[nv * u + v] = colors[1][1];
+          Cb[nv * u + v] = colors[1][2];
         }
       }
       // +X right face below half
@@ -379,9 +379,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = 0;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colors[5][0];
-          Cy[nv * u + v] = colors[5][1];
-          Cz[nv * u + v] = colors[5][2];
+          Cr[nv * u + v] = colors[5][0];
+          Cg[nv * u + v] = colors[5][1];
+          Cb[nv * u + v] = colors[5][2];
         }
       }
       // +Z front face
@@ -397,9 +397,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
           Nz[nv * u + v] = +1;
         }
         if (multicolored) {
-          Cx[nv * u + v] = colors[2][0];
-          Cy[nv * u + v] = colors[2][1];
-          Cz[nv * u + v] = colors[2][2];
+          Cr[nv * u + v] = colors[2][0];
+          Cg[nv * u + v] = colors[2][1];
+          Cb[nv * u + v] = colors[2][2];
         }
       }
     }
@@ -409,9 +409,9 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
 void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
                                      ftype* Vx, ftype* Vy, ftype* Vz,
                                      ftype* Nx, ftype* Ny, ftype* Nz,
-                                     ftype* Cx, ftype* Cy, ftype* Cz) const
+                                     ftype* Cr, ftype* Cg, ftype* Cb) const
 {
-  fakeRectangularBox(nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz); // TODO: Implement
+  fakeRectangularBox(nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cr, Cg, Cb); // TODO: Implement
 }
 
 /**
@@ -866,9 +866,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   ftype* Ny = nullptr;
   ftype* Nz = nullptr;
 
-  ftype* Cx = nullptr;
-  ftype* Cy = nullptr;
-  ftype* Cz = nullptr;
+  ftype* Cr = nullptr;
+  ftype* Cg = nullptr;
+  ftype* Cb = nullptr;
 
   {
     Vx = V[x];
@@ -881,18 +881,18 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     Nz = N[z];
   }
   if (multicolored) {
-    Cx = C[x];
-    Cy = C[y];
-    Cz = C[z];
+    Cr = C[x];
+    Cg = C[y];
+    Cb = C[z];
   }
 
   // TODO: Interface with omc instead of drawing fake surfaces
 #if SURFACE_DRAW_SPHERICAL_ARC
-  fakeSphericalArc  (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz);
+  fakeSphericalArc  (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cr, Cg, Cb);
 #elif SURFACE_DRAW_RECTANGULAR_BOX
-  fakeRectangularBox(nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz);
+  fakeRectangularBox(nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cr, Cg, Cb);
 #elif SURFACE_DRAW_TORUS
-  fakeTorus         (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz);
+  fakeTorus         (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cr, Cg, Cb);
 #endif
 
   /* Attributes */
@@ -955,7 +955,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
 
         if (multicolored) {
-          colors  ->push_back(Vec4(Cx[nv * u + v], Cy[nv * u + v], Cz[nv * u + v], opacity));
+          colors  ->push_back(Vec4(Cr[nv * u + v], Cg[nv * u + v], Cb[nv * u + v], opacity));
         } else {
           colors  ->push_back(Vec4(colorR, colorG, colorB, opacity));
         }
@@ -1233,7 +1233,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       if (!faceted) {
         for (itype u = 0; u < nu; u++) {
           for (itype v = 0; v < nv; v++) {
-            colors->push_back(Vec4(Cx[nv * u + v], Cy[nv * u + v], Cz[nv * u + v], opacity));
+            colors->push_back(Vec4(Cr[nv * u + v], Cg[nv * u + v], Cb[nv * u + v], opacity));
           }
         }
       } else {
@@ -1243,24 +1243,24 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           for (itype v = 0; v < nvm1; v++) {
             const itype vp0 = v;
             const itype vp1 = v + one;
-            const ftype Cx00 = Cx[nv * up0 + vp0];
-            const ftype Cy00 = Cy[nv * up0 + vp0];
-            const ftype Cz00 = Cz[nv * up0 + vp0];
-            const ftype Cx01 = Cx[nv * up0 + vp1];
-            const ftype Cy01 = Cy[nv * up0 + vp1];
-            const ftype Cz01 = Cz[nv * up0 + vp1];
-            const ftype Cx10 = Cx[nv * up1 + vp0];
-            const ftype Cy10 = Cy[nv * up1 + vp0];
-            const ftype Cz10 = Cz[nv * up1 + vp0];
-            const ftype Cx11 = Cx[nv * up1 + vp1];
-            const ftype Cy11 = Cy[nv * up1 + vp1];
-            const ftype Cz11 = Cz[nv * up1 + vp1];
-            colors->push_back(Vec4(Cx00, Cy00, Cz00, opacity));
-            colors->push_back(Vec4(Cx10, Cy10, Cz10, opacity));
-            colors->push_back(Vec4(Cx01, Cy01, Cz01, opacity));
-            colors->push_back(Vec4(Cx10, Cy10, Cz10, opacity));
-            colors->push_back(Vec4(Cx11, Cy11, Cz11, opacity));
-            colors->push_back(Vec4(Cx01, Cy01, Cz01, opacity));
+            const ftype Cr00 = Cr[nv * up0 + vp0];
+            const ftype Cg00 = Cg[nv * up0 + vp0];
+            const ftype Cb00 = Cb[nv * up0 + vp0];
+            const ftype Cr01 = Cr[nv * up0 + vp1];
+            const ftype Cg01 = Cg[nv * up0 + vp1];
+            const ftype Cb01 = Cb[nv * up0 + vp1];
+            const ftype Cr10 = Cr[nv * up1 + vp0];
+            const ftype Cg10 = Cg[nv * up1 + vp0];
+            const ftype Cb10 = Cb[nv * up1 + vp0];
+            const ftype Cr11 = Cr[nv * up1 + vp1];
+            const ftype Cg11 = Cg[nv * up1 + vp1];
+            const ftype Cb11 = Cb[nv * up1 + vp1];
+            colors->push_back(Vec4(Cr00, Cg00, Cb00, opacity));
+            colors->push_back(Vec4(Cr10, Cg10, Cb10, opacity));
+            colors->push_back(Vec4(Cr01, Cg01, Cb01, opacity));
+            colors->push_back(Vec4(Cr10, Cg10, Cb10, opacity));
+            colors->push_back(Vec4(Cr11, Cg11, Cb11, opacity));
+            colors->push_back(Vec4(Cr01, Cg01, Cb01, opacity));
           }
         }
       }
