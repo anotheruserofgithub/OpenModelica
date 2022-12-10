@@ -168,7 +168,252 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
 
 void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
 {
-  fakeTorus(nu, nv, X, Y, Z, N, C); // TODO: Implement (see https://stackoverflow.com/a/65961094)
+  /* Inspired by https://stackoverflow.com/a/65961094 */
+  // Dimensions
+  const itype W = nu - 1; // Width
+  const itype H = nu - 1; // Height
+  const itype L = nu > 1 ? (nv == nu ? 0 : (nv - nu * 3) / 4 - 1) : nv - 1; // Length
+  // Conditions
+  const itype Wp1 = W + 1;
+  const itype Hp1 = H + 1;
+  const itype Lp1 = L + 1;
+  assert(nu > 0);
+  assert(nv > 0);
+  if (H == 0) {
+    assert(Wp1 == Hp1);
+    assert(Hp1 == nu);
+    assert(Lp1 == nv);
+  } else if (L == 0) {
+    assert(nv == nu);
+    assert(Wp1 == Hp1);
+    assert(Hp1 == nu);
+    assert(Lp1 == 1);
+  } else {
+    assert(nv >= nu * 3 + 4);
+    assert(Wp1 == Hp1);
+    assert(Hp1 == nu);
+    assert(Lp1 * 4 + Wp1 * 2 + Hp1 * 1 == nv);
+  }
+  // Parameters
+  const ftype xscale = 1;
+  const ftype yscale = 1;
+  const ftype zscale = 1;
+  const ftype xmin = -xscale * L / 2;
+  const ftype ymin = -yscale * H / 2;
+  const ftype zmin = -zscale * W / 2;
+  const ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
+  // Attributes
+  const ftype colorR = _color[0].exp;
+  const ftype colorG = _color[1].exp;
+  const ftype colorB = _color[2].exp;
+  const bool normalized = _normalized.exp;
+  const bool multicolored = _multicolored.exp;
+  // Pointers
+  ftype* Vx = nullptr;
+  ftype* Vy = nullptr;
+  ftype* Vz = nullptr;
+  ftype* Nx = nullptr;
+  ftype* Ny = nullptr;
+  ftype* Nz = nullptr;
+  ftype* Cx = nullptr;
+  ftype* Cy = nullptr;
+  ftype* Cz = nullptr;
+  {
+    Vx = X;
+    Vy = Y;
+    Vz = Z;
+  }
+  if (normalized) {
+    Nx = N[0];
+    Ny = N[1];
+    Nz = N[2];
+  }
+  if (multicolored) {
+    Cx = C[0];
+    Cy = C[1];
+    Cz = C[2];
+  }
+  // Vertices
+  if (H == 0) {
+    // Degenerate to a line strip or a single point
+    {
+      const itype u = 0;
+      itype v = 0;
+      for (itype l = 0; l <= L; l++, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * l;
+          Vy[nv * u + v] = ymin + yscale * 0;
+          Vz[nv * u + v] = zmin + zscale * 0;
+        }
+        if (normalized) {
+          Nx[nv * u + v] = 0;
+          Ny[nv * u + v] = 0;
+          Nz[nv * u + v] = -1;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colorR;
+          Cy[nv * u + v] = colorG;
+          Cz[nv * u + v] = colorB;
+        }
+      }
+    }
+  } else if (L == 0) {
+    // Degenerate to a single face
+    for (itype h = 0; h <= H; h++) {
+      const itype u = h;
+      itype v = 0;
+      for (itype w = 0; w <= W; w++, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * 0;
+          Vy[nv * u + v] = ymin + yscale * h;
+          Vz[nv * u + v] = zmin + zscale * w;
+        }
+        if (normalized) {
+          Nx[nv * u + v] = +1;
+          Ny[nv * u + v] = 0;
+          Nz[nv * u + v] = 0;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colorR;
+          Cy[nv * u + v] = colorG;
+          Cz[nv * u + v] = colorB;
+        }
+      }
+    }
+  } else {
+    // Loop over substrips
+    for (itype h = 0; h <= H; h++) {
+      const itype w = W - h;
+      const itype u = h;
+      itype v = 0;
+      // -Z back face
+      for (itype l = 0; l <= L; l++, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * l;
+          Vy[nv * u + v] = ymin + yscale * h;
+          Vz[nv * u + v] = zmin + zscale * 0;
+        }
+        if (normalized) {
+          Nx[nv * u + v] = 0;
+          Ny[nv * u + v] = 0;
+          Nz[nv * u + v] = -1;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colors[0][0];
+          Cy[nv * u + v] = colors[0][1];
+          Cz[nv * u + v] = colors[0][2];
+        }
+      }
+      // +X right face above half
+      for (itype w = 0; w <= W; w++, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * L;
+          Vy[nv * u + v] = ymin + yscale * (H - h > w ? w + h : H);
+          Vz[nv * u + v] = zmin + zscale * (W - h > w ? w : W - h);
+        }
+        if (normalized) {
+          Nx[nv * u + v] = +1;
+          Ny[nv * u + v] = 0;
+          Nz[nv * u + v] = 0;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colors[5][0];
+          Cy[nv * u + v] = colors[5][1];
+          Cz[nv * u + v] = colors[5][2];
+        }
+      }
+      // +Y top face
+      for (itype l = L; l >= 0; l--, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * l;
+          Vy[nv * u + v] = ymin + yscale * H;
+          Vz[nv * u + v] = zmin + zscale * w;
+        }
+        if (normalized) {
+          Nx[nv * u + v] = 0;
+          Ny[nv * u + v] = +1;
+          Nz[nv * u + v] = 0;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colors[3][0];
+          Cy[nv * u + v] = colors[3][1];
+          Cz[nv * u + v] = colors[3][2];
+        }
+      }
+      // -X left face
+      for (itype h = H; h >= 0; h--, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * 0;
+          Vy[nv * u + v] = ymin + yscale * h;
+          Vz[nv * u + v] = zmin + zscale * w;
+        }
+        if (normalized) {
+          Nx[nv * u + v] = -1;
+          Ny[nv * u + v] = 0;
+          Nz[nv * u + v] = 0;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colors[4][0];
+          Cy[nv * u + v] = colors[4][1];
+          Cz[nv * u + v] = colors[4][2];
+        }
+      }
+      // -Y bottom face
+      for (itype l = 0; l <= L; l++, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * l;
+          Vy[nv * u + v] = ymin + yscale * 0;
+          Vz[nv * u + v] = zmin + zscale * w;
+        }
+        if (normalized) {
+          Nx[nv * u + v] = 0;
+          Ny[nv * u + v] = -1;
+          Nz[nv * u + v] = 0;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colors[1][0];
+          Cy[nv * u + v] = colors[1][1];
+          Cz[nv * u + v] = colors[1][2];
+        }
+      }
+      // +X right face below half
+      for (itype w = 0; w <= W; w++, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * L;
+          Vy[nv * u + v] = ymin + yscale * (H - h < w ? w + h - H : 0);
+          Vz[nv * u + v] = zmin + zscale * (W - h < w ? w : W - h);
+        }
+        if (normalized) {
+          Nx[nv * u + v] = +1;
+          Ny[nv * u + v] = 0;
+          Nz[nv * u + v] = 0;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colors[5][0];
+          Cy[nv * u + v] = colors[5][1];
+          Cz[nv * u + v] = colors[5][2];
+        }
+      }
+      // +Z front face
+      for (itype l = L; l >= 0; l--, v++) {
+        {
+          Vx[nv * u + v] = xmin + xscale * l;
+          Vy[nv * u + v] = ymin + yscale * h;
+          Vz[nv * u + v] = zmin + zscale * W;
+        }
+        if (normalized) {
+          Nx[nv * u + v] = 0;
+          Ny[nv * u + v] = 0;
+          Nz[nv * u + v] = +1;
+        }
+        if (multicolored) {
+          Cx[nv * u + v] = colors[2][0];
+          Cy[nv * u + v] = colors[2][1];
+          Cz[nv * u + v] = colors[2][2];
+        }
+      }
+    }
+  }
 }
 
 void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
@@ -284,16 +529,20 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 {
   osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
 
+#define SURFACE_DRAW_SPHERICAL_ARC   1
+#define SURFACE_DRAW_RECTANGULAR_BOX 0
+#define SURFACE_DRAW_TORUS           0
+
   const char* id = _id.c_str();
-#if 0 // Torus
+#if SURFACE_DRAW_SPHERICAL_ARC
+  const itype nu = 4;
+  const itype nv = 32;
+#elif SURFACE_DRAW_RECTANGULAR_BOX
+  const itype nu = 2;
+  const itype nv = 14;
+#else
   const itype nu = _nu.exp;
   const itype nv = _nv.exp;
-#elif 1 // Rectangular Box
-  const itype nu = 2;
-  const itype nv = 7;
-#else // Spherical arc
-  const itype nu = 2;
-  const itype nv = 7;
 #endif
   const bool wireframe = _wireframe.exp;
   const bool normalized = _normalized.exp;
@@ -645,12 +894,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
 
   // TODO: Interface with omc instead of drawing fake surfaces
-#if 0
-  fakeTorus         (nu, nv, Vx, Vy, Vz, N, C);
-#elif 1
-  fakeRectangularBox(nu, nv, Vx, Vy, Vz, N, C);
-#else
+#if SURFACE_DRAW_SPHERICAL_ARC
   fakeSphericalArc  (nu, nv, Vx, Vy, Vz, N, C);
+#elif SURFACE_DRAW_RECTANGULAR_BOX
+  fakeRectangularBox(nu, nv, Vx, Vy, Vz, N, C);
+#elif SURFACE_DRAW_TORUS
+  fakeTorus         (nu, nv, Vx, Vy, Vz, N, C);
 #endif
 
   /* Attributes */
