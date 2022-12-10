@@ -91,7 +91,10 @@ void SurfaceObject::dumpVisualizerAttributes() const
   std::cout << "transparency " << _transparency.getValueString() << std::endl;
 }
 
-void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
+void SurfaceObject::fakeTorus(const itype nu, const itype nv,
+                              ftype* Vx, ftype* Vy, ftype* Vz,
+                              ftype* Nx, ftype* Ny, ftype* Nz,
+                              ftype* Cx, ftype* Cy, ftype* Cz) const
 {
   constexpr ftype pi = M_PI;
 
@@ -104,6 +107,9 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
   constexpr ftype phi_start = -pi + opening;
   constexpr ftype phi_stop  = +pi - opening;
 
+  const bool normalized = _normalized.exp;
+  const bool multicolored = _multicolored.exp;
+
   ftype alpha;
   ftype beta;
 
@@ -111,18 +117,20 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
     alpha = startAngle + (nu > 1 ? (stopAngle - startAngle) * u / (nu - 1) : 0);
     for (itype v = 0; v < nv; v++) {
       beta = phi_start + (nv > 1 ? (phi_stop - phi_start) * v / (nv - 1) : 0);
-      Z[nv * u + v] = (R + r * std::cos(beta)) * std::cos(alpha);
-      X[nv * u + v] = (R + r * std::cos(beta)) * std::sin(alpha);
-      Y[nv * u + v] =      r * std::sin(beta);
-      if (N) {
-        N[2][nv * u + v] = std::cos(beta) * std::cos(alpha);
-        N[0][nv * u + v] = std::cos(beta) * std::sin(alpha);
-        N[1][nv * u + v] = std::sin(beta);
+      {
+        Vz[nv * u + v] = (R + r * std::cos(beta)) * std::cos(alpha);
+        Vx[nv * u + v] = (R + r * std::cos(beta)) * std::sin(alpha);
+        Vy[nv * u + v] =      r * std::sin(beta);
       }
-      if (C) {
-        C[0][nv * u + v] = 0;
-        C[1][nv * u + v] = 1;
-        C[2][nv * u + v] = 0;
+      if (normalized) {
+        Nz[nv * u + v] = std::cos(beta) * std::cos(alpha);
+        Nx[nv * u + v] = std::cos(beta) * std::sin(alpha);
+        Ny[nv * u + v] = std::sin(beta);
+      }
+      if (multicolored) {
+        Cx[nv * u + v] = 0;
+        Cy[nv * u + v] = 1;
+        Cz[nv * u + v] = 0;
       }
     }
   }
@@ -130,32 +138,39 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv, ftype* X, ftype* Y
   if (mClosenessCheckState == SurfaceClosenessCheckState::active) {
     if (phi_stop - pi == phi_start + pi) {
       for (itype u = 0; u < nu; u++) {
-        X[nv * u + (nv - 1)] = X[nv * u + 0];
-        Y[nv * u + (nv - 1)] = Y[nv * u + 0];
-        Z[nv * u + (nv - 1)] = Z[nv * u + 0];
-        if (N) {
-          N[0][nv * u + (nv - 1)] = N[0][nv * u + 0];
-          N[1][nv * u + (nv - 1)] = N[1][nv * u + 0];
-          N[2][nv * u + (nv - 1)] = N[2][nv * u + 0];
+        {
+          Vx[nv * u + (nv - 1)] = Vx[nv * u + 0];
+          Vy[nv * u + (nv - 1)] = Vy[nv * u + 0];
+          Vz[nv * u + (nv - 1)] = Vz[nv * u + 0];
+        }
+        if (normalized) {
+          Nx[nv * u + (nv - 1)] = Nx[nv * u + 0];
+          Ny[nv * u + (nv - 1)] = Ny[nv * u + 0];
+          Nz[nv * u + (nv - 1)] = Nz[nv * u + 0];
         }
       }
     }
     if (stopAngle - pi == startAngle + pi) {
       for (itype v = 0; v < nv; v++) {
-        X[nv * (nu - 1) + v] = X[nv * 0 + v];
-        Y[nv * (nu - 1) + v] = Y[nv * 0 + v];
-        Z[nv * (nu - 1) + v] = Z[nv * 0 + v];
-        if (N) {
-          N[0][nv * (nu - 1) + v] = N[0][nv * 0 + v];
-          N[1][nv * (nu - 1) + v] = N[1][nv * 0 + v];
-          N[2][nv * (nu - 1) + v] = N[2][nv * 0 + v];
+        {
+          Vx[nv * (nu - 1) + v] = Vx[nv * 0 + v];
+          Vy[nv * (nu - 1) + v] = Vy[nv * 0 + v];
+          Vz[nv * (nu - 1) + v] = Vz[nv * 0 + v];
+        }
+        if (normalized) {
+          Nx[nv * (nu - 1) + v] = Nx[nv * 0 + v];
+          Ny[nv * (nu - 1) + v] = Ny[nv * 0 + v];
+          Nz[nv * (nu - 1) + v] = Nz[nv * 0 + v];
         }
       }
     }
   }
 }
 
-void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
+void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
+                                       ftype* Vx, ftype* Vy, ftype* Vz,
+                                       ftype* Nx, ftype* Ny, ftype* Nz,
+                                       ftype* Cx, ftype* Cy, ftype* Cz) const
 {
   /* Inspired by https://stackoverflow.com/a/65961094 */
   // Dimensions
@@ -197,31 +212,6 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv, ftype* X,
   const ftype colorB = _color[2].exp;
   const bool normalized = _normalized.exp;
   const bool multicolored = _multicolored.exp;
-  // Pointers
-  ftype* Vx = nullptr;
-  ftype* Vy = nullptr;
-  ftype* Vz = nullptr;
-  ftype* Nx = nullptr;
-  ftype* Ny = nullptr;
-  ftype* Nz = nullptr;
-  ftype* Cx = nullptr;
-  ftype* Cy = nullptr;
-  ftype* Cz = nullptr;
-  {
-    Vx = X;
-    Vy = Y;
-    Vz = Z;
-  }
-  if (normalized) {
-    Nx = N[0];
-    Ny = N[1];
-    Nz = N[2];
-  }
-  if (multicolored) {
-    Cx = C[0];
-    Cy = C[1];
-    Cz = C[2];
-  }
   // Vertices
   if (H == 0) {
     // Degenerate to a line strip or a single point
@@ -405,9 +395,12 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv, ftype* X,
   }
 }
 
-void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv, ftype* X, ftype* Y, ftype* Z, ftype** N, ftype** C) const
+void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
+                                     ftype* Vx, ftype* Vy, ftype* Vz,
+                                     ftype* Nx, ftype* Ny, ftype* Nz,
+                                     ftype* Cx, ftype* Cy, ftype* Cz) const
 {
-  fakeRectangularBox(nu, nv, X, Y, Z, N, C); // TODO: Implement
+  fakeRectangularBox(nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz); // TODO: Implement
 }
 
 /**
@@ -884,11 +877,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   // TODO: Interface with omc instead of drawing fake surfaces
 #if SURFACE_DRAW_SPHERICAL_ARC
-  fakeSphericalArc  (nu, nv, Vx, Vy, Vz, N, C);
+  fakeSphericalArc  (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz);
 #elif SURFACE_DRAW_RECTANGULAR_BOX
-  fakeRectangularBox(nu, nv, Vx, Vy, Vz, N, C);
+  fakeRectangularBox(nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz);
 #elif SURFACE_DRAW_TORUS
-  fakeTorus         (nu, nv, Vx, Vy, Vz, N, C);
+  fakeTorus         (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cx, Cy, Cz);
 #endif
 
   /* Attributes */
