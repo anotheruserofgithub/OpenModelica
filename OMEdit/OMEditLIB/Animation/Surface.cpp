@@ -428,7 +428,7 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
  *
  * const ftype area1 = length1 / 2; // surface area = triangle area = half the norm of the cross product
  *
- * const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0); // corner angle = angle of the corner of the polygon at the vertex
+ * const ftype angle11 = std::acos(length11 > 0 ? length11 < std::abs(dot11) ? dot11 / std::abs(dot11) : dot11 / length11 : 0); // corner angle = angle of the corner of the polygon at the vertex
  *
  * @note @c nutnv = nu * nv never overflows because @c nPoints < @c nFacetsTripled, i.e. nu * nv < 3 * 2 * (nu - 1) * (nv - 1),
  * and one/both of them is/are checked for overflow of the same integer type.
@@ -1119,12 +1119,12 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                 const ftype length21 = lvu * lv2;
                 const ftype length22 = lv2 * lu2;
                 const ftype length23 = lu2 * luv;
-                const ftype angle11 = std::acos(length11 > 0 ? dot11 / length11 : 0);
-                const ftype angle12 = std::acos(length12 > 0 ? dot12 / length12 : 0);
-                const ftype angle13 = std::acos(length13 > 0 ? dot13 / length13 : 0);
-                const ftype angle21 = std::acos(length21 > 0 ? dot21 / length21 : 0);
-                const ftype angle22 = std::acos(length22 > 0 ? dot22 / length22 : 0);
-                const ftype angle23 = std::acos(length23 > 0 ? dot23 / length23 : 0);
+                const ftype angle11 = std::acos(length11 > 0 ? length11 < std::abs(dot11) ? dot11 / std::abs(dot11) : dot11 / length11 : 0);
+                const ftype angle12 = std::acos(length12 > 0 ? length12 < std::abs(dot12) ? dot12 / std::abs(dot12) : dot12 / length12 : 0);
+                const ftype angle13 = std::acos(length13 > 0 ? length13 < std::abs(dot13) ? dot13 / std::abs(dot13) : dot13 / length13 : 0);
+                const ftype angle21 = std::acos(length21 > 0 ? length21 < std::abs(dot21) ? dot21 / std::abs(dot21) : dot21 / length21 : 0);
+                const ftype angle22 = std::acos(length22 > 0 ? length22 < std::abs(dot22) ? dot22 / std::abs(dot22) : dot22 / length22 : 0);
+                const ftype angle23 = std::acos(length23 > 0 ? length23 < std::abs(dot23) ? dot23 / std::abs(dot23) : dot23 / length23 : 0);
                 W[w][i][nv * up0 + vp0] = angle11;
                 W[w][j][nv * up1 + vp0] = angle12;
                 W[w][k][nv * up0 + vp1] = angle13;
