@@ -400,7 +400,270 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
                                      ftype* Nx, ftype* Ny, ftype* Nz,
                                      ftype* Cr, ftype* Cg, ftype* Cb) const
 {
-  fakeRectangularBox(nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cr, Cg, Cb); // TODO: Implement
+  /* Inspired by https://stackoverflow.com/a/65961094 */
+  // Dimensions
+  const itype W = nu - 1; // Width
+  const itype H = nu - 1; // Height
+  const itype L = nu > 1 ? (nv == nu ? 0 : (nv - nu * 3) / 4 - 1) : nv - 1; // Length
+  // Conditions
+  const itype Wp1 = W + 1;
+  const itype Hp1 = H + 1;
+  const itype Lp1 = L + 1;
+  assert(nu > 0);
+  assert(nv > 0);
+  if (H == 0) {
+    assert(Wp1 == Hp1);
+    assert(Hp1 == nu);
+    assert(Lp1 == nv);
+  } else if (L == 0) {
+    assert(nv == nu);
+    assert(Wp1 == Hp1);
+    assert(Hp1 == nu);
+    assert(Lp1 == 1);
+  } else {
+    assert(nv >= nu * 3 + 4);
+    assert(Wp1 == Hp1);
+    assert(Hp1 == nu);
+    assert(Lp1 * 4 + Wp1 * 2 + Hp1 * 1 == nv);
+  }
+  // Parameters
+  constexpr ftype pi = M_PI;
+  const ftype rmin = 1;       // Minimum altitude (radial distance r as geographic altitude) in [0, +inf)
+  const ftype rmax = 2;       // Maximum altitude (radial distance r as geographic altitude) in [0, +inf)
+  const ftype pmin = -pi / 8; // Minimum latitude (polar angle phi as geographic elevation) in [-pi/2, +pi/2]
+  const ftype pmax = +pi / 8; // Maximum latitude (polar angle phi as geographic elevation) in [-pi/2, +pi/2]
+  const ftype tmin = -pi / 4; // Minimum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
+  const ftype tmax = +pi / 4; // Maximum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
+  const bool bevel = false; // If true, the bevel is due to an angular slice at pmax and pmin, else the height is constant from rmax
+  const bool offset = true; // If true, the surface is shifted by [0, 0, (rmax + rmin) / 2], else it is centered at the frame origin
+  const ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
+  // Boundaries
+  assert(tmin < tmax);
+  assert(pmin < pmax);
+  assert(rmin < rmax);
+  assert(tmax - tmin <= 2 * pi);
+  assert(pmax <= +pi / 2);
+  assert(pmin >= -pi / 2);
+  assert(rmin >= (bevel ? 0 : rmax * std::sin((pmax - pmin) / 2)));
+  // Helpers
+  const ftype rmid = (rmax + rmin) / 2; // Middle altitude
+  const ftype pmid = (pmax + pmin) / 2; // Middle latitude
+  const ftype tmid = (tmax + tmin) / 2; // Middle longitude
+  const ftype rres = (rmax - rmin) / W; // Resolution on altitude
+  const ftype pres = (pmax - pmin) / H; // Resolution on latitude
+  const ftype tres = (tmax - tmin) / L; // Resolution on longitude
+  const ftype zoff = offset ? rmid : 0; // Offset on altitude
+  const ftype cpmid = bevel ? 1 : std::cos(pmid); // Middle latitude's cosine
+  const ftype spmid = bevel ? 0 : std::sin(pmid); // Middle latitude's sine
+  // Attributes
+  const ftype colorR = _color[0].exp;
+  const ftype colorG = _color[1].exp;
+  const ftype colorB = _color[2].exp;
+  const bool normalized = _normalized.exp;
+  const bool multicolored = _multicolored.exp;
+  // Vertices
+#define SURFACE_SPHERICAL_ARC_BEVEL() \
+        const ftype c = bevel ? e : std::sin(e - pmid) * (rmax / r); \
+        const ftype p = bevel ? c : std::asin(std::abs(c) > 1 ? c / std::abs(c) : c) + pmid;
+#define SURFACE_SPHERICAL_ARC_TRIGO() \
+        const ftype cp = std::cos(p); \
+        const ftype sp = std::sin(p); \
+        const ftype ct = std::cos(t); \
+        const ftype st = std::sin(t);
+#define SURFACE_SPHERICAL_ARC_VERTS() \
+        { \
+          Vz[nv * u + v] = - r * cp * ct + zoff; \
+          Vx[nv * u + v] = + r * cp * st; \
+          Vy[nv * u + v] = + r * sp; \
+        }
+  if (H == 0) {
+    // Degenerate to a line strip or a single point
+    {
+      const itype u = 0;
+      itype v = 0;
+      for (itype l = 0; l <= L; l++, v++) {
+        const ftype r = rmid;
+        const ftype p = pmid;
+        const ftype t = L == 0 ? tmid : tmin + tres * l;
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = - cp * ct;
+          Nx[nv * u + v] = + cp * st;
+          Ny[nv * u + v] = + sp;
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colorR;
+          Cg[nv * u + v] = colorG;
+          Cb[nv * u + v] = colorB;
+        }
+      }
+    }
+  } else if (L == 0) {
+    // Degenerate to a single face
+    for (itype h = 0; h <= H; h++) {
+      const itype u = h;
+      itype v = 0;
+      for (itype w = W; w >= 0; w--, v++) {
+        const ftype r = rmin + rres * w;
+        const ftype e = pmin + pres * h;
+        const ftype t = tmid;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = + st;
+          Nx[nv * u + v] = + ct;
+          Ny[nv * u + v] = + 0;
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colorR;
+          Cg[nv * u + v] = colorG;
+          Cb[nv * u + v] = colorB;
+        }
+      }
+    }
+  } else {
+    // Loop over substrips
+    for (itype h = 0; h <= H; h++) {
+      const itype w = h;
+      const itype u = h;
+      itype v = 0;
+      // -Z back face
+      for (itype l = 0; l <= L; l++, v++) {
+        const ftype r = rmin + rres * W;
+        const ftype e = pmin + pres * h;
+        const ftype t = tmin + tres * l;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = - cp * ct;
+          Nx[nv * u + v] = + cp * st;
+          Ny[nv * u + v] = + sp;
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colors[0][0];
+          Cg[nv * u + v] = colors[0][1];
+          Cb[nv * u + v] = colors[0][2];
+        }
+      }
+      // +X right face above half
+      for (itype w = W; w >= 0; w--, v++) {
+        const ftype r = rmin + rres * (w > h ? w : h);
+        const ftype e = pmin + pres * (w > h ? W - w + h : H);
+        const ftype t = tmin + tres * L;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = + st;
+          Nx[nv * u + v] = + ct;
+          Ny[nv * u + v] = + 0;
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colors[5][0];
+          Cg[nv * u + v] = colors[5][1];
+          Cb[nv * u + v] = colors[5][2];
+        }
+      }
+      // +Y top face
+      for (itype l = L; l >= 0; l--, v++) {
+        const ftype r = rmin + rres * w;
+        const ftype e = pmin + pres * H;
+        const ftype t = tmin + tres * l;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = + (bevel ? sp : spmid) * ct;
+          Nx[nv * u + v] = - (bevel ? sp : spmid) * st;
+          Ny[nv * u + v] = + (bevel ? cp : cpmid);
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colors[3][0];
+          Cg[nv * u + v] = colors[3][1];
+          Cb[nv * u + v] = colors[3][2];
+        }
+      }
+      // -X left face
+      for (itype h = H; h >= 0; h--, v++) {
+        const ftype r = rmin + rres * w;
+        const ftype e = pmin + pres * h;
+        const ftype t = tmin + tres * 0;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = - st;
+          Nx[nv * u + v] = - ct;
+          Ny[nv * u + v] = - 0;
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colors[4][0];
+          Cg[nv * u + v] = colors[4][1];
+          Cb[nv * u + v] = colors[4][2];
+        }
+      }
+      // -Y bottom face
+      for (itype l = 0; l <= L; l++, v++) {
+        const ftype r = rmin + rres * w;
+        const ftype e = pmin + pres * 0;
+        const ftype t = tmin + tres * l;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = - (bevel ? sp : spmid) * ct;
+          Nx[nv * u + v] = + (bevel ? sp : spmid) * st;
+          Ny[nv * u + v] = - (bevel ? cp : cpmid);
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colors[1][0];
+          Cg[nv * u + v] = colors[1][1];
+          Cb[nv * u + v] = colors[1][2];
+        }
+      }
+      // +X right face below half
+      for (itype w = W; w >= 0; w--, v++) {
+        const ftype r = rmin + rres * (w < h ? w : h);
+        const ftype e = pmin + pres * (w < h ? h - w : 0);
+        const ftype t = tmin + tres * L;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = + st;
+          Nx[nv * u + v] = + ct;
+          Ny[nv * u + v] = + 0;
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colors[5][0];
+          Cg[nv * u + v] = colors[5][1];
+          Cb[nv * u + v] = colors[5][2];
+        }
+      }
+      // +Z front face
+      for (itype l = L; l >= 0; l--, v++) {
+        const ftype r = rmin + rres * 0;
+        const ftype e = pmin + pres * h;
+        const ftype t = tmin + tres * l;
+        SURFACE_SPHERICAL_ARC_BEVEL();
+        SURFACE_SPHERICAL_ARC_TRIGO();
+        SURFACE_SPHERICAL_ARC_VERTS();
+        if (normalized) {
+          Nz[nv * u + v] = + cp * ct;
+          Nx[nv * u + v] = - cp * st;
+          Ny[nv * u + v] = - sp;
+        }
+        if (multicolored) {
+          Cr[nv * u + v] = colors[2][0];
+          Cg[nv * u + v] = colors[2][1];
+          Cb[nv * u + v] = colors[2][2];
+        }
+      }
+    }
+  }
 }
 
 /**
