@@ -199,13 +199,13 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
     assert(Lp1 * 4 + Wp1 * 2 + Hp1 * 1 == nv);
   }
   // Parameters
-  const ftype xscale = 1;
-  const ftype yscale = 1;
-  const ftype zscale = 1;
-  const ftype xmin = -xscale * L / 2;
-  const ftype ymin = -yscale * H / 2;
-  const ftype zmin = -zscale * W / 2;
-  const ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
+  constexpr ftype xscale = 1;
+  constexpr ftype yscale = 1;
+  constexpr ftype zscale = 1;
+  const     ftype xmin = -xscale * L / 2;
+  const     ftype ymin = -yscale * H / 2;
+  const     ftype zmin = -zscale * W / 2;
+  constexpr ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
   // Attributes
   const ftype colorR = _color[0].exp;
   const ftype colorG = _color[1].exp;
@@ -216,7 +216,7 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
   if (H == 0) {
     // Degenerate to a line strip or a single point
     {
-      const itype u = 0;
+      constexpr itype u = 0;
       itype v = 0;
       for (itype l = 0; l <= L; l++, v++) {
         {
@@ -428,15 +428,15 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   }
   // Parameters
   constexpr ftype pi = M_PI;
-  const ftype rmin = 1;       // Minimum altitude (radial distance r as geographic altitude) in [0, +inf)
-  const ftype rmax = 2;       // Maximum altitude (radial distance r as geographic altitude) in [0, +inf)
-  const ftype pmin = -pi / 8; // Minimum latitude (polar angle phi as geographic elevation) in [-pi/2, +pi/2]
-  const ftype pmax = +pi / 8; // Maximum latitude (polar angle phi as geographic elevation) in [-pi/2, +pi/2]
-  const ftype tmin = -pi / 4; // Minimum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
-  const ftype tmax = +pi / 4; // Maximum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
-  const bool bevel = false; // If true, the bevel is due to an angular slice at pmax and pmin, else the height is constant from rmax
-  const bool offset = true; // If true, the surface is shifted by [0, 0, (rmax + rmin) / 2], else it is centered at the frame origin
-  const ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
+  constexpr ftype rmin = 1;       // Minimum altitude (radial distance r as geographic altitude) in [0, +inf)
+  constexpr ftype rmax = 2;       // Maximum altitude (radial distance r as geographic altitude) in [0, +inf)
+  constexpr ftype pmin = -pi / 8; // Minimum latitude (polar angle phi as geographic elevation) in [-pi/2, +pi/2]
+  constexpr ftype pmax = +pi / 8; // Maximum latitude (polar angle phi as geographic elevation) in [-pi/2, +pi/2]
+  constexpr ftype tmin = -pi / 4; // Minimum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
+  constexpr ftype tmax = +pi / 4; // Maximum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
+  constexpr bool bevel = false; // If true, the bevel is due to an angular slice at pmax and pmin, else the height is constant from rmax
+  constexpr bool offset = true; // If true, the surface is shifted by [0, 0, (rmax + rmin) / 2], else it is centered at the frame origin
+  constexpr ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
   // Boundaries
   assert(tmin < tmax);
   assert(pmin < pmax);
@@ -446,15 +446,15 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   assert(pmin >= -pi / 2);
   assert(rmin >= (bevel ? 0 : rmax * std::sin((pmax - pmin) / 2)));
   // Helpers
-  const ftype rmid = (rmax + rmin) / 2; // Middle altitude
-  const ftype pmid = (pmax + pmin) / 2; // Middle latitude
-  const ftype tmid = (tmax + tmin) / 2; // Middle longitude
-  const ftype rres = (rmax - rmin) / W; // Resolution on altitude
-  const ftype pres = (pmax - pmin) / H; // Resolution on latitude
-  const ftype tres = (tmax - tmin) / L; // Resolution on longitude
-  const ftype zoff = offset ? rmid : 0; // Offset on altitude
-  const ftype cpmid = bevel ? 1 : std::cos(pmid); // Middle latitude's cosine
-  const ftype spmid = bevel ? 0 : std::sin(pmid); // Middle latitude's sine
+  constexpr ftype rmid = (rmax + rmin) / 2; // Middle altitude
+  constexpr ftype pmid = (pmax + pmin) / 2; // Middle latitude
+  constexpr ftype tmid = (tmax + tmin) / 2; // Middle longitude
+  const     ftype rres = (rmax - rmin) / W; // Resolution on altitude
+  const     ftype pres = (pmax - pmin) / H; // Resolution on latitude
+  const     ftype tres = (tmax - tmin) / L; // Resolution on longitude
+  constexpr ftype zoff = offset ? rmid : 0; // Offset on altitude
+  constexpr ftype cpmid = bevel ? 1 : std::cos(pmid); // Middle latitude's cosine
+  constexpr ftype spmid = bevel ? 0 : std::sin(pmid); // Middle latitude's sine
   // Attributes
   const ftype colorR = _color[0].exp;
   const ftype colorG = _color[1].exp;
@@ -479,12 +479,12 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   if (H == 0) {
     // Degenerate to a line strip or a single point
     {
-      const itype u = 0;
+      constexpr itype u = 0;
       itype v = 0;
       for (itype l = 0; l <= L; l++, v++) {
-        const ftype r = rmid;
-        const ftype p = pmid;
-        const ftype t = L == 0 ? tmid : tmin + tres * l;
+        constexpr ftype r = rmid;
+        constexpr ftype p = pmid;
+        const     ftype t = L == 0 ? tmid : tmin + tres * l;
         SURFACE_SPHERICAL_ARC_TRIGO();
         SURFACE_SPHERICAL_ARC_VERTS();
         if (normalized) {
@@ -505,9 +505,9 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
       const itype u = h;
       itype v = 0;
       for (itype w = W; w >= 0; w--, v++) {
-        const ftype r = rmin + rres * w;
-        const ftype e = pmin + pres * h;
-        const ftype t = tmid;
+        const     ftype r = rmin + rres * w;
+        const     ftype e = pmin + pres * h;
+        constexpr ftype t = tmid;
         SURFACE_SPHERICAL_ARC_BEVEL();
         SURFACE_SPHERICAL_ARC_TRIGO();
         SURFACE_SPHERICAL_ARC_VERTS();
@@ -841,8 +841,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   const itype o = restart && !faceted && !degenerated ? ri + one : zero; // Index offset
 
-  const itype imax = std::numeric_limits<itype>::max();
-  const ltype lmax = std::numeric_limits<ltype>::max();
+  constexpr itype imax = std::numeric_limits<itype>::max();
+  constexpr ltype lmax = std::numeric_limits<ltype>::max();
 
   const itype num1 = nu - one;
   const itype nvm1 = nv - one;
@@ -1624,7 +1624,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         1, 0, 0);
   }
   if (facets) {
-    const itype offset = 0;
+    constexpr itype offset = 0;
     const itype size = facetsCenters->size();
     SURFACE_DEBUG_N(
         offset, size,
