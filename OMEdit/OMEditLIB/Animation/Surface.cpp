@@ -815,8 +815,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     return geometry.release();
   }
 
-  constexpr itype ri = 0; // Restart index
-
   const ftype ps = mPointSize; // Point size
   const ftype lw = mLineWidth; // Line width
   const ftype ns = mNormalScale; // Normal scale
@@ -838,8 +836,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   const bool degenerate = mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
   const bool restart    = mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
-
-  const itype o = restart && !faceted && !degenerated ? ri + one : zero; // Index offset
 
   constexpr itype imax = std::numeric_limits<itype>::max();
   constexpr ltype lmax = std::numeric_limits<ltype>::max();
@@ -905,15 +901,15 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nVertices += nFacetsDoubled;
     }
     if (!degenerated && !faceted && restart) {
-      const itype iOffset = o;
+      const itype nBlanks = one;
       const itype nMLines = num2;
-      if (imax - iOffset < nVertices) {
+      if (imax - nBlanks < nVertices) {
         throw std::overflow_error("[Primitive restart index] Overflow of the number of vertices");
       }
       if (imax - nMLines < nIndices) {
         throw std::overflow_error("[Primitive restart index] Overflow of the number of indices");
       }
-      nVertices += iOffset;
+      nVertices += nBlanks;
       nIndices  += nMLines;
     }
     if (!degenerated && !faceted && degenerate) {
@@ -939,6 +935,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                           Helper::errorLevel));
     return geometry.release();
   }
+
+  const itype ri = nPoints; // Restart index
 
   constexpr itype x = 0; // Index of 1st coordinate
   constexpr itype y = 1; // Index of 2nd coordinate
@@ -1224,15 +1222,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   } else {
     const ftype fnum1 = ftype(num1);
     const ftype fnvm1 = ftype(nvm1);
-
-    if (restart) { // Duplicate a dummy vertex (see OSG commit 353b18b)
-      for (itype i = 0; i < o; i++) {
-        vertices->push_back(Vec3());
-        normals ->push_back(Vec3());
-        colors  ->push_back(Vec4());
-        texels  ->push_back(Vec2());
-      }
-    }
 
     /* Vertices */
     if (!faceted) {
@@ -1552,49 +1541,57 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       const osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
       strip->reserveElements(nIndices);
       const bool num2g0 = num2 > 0;
-      const itype num2tnvpo = num2 * nv + o;
-      itype up0tnvpopv = o;
-      itype up1tnvpo = nv + o;
-#define SURFACE_INDICES_V_FIRST()               \
+      const itype num2tnv = num2 * nv;
+      itype up0tnvpv = 0;
+      itype up1tnv = nv;
+#define SURFACE_INDICES_FRST()                  \
   if (degenerate) {                             \
-    strip->addElement(up0tnvpopv);              \
+    strip->addElement(up0tnvpv);                \
   }
-#define SURFACE_INDICES_V_LOOP()                \
-  for (; up0tnvpopv < up1tnvpo; up0tnvpopv++) { \
-    strip->addElement(up0tnvpopv);              \
-    strip->addElement(up0tnvpopv + nv);         \
+#define SURFACE_INDICES_LOOP()                  \
+  for (; up0tnvpv < up1tnv; up0tnvpv++) {       \
+    strip->addElement(up0tnvpv);                \
+    strip->addElement(up0tnvpv + nv);           \
   }
-#define SURFACE_INDICES_V_LAST()                \
+#define SURFACE_INDICES_LAST()                  \
   if (degenerate) {                             \
-    strip->addElement(up0tnvpopv + nvm1);       \
+    strip->addElement(up0tnvpv + nvm1);         \
   } else if (restart) {                         \
     strip->addElement(ri);                      \
   }
       {
-        SURFACE_INDICES_V_LOOP();
+        SURFACE_INDICES_LOOP();
       }
       if (num2g0) {
-        SURFACE_INDICES_V_LAST();
+        SURFACE_INDICES_LAST();
       }
-      for (up1tnvpo += nv; up0tnvpopv < num2tnvpo; up1tnvpo += nv) {
-        SURFACE_INDICES_V_FIRST();
-        SURFACE_INDICES_V_LOOP();
-        SURFACE_INDICES_V_LAST();
+      for (up1tnv += nv; up0tnvpv < num2tnv; up1tnv += nv) {
+        SURFACE_INDICES_FRST();
+        SURFACE_INDICES_LOOP();
+        SURFACE_INDICES_LAST();
       }
       if (num2g0) {
-        SURFACE_INDICES_V_FIRST();
-        SURFACE_INDICES_V_LOOP();
+        SURFACE_INDICES_FRST();
+        SURFACE_INDICES_LOOP();
       }
     } else {
-      indices = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, o, nIndices);
+      indices = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, zero, nIndices);
     }
   }
 
+  /* Blanks */
+  if (!degenerated && !faceted && restart) { // Insert a dummy vertex (see OSG commit 353b18b)
+    vertices->push_back(Vec3());
+    normals ->push_back(Vec3());
+    colors  ->push_back(Vec4());
+    texels  ->push_back(Vec2());
+  }
+
   /* Debug */
-#define SURFACE_DEBUG_N(o, e, v, n, r, g, b)    \
+#define SURFACE_NORMALS_DEBUG(s, v, n, r, g, b) \
   const itype l = vertices->size();             \
-  const itype c = two * (e - o);                \
-  for (itype i = o; i < e; i++) {               \
+  const itype c = two * s;                      \
+  for (itype i = 0; i < s; i++) {               \
     const Vec3 vertex = v->at(i);               \
     const Vec3 normal = n->at(i);               \
     const Vec2 texel0 = Vec2(0, 1);             \
@@ -1615,19 +1612,17 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           osg::PrimitiveSet::LINES, l, c);      \
   geometry->addPrimitiveSet(lines.get());
   if (vertexes) {
-    const itype offset = o;
-    const itype size = vertices->size();
-    SURFACE_DEBUG_N(
-        offset, size,
+    const itype size = itype(vertices->size()) - itype(!degenerated && !faceted && restart);
+    SURFACE_NORMALS_DEBUG(
+        size,
         vertices,
         normals,
         1, 0, 0);
   }
   if (facets) {
-    constexpr itype offset = 0;
     const itype size = facetsCenters->size();
-    SURFACE_DEBUG_N(
-        offset, size,
+    SURFACE_NORMALS_DEBUG(
+        size,
         facetsCenters,
         facetsNormals,
         0, 0, 1);
