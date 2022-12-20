@@ -1160,7 +1160,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   /* Attributes */
   constexpr osg::StateAttribute::GLModeValue mode = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
-  osg::ref_ptr<osg::StateSet> ss = geometry->getOrCreateStateSet();
+  const osg::ref_ptr<osg::StateSet> ss = geometry->getOrCreateStateSet();
   if (point) {
     ss->setAttributeAndModes(new osg::Point(ps), mode);
   }
@@ -1175,16 +1175,16 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::Face::FRONT_AND_BACK, osg::PolygonMode::Mode::LINE), mode);
   }
   if (doublesided) {
-    osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
+    const osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
     lightModel->setTwoSided(true);
     ss->setAttributeAndModes(lightModel.get(), mode);
   }
 
   /* Arrays */
-  osg::ref_ptr<Vec3Array> vertices = new Vec3Array(osg::Array::BIND_PER_VERTEX);
-  osg::ref_ptr<Vec3Array> normals  = new Vec3Array(osg::Array::BIND_PER_VERTEX);
-  osg::ref_ptr<Vec4Array> colors   = new Vec4Array(osg::Array::BIND_PER_VERTEX);
-  osg::ref_ptr<Vec2Array> texels   = new Vec2Array(osg::Array::BIND_PER_VERTEX);
+  const osg::ref_ptr<Vec3Array> vertices = new Vec3Array(osg::Array::BIND_PER_VERTEX);
+  const osg::ref_ptr<Vec3Array> normals  = new Vec3Array(osg::Array::BIND_PER_VERTEX);
+  const osg::ref_ptr<Vec4Array> colors   = new Vec4Array(osg::Array::BIND_PER_VERTEX);
+  const osg::ref_ptr<Vec2Array> texels   = new Vec2Array(osg::Array::BIND_PER_VERTEX);
   osg::ref_ptr<osg::PrimitiveSet> indices;
   osg::ref_ptr<Vec3Array> facetsCenters;
   osg::ref_ptr<Vec3Array> facetsNormals;
@@ -1560,7 +1560,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     /* Indices */
     if (!faceted) {
       indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
-      osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
+      const osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
       strip->reserveElements(nIndices);
       const bool num2g0 = num2 > 0;
       const itype num2tnvpo = num2 * nv + o;
@@ -1621,7 +1621,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     colors->insert(colors->end(), c,            \
         Vec4(r, g, b, opacity));                \
   }                                             \
-  osg::ref_ptr<osg::PrimitiveSet> lines =       \
+  const osg::ref_ptr<osg::PrimitiveSet> lines = \
       new osg::DrawArrays(                      \
           osg::PrimitiveSet::LINES, l, c);      \
   geometry->addPrimitiveSet(lines.get());
