@@ -823,19 +823,19 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const bool line = (nu == one || nv == one) && !point; // Surface degenerated to a line strip
 
   const bool degenerated = point || line; // Surface degenerated to a point or a line
-  const bool closed = mClosenessCheckState == SurfaceClosenessCheckState::active; // Surface checked for closeness
-  const bool averaged = mNormalsAverageWeights != SurfaceNormalsAverageWeights::none; // Averaged rendering
-  const bool faceted = !normalized && !averaged; // Faceted rendering
-  const bool objects = !normalized && !degenerated; // Objects allocation
+  const bool objects  = !degenerated && !normalized; // Objects allocation
+  const bool closed   = objects && mClosenessCheckState   == SurfaceClosenessCheckState::active; // Checked for closeness
+  const bool faceted  = objects && mNormalsAverageWeights == SurfaceNormalsAverageWeights::none; // Faceted  rendering
+  const bool averaged = objects && mNormalsAverageWeights != SurfaceNormalsAverageWeights::none; // Averaged rendering
 
-  const bool area  = mNormalsAverageWeights & SurfaceNormalsAverageWeights::area;  // Normals averaged with area
-  const bool angle = mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle; // Normals averaged with angle
+  const bool area  = averaged && mNormalsAverageWeights & SurfaceNormalsAverageWeights::area;  // Normals averaged with area
+  const bool angle = averaged && mNormalsAverageWeights & SurfaceNormalsAverageWeights::angle; // Normals averaged with angle
 
-  const bool vertexes = mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices; // Normals animated for vertices
-  const bool facets   = mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets;   // Normals animated for facets
+  const bool vertexes =                 mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices; // Normals animated for vertices
+  const bool facets   = !degenerated && mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets;   // Normals animated for facets
 
-  const bool degenerate = mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
-  const bool restart    = mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
+  const bool degenerate = !degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
+  const bool restart    = !degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
 
   constexpr itype imax = std::numeric_limits<itype>::max();
   constexpr ltype lmax = std::numeric_limits<ltype>::max();
@@ -856,7 +856,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       nPoints = nu * nv;
     }
-    if (!degenerated && (faceted || facets)) {
+    if (faceted || facets) {
       if (imax / num1 < nvm1 || imax / two < num1 * nvm1) {
         throw std::overflow_error("[Facets counting] Overflow of the number of triangular facets");
       }
@@ -890,7 +890,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       nVertices += nVerticesDoubled;
     }
-    if (!degenerated && facets) {
+    if (facets) {
       if (imax / two < nFacets) {
         throw std::overflow_error("[Animation of facet normals] Overflow of the number of triangular facets doubled");
       }
@@ -900,7 +900,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
       nVertices += nFacetsDoubled;
     }
-    if (!degenerated && !faceted && restart) {
+    if (restart) {
       const itype nBlanks = one;
       const itype nMLines = num2;
       if (imax - nBlanks < nVertices) {
@@ -912,7 +912,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       nVertices += nBlanks;
       nIndices  += nMLines;
     }
-    if (!degenerated && !faceted && degenerate) {
+    if (degenerate) {
       const itype nMLines = num2;
       if (imax / two < nMLines) {
         throw std::overflow_error("[Degenerate triangles] Overflow of the number of middle lines (directed along v-dimension) doubled");
@@ -944,10 +944,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   constexpr itype nc = 3; // Number of coordinates
 
-  const itype ne = 1 + normalized + multicolored; // Number of user-provided elements
-  const itype na = averaged ? 6 : 2; // Number of considered adjacent facets
-  const itype nw = area && angle ? 2 : area || angle ? 1 : 0; // Number of area|angle weights
-  const itype no = nc + nw; // Number of objects
+  const itype ne = one + normalized + multicolored; // Number of user-provided elements
+  const itype na = objects ? averaged ? 6 : 2 : 0;  // Number of considered adjacent facets
+  const itype nw = objects ? area + angle : 0;      // Number of averaging weights
+  const itype no = objects ? nc + nw : 0;           // Number of objects
 
   {
     try {
@@ -1154,7 +1154,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   if (line || wireframe || vertexes || facets) {
     ss->setAttributeAndModes(new osg::LineWidth(lw), mode);
   }
-  if (restart && !faceted && !degenerated) {
+  if (restart) {
     ss->setAttributeAndModes(new osg::PrimitiveRestartIndex(ri), mode);
     ss->setMode(GL_PRIMITIVE_RESTART, mode);
   }
@@ -1379,7 +1379,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
       }
       if (!normalized) {
-        if (averaged) {
+        if (!faceted) {
           if (closed) {
             constexpr itype nut0 = 0;
             constexpr itype nvt0 = 0;
@@ -1580,7 +1580,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
 
   /* Blanks */
-  if (!degenerated && !faceted && restart) { // Insert a dummy vertex (see OSG commit 353b18b)
+  if (restart) { // Insert a dummy vertex (see OSG commit 353b18b)
     vertices->push_back(Vec3());
     normals ->push_back(Vec3());
     colors  ->push_back(Vec4());
@@ -1612,7 +1612,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
           osg::PrimitiveSet::LINES, l, c);      \
   geometry->addPrimitiveSet(lines.get());
   if (vertexes) {
-    const itype size = itype(vertices->size()) - itype(!degenerated && !faceted && restart);
+    const itype size = itype(vertices->size()) - itype(restart);
     SURFACE_NORMALS_DEBUG(
         size,
         vertices,
