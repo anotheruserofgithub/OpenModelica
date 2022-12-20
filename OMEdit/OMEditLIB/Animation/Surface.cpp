@@ -1192,7 +1192,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
 
   if (degenerated) {
-    const ftype fnutnvm1 = (ftype)(nPoints - one);
+    const ftype fnutnvm1 = ftype(nPoints - one);
 
     for (itype u = 0; u < nu; u++) {
       for (itype v = 0; v < nv; v++) {
@@ -1222,8 +1222,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
     indices = new osg::DrawArrays(point ? osg::PrimitiveSet::POINTS : osg::PrimitiveSet::LINE_STRIP, zero, nIndices);
   } else {
-    const ftype fnum1 = (ftype)num1;
-    const ftype fnvm1 = (ftype)nvm1;
+    const ftype fnum1 = ftype(num1);
+    const ftype fnvm1 = ftype(nvm1);
 
     if (restart) { // Duplicate a dummy vertex (see OSG commit 353b18b)
       for (itype i = 0; i < o; i++) {
