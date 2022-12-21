@@ -65,16 +65,16 @@ SurfaceObject::SurfaceObject()
       mClosenessCheckState(SurfaceClosenessCheckState::active),
       mStripsWrappingMethod(SurfaceStripsWrappingMethod::degenerate),
       mNormalsAverageWeights(SurfaceNormalsAverageWeights::bothAreaAndAngle),
-      mNormalsAnimationTypes(SurfaceNormalsAnimationTypes::none),
-      mPointSize(1.0),
-      mLineWidth(1.0),
+      mNormalsAnimationTypes(SurfaceNormalsAnimationTypes::bothVerticesAndFacets),
+      mPointSize(5.0),
+      mLineWidth(5.0),
       mNormalScale(0.25),
       _nu(VisualizerAttribute(0.0)),
       _nv(VisualizerAttribute(0.0)),
       _wireframe(VisualizerAttribute(0.0)),
-      _normalized(VisualizerAttribute(0.0)),
+      _normalized(VisualizerAttribute(1.0)),
       _doublesided(VisualizerAttribute(1.0)),
-      _multicolored(VisualizerAttribute(0.0)),
+      _multicolored(VisualizerAttribute(1.0)),
       _transparency(VisualizerAttribute(0.0))
 {
 }

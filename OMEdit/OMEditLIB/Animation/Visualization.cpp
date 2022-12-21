@@ -485,13 +485,13 @@ void OMVisualBase::initVisObjects()
     surface._nu = getVisualizerAttributeForNode(expNode);
     expNode = surfaceNode->first_node("nv")->first_node();
     surface._nv = getVisualizerAttributeForNode(expNode);
-
+/*
     expNode = surfaceNode->first_node("wireframe")->first_node();
     surface._wireframe = getVisualizerAttributeForNode(expNode);
 
     expNode = surfaceNode->first_node("multiColored")->first_node();
     surface._multicolored = getVisualizerAttributeForNode(expNode);
-
+*/
     expNode = surfaceNode->first_node("transparency")->first_node();
     surface._transparency = getVisualizerAttributeForNode(expNode);
 
@@ -611,11 +611,11 @@ void OMVisualBase::setFmuVarRefInVisObjects()
 
       surface._nu.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._nu);
       surface._nv.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._nv);
-
+/*
       surface._wireframe.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._wireframe);
 
       surface._multicolored.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._multicolored);
-
+*/
       surface._transparency.fmuValueRef = _visualization->getFmuVariableReferenceForVisualizerAttribute(surface._transparency);
 
       //surface.dumpVisualizerAttributes();
@@ -771,11 +771,11 @@ void OMVisualBase::updateVisObjects(const double time)
 
       _visualization->updateVisualizerAttribute(surface._nu, time);
       _visualization->updateVisualizerAttribute(surface._nv, time);
-
+/*
       _visualization->updateVisualizerAttribute(surface._wireframe, time);
 
       _visualization->updateVisualizerAttribute(surface._multicolored, time);
-
+*/
       _visualization->updateVisualizerAttribute(surface._transparency, time);
 
       rAndT rT = rotateModelica2OSG(
