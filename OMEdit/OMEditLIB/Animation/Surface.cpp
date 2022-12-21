@@ -668,19 +668,175 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
  *
  * @details Surface geometry // TODO: Document
  *
- * constexpr itype i = 0; // index of first adjacent facet for top right vertex
- * constexpr itype j = 2; // index of first adjacent facet for top left vertex
- * constexpr itype k = 4; // index of first adjacent facet for bottom right vertex
- * constexpr itype l = 1; // index of second adjacent facet for top left vertex
- * constexpr itype m = 3; // index of second adjacent facet for bottom left vertex
- * constexpr itype n = 5; // index of second adjacent facet for bottom right vertex
+ * Parametric surface: u & v dimensions.
+ *
+ * TODO: Explain features defined by enums.
+ *
+ * A degenerate surface is rendered either as a line strip or as a single point,
+ * otherwise it is built using a counter-clockwise triangle strip with wrapping.
+ * FIXME: Unless it is rendered faceted (in this case, it is built using
+ * separate counter-clockwise triangles, that is, with unshared vertices)!
+ * TODO: Explain that triangles are used instead of quadrilaterals in order to
+ * ensure planar primitive polygons thus correct rendering in all cases
+ * (see https://www.glprogramming.com/red/chapter02.html#name2).
+ * TODO: Explain that wrapping means
+ * linking together triangle substrips
+ * or connecting consecutive substrips
+ * and can be done either with degenerate triangles
+ * (see https://www.learnopengles.com/tag/triangle-strips)
+ * or using a primitive restart index
+ * (see https://www.khronos.org/opengl/wiki/Vertex_Rendering#Primitive_Restart)
+ * for the purpose, the latter being more memory efficient than the former
+ * but not necessarily available in all drivers (introduced in GL version 3.1).
+ * FIXME: Should that be called jumping/linking/connecting instead of wrapping?
+ *
+
+        v
+        ^
+        |
+        |  ....
+        |  :  :
+        |  :  v
+      2 |------------
+        |\    |\    |
+        | \ 4 | \ 8 |
+        |  \  |  \  |
+        | 3 \ | 7 \ |
+        |    \|    \|
+      1 |------------
+        |\    |\    |
+        | \ 2 | \ 6 |
+        |  \  |  \  |
+        | 1 \ | 5 \ |
+        |    \|    \|
+      0 ----------------> u
+        0     1     2
+              :  ^
+              :  :
+              ....
+
+ *
+ * When averaging normals, adjacent facets of a vertex are taken in this order:
+ *
+
+              v
+              ^
+              |
+        -------------
+        |\    |\    |
+        | \ l | \   |
+        |  \  |  \  |
+        | j \ | i \ |
+        |    \|    \|
+        ------X---------> u
+        |\    |\    |
+        | \ m | \ n |
+        |  \  |  \  |
+        |   \ | k \ |
+        |    \|    \|
+        -------------
+
+ *
+ * In faceted rendering, however, only two adjacent facets are to be considered:
+ * FIXME: No, each facet has its own normal (there is no averaging), it is just
+ * that we need to store them in an array, and it is done like shown in schema!
+ *
+
+              v
+              ^
+              |
+        ------X-----X
+        |\    |\    |
+        | \   | \ l |
+        |  \  |  \  |
+        |   \ | i \ |
+        |    \|    \|
+        ------X-----X---> u
+        |\    |\    |
+        | \   | \   |
+        |  \  |  \  |
+        |   \ |   \ |
+        |    \|    \|
+        -------------
+
+ *
+ * constexpr itype i = 0; // index of first adjacent facet for bottom left vertex
+ * constexpr itype j = 2; // index of first adjacent facet for bottom right vertex
+ * constexpr itype k = 4; // index of first adjacent facet for top left vertex
+ * constexpr itype l = 1; // index of second adjacent facet for bottom right vertex
+ * constexpr itype m = 3; // index of second adjacent facet for top right vertex
+ * constexpr itype n = 5; // index of second adjacent facet for top left vertex
+ *
+
+ *
+ * Sharp edges can be obtained by repeated vertices, meaning,
+ * by manually introducing degenerate triangles in the strip.
+ * This technique also allows inverting front and back faces.
+ * Discontinuous surfaces can be drawn using this same trick.
+ *
+
+ *
+ * To average the adjacent facet normals, two kinds of weights can be applied
+ * (see https://www.bytehazard.com/articles/vertnorm.html for example drawings):
+ * - area:  TODO: Explain what it is and when it is effective.
+ * - angle: TODO: Explain what it is and when it is effective.
+ * Considering the two edges of a triangle along the u and v directions,
+ * respectively denoted as vectors du and dv in the following schema:
+ *
+
+        ^
+        |\
+        | \
+     dv |  \
+        |   \
+        |    \
+        X----->
+          du
+
+          du
+        <-----X
+         \    |
+          \   |
+           \  | dv
+            \ |
+             \|
+              v
+
+ *
+ * Then the normal of the triangle is
+ * defined as the normalized cross product between du and dv:
+ *     (du ^ dv) / || du ^ dv ||
+ * The area of the triangle is therefore equivalent to
+ * half the norm of the cross product between du and dv:
+ *     || du ^ dv || / 2
+ * The angle of the corner formed at the vertex X is computed as
+ * the arc-cosine of the normalized dot product between du and dv:
+ *     acos((du . dv) / (|| du || * || dv ||))
+ * (obviously, in general this angle is not a right angle)
+ * and the angle at the other vertices of this same triangle
+ * is obtained similarly using the remaining edge (du - dv).
+ *
+ * Due to round-off errors, length = 0 or acos = nan
+ *
+
  *
  * const ftype area1 = length1 / 2; // surface area = triangle area = half the norm of the cross product
  *
  * const ftype angle11 = std::acos(length11 > 0 ? length11 < std::abs(dot11) ? dot11 / std::abs(dot11) : dot11 / length11 : 0); // corner angle = angle of the corner of the polygon at the vertex
  *
+
+ *
+ * TODO: Explain overflow checks.
+ * Care is taken to check for overflow in integer operations
+ * and to disallow them before actual computations to avoid
+ * implementation-defined or undefined behavior.
+ *
  * @note @c nutnv = nu * nv never overflows because @c nPoints < @c nFacetsTripled, i.e. nu * nv < 3 * 2 * (nu - 1) * (nv - 1),
  * and one/both of them is/are checked for overflow of the same integer type.
+ *
+
+ *
+ * TODO: Explain typedefs.
  *
  * @note @c itype, @c ftype, @c stype typedefs are not arbitrary, they must satisfy the following constraints:
  * typedef int itype; // Unsigned integers use modulo arithmetic (for wrapping) which is slower than undefined behavior of under/overflow with signed integers,
@@ -694,6 +850,23 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
  * https://github.com/openscenegraph/OpenSceneGraph/commit/6e1866ac1857d3466a236a8ad63f91be39e19c71#diff-e5c13d448896b8697db1363ad34ad746a07e66512af001c8d27b087e334281b4L444
  * It still does in latest version, however it might be something else around this cast that leads to a segmentation fault
  * https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osgUtil/LineSegmentIntersector.cpp#L530
+ *
+
+ *
+ * TODO: Explain data storage, that is, allocation of multidimensional arrays in
+ * contiguous arrays (with pointers overhead)
+ * rather than
+ * ragged arrays (with allocator overhead)
+ * for smaller memory footprint and greater execution speed
+ * (see https://c-faq.com/aryptr/dynmuldimary.html).
+ *
+
+ *
+ * @ref Some general references that might be of relevance:
+ * - OpenGL Programming Guide (Version 1.1):
+ *   https://www.glprogramming.com/red
+ * - OpenSceneGraph Quick Start Guide (3rd Revision):
+ *   https://weber.itn.liu.se/~karlu20/courses/TNM086-2021/labs/models/openscenegraph_quick_start_guide.pdf
  *
 //
 List of relevant references:
@@ -745,7 +918,7 @@ See https://www.learnopengles.com/tag/triangle-strips to making use of index buf
 Enum for two methods to connect consecutive row strips: degenerate triangles, primitive restart index
 Enum for two methods to compute surface normal vectors: faceted, averaged (average with unit weights or weighted by angle between each face and current vertex BUT this requires the true normal which we do not have since this is what we are trying to approximate, so just average with equal weights
 => Ah! In fact there are some methods out there to do that:
- - https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.534.7649&rep=rep1&type=pdf
+ - https://sci-hub.se/10.1080/10867651.1999.10487501
  - https://www.bytehazard.com/articles/vertnorm.html
  - https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2022/ENU/Maya-Modeling/files/GUID-232E99F8-96B4-4870-8BA0-4887C1C8F0F2-htm.html
  - https://github.com/pmnuckels/wnormals
