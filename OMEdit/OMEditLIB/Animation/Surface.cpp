@@ -1182,13 +1182,13 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     facetsNormals = new Vec3Array();
   }
 
-  vertices->reserve(nVertices);
-  normals ->reserve(nVertices);
-  colors  ->reserve(nVertices);
-  texels  ->reserve(nVertices);
+  vertices->reserveArray(nVertices);
+  normals ->reserveArray(nVertices);
+  colors  ->reserveArray(nVertices);
+  texels  ->reserveArray(nVertices);
   if (facets) {
-    facetsCenters->reserve(nFacets);
-    facetsNormals->reserve(nFacets);
+    facetsCenters->reserveArray(nFacets);
+    facetsNormals->reserveArray(nFacets);
   }
 
   if (degenerated) {
@@ -1517,7 +1517,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
       }
     } else {
-      colors->clear();
+      colors->trim();
       colors->setBinding(osg::Array::BIND_OVERALL);
       colors->push_back(Vec4(colorR, colorG, colorB, opacity));
     }
