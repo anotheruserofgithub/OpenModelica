@@ -56,7 +56,7 @@ public:
   SurfaceObject& operator=(const SurfaceObject&) = default;
   SurfaceObject* asSurface() override final {return this;}
   void dumpVisualizerAttributes() const override;
-  osg::Geometry* drawGeometry() const;
+  osg::Geometry* drawGeometry() const __attribute__((optimize(2)));
 public:
   typedef int itype;
   typedef double ftype;
@@ -71,15 +71,15 @@ private: // TODO: Remove
   void fakeTorus         (const itype nu, const itype nv,
                           ftype* Vx, ftype* Vy, ftype* Vz,
                           ftype* Nx, ftype* Ny, ftype* Nz,
-                          ftype* Cr, ftype* Cg, ftype* Cb) const;
+                          ftype* Cr, ftype* Cg, ftype* Cb) const __attribute__((optimize(2)));
   void fakeRectangularBox(const itype nu, const itype nv,
                           ftype* Vx, ftype* Vy, ftype* Vz,
                           ftype* Nx, ftype* Ny, ftype* Nz,
-                          ftype* Cr, ftype* Cg, ftype* Cb) const;
+                          ftype* Cr, ftype* Cg, ftype* Cb) const __attribute__((optimize(2)));
   void fakeSphericalArc  (const itype nu, const itype nv,
                           ftype* Vx, ftype* Vy, ftype* Vz,
                           ftype* Nx, ftype* Ny, ftype* Nz,
-                          ftype* Cr, ftype* Cg, ftype* Cb) const;
+                          ftype* Cr, ftype* Cg, ftype* Cb) const __attribute__((optimize(2)));
 private:
   SurfaceClosenessCheckState mClosenessCheckState;
   SurfaceStripsWrappingMethod mStripsWrappingMethod;
