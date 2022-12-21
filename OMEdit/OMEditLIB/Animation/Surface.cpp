@@ -828,7 +828,7 @@ do {                                            \
   const bool line = (nu == one || nv == one) && !point; // Surface degenerated to a line strip
 
   const bool degenerated = point || line; // Surface degenerated to a point or a line
-  const bool objects  = !degenerated && !normalized; // Objects allocation
+  const bool objects  = !degenerated && !normalized; // Allocation required for auxiliary objects
   const bool closed   = objects && mClosenessCheckState   == SurfaceClosenessCheckState::active; // Checked for closeness
   const bool faceted  = objects && mNormalsAverageWeights == SurfaceNormalsAverageWeights::none; // Faceted  rendering
   const bool averaged = objects && mNormalsAverageWeights != SurfaceNormalsAverageWeights::none; // Averaged rendering
@@ -953,9 +953,9 @@ do {                                            \
   constexpr itype nc = 3; // Number of coordinates
 
   const itype ne = one + normalized + multicolored; // Number of user-provided elements
-  const itype na = objects ? averaged ? 6 : 2 : 0;  // Number of considered adjacent facets
+  const itype nf = objects ? averaged ? 6 : 2 : 0;  // Number of needed adjacent facets
   const itype nw = objects ? area + angle : 0;      // Number of averaging weights
-  const itype no = objects ? nc + nw : 0;           // Number of objects
+  const itype no = objects ? nc + nw : 0;           // Number of auxiliary objects
 
   {
     try {
@@ -985,21 +985,21 @@ do {                                            \
 
   if (objects) {
     try {
-      const ltype notna = no * na;
-      if (lmax / nu < notna) {
-        throw std::overflow_error("[Array size for objects] Overflow of no * na * nu");
+      const ltype notnf = no * nf;
+      if (lmax / nu < notnf) {
+        throw std::overflow_error("[Array size for objects] Overflow of no * nf * nu");
       }
-      const ltype notnatnu = notna * nu;
-      if (lmax / nv < notnatnu) {
-        throw std::overflow_error("[Array size for objects] Overflow of no * na * nu * nv");
+      const ltype notnftnu = notnf * nu;
+      if (lmax / nv < notnftnu) {
+        throw std::overflow_error("[Array size for objects] Overflow of no * nf * nu * nv");
       }
     } catch (const std::overflow_error& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Too many vertices for surface \"%1\" "
-                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6.")
+                                                                "(no = %2, nf = %3, nu = %4, nv = %5):\n%6.")
                                                                 .arg(id)
                                                                 .arg(no)
-                                                                .arg(na)
+                                                                .arg(nf)
                                                                 .arg(nu)
                                                                 .arg(nv)
                                                                 .arg(ex.what()),
@@ -1014,7 +1014,7 @@ do {                                            \
   ftype*** E = nullptr;
   ftype*** O = nullptr;
 
-  ftype*** A = nullptr;
+  ftype*** F = nullptr;
   ftype*** W = nullptr;
 
   {
@@ -1058,31 +1058,31 @@ do {                                            \
   }
 
   if (objects) {
-    const ltype notna = no * na;
-    const ltype notnatnutnv = notna * nutnv;
+    const ltype notnf = no * nf;
+    const ltype notnftnutnv = notnf * nutnv;
 
     ftype*** Oo  = nullptr;
-    ftype** Ooa  = nullptr;
-    ftype* Ooauv = nullptr;
+    ftype** Oof  = nullptr;
+    ftype* Oofuv = nullptr;
 
     try {
       Oo  = new ftype**[no];
-      Ooa  = new ftype*[notna];
-      Ooauv = new ftype[notnatnutnv]{0};
+      Oof  = new ftype*[notnf];
+      Oofuv = new ftype[notnftnutnv]{0};
     } catch (const std::bad_alloc& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Not enough memory to allocate objects for surface \"%1\" "
-                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6.")
+                                                                "(no = %2, nf = %3, nu = %4, nv = %5):\n%6.")
                                                                 .arg(id)
                                                                 .arg(no)
-                                                                .arg(na)
+                                                                .arg(nf)
                                                                 .arg(nu)
                                                                 .arg(nv)
                                                                 .arg(ex.what()),
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
-      delete[] Ooauv;
-      delete[] Ooa;
+      delete[] Oofuv;
+      delete[] Oof;
       delete[] Oo;
       delete[] E[0][0];
       delete[] E[0];
@@ -1090,17 +1090,17 @@ do {                                            \
       SURFACE_GEOMETRY_RETURN();
     }
 
-    for (itype o = 0; o < no; o++, Ooa += na) {
-      Oo[o] = Ooa;
-      for (itype a = 0; a < na; a++, Ooauv += nutnv) {
-        Oo[o][a] = Ooauv;
+    for (itype o = 0; o < no; o++, Oof += nf) {
+      Oo[o] = Oof;
+      for (itype f = 0; f < nf; f++, Oofuv += nutnv) {
+        Oo[o][f] = Oofuv;
       }
     }
 
     O = Oo;
 
-    A = O;
-    W = A + nc;
+    F = O;
+    W = F + nc;
   }
 
 #define SURFACE_GEOMETRY_DELETE()               \
@@ -1378,17 +1378,17 @@ do {                                            \
           if (!normalized) {
             if (!averaged) {
               for (itype c = 0; c < nc; c++) {
-                A[c][i][nv * up0 + vp0] = normal1[c];
-                A[c][l][nv * up1 + vp1] = normal2[c];
+                F[c][i][nv * up0 + vp0] = normal1[c];
+                F[c][l][nv * up1 + vp1] = normal2[c];
               }
             } else {
               for (itype c = 0; c < nc; c++) {
-                A[c][i][nv * up0 + vp0] = normal1[c];
-                A[c][j][nv * up1 + vp0] = normal1[c];
-                A[c][k][nv * up0 + vp1] = normal1[c];
-                A[c][l][nv * up1 + vp0] = normal2[c];
-                A[c][m][nv * up1 + vp1] = normal2[c];
-                A[c][n][nv * up0 + vp1] = normal2[c];
+                F[c][i][nv * up0 + vp0] = normal1[c];
+                F[c][j][nv * up1 + vp0] = normal1[c];
+                F[c][k][nv * up0 + vp1] = normal1[c];
+                F[c][l][nv * up1 + vp0] = normal2[c];
+                F[c][m][nv * up1 + vp1] = normal2[c];
+                F[c][n][nv * up0 + vp1] = normal2[c];
               }
               itype w = 0;
               if (area) {
@@ -1451,12 +1451,12 @@ do {                                            \
                   Vy[nv * u + nvt0] == Vy[nv * u + nvm1] &&
                   Vz[nv * u + nvt0] == Vz[nv * u + nvm1]) {
                 for (itype c = 0; c < nc; c++) {
-                  A[c][i][nv * u + nvm1] = A[c][i][nv * u + nvt0];
-                  A[c][l][nv * u + nvm1] = A[c][l][nv * u + nvt0];
-                  A[c][j][nv * u + nvm1] = A[c][j][nv * u + nvt0];
-                  A[c][m][nv * u + nvt0] = A[c][m][nv * u + nvm1];
-                  A[c][k][nv * u + nvt0] = A[c][k][nv * u + nvm1];
-                  A[c][n][nv * u + nvt0] = A[c][n][nv * u + nvm1];
+                  F[c][i][nv * u + nvm1] = F[c][i][nv * u + nvt0];
+                  F[c][l][nv * u + nvm1] = F[c][l][nv * u + nvt0];
+                  F[c][j][nv * u + nvm1] = F[c][j][nv * u + nvt0];
+                  F[c][m][nv * u + nvt0] = F[c][m][nv * u + nvm1];
+                  F[c][k][nv * u + nvt0] = F[c][k][nv * u + nvm1];
+                  F[c][n][nv * u + nvt0] = F[c][n][nv * u + nvm1];
                 }
                 for (itype w = 0; w < nw; w++) {
                   W[w][i][nv * u + nvm1] = W[w][i][nv * u + nvt0];
@@ -1473,12 +1473,12 @@ do {                                            \
                   Vy[nv * nut0 + v] == Vy[nv * num1 + v] &&
                   Vz[nv * nut0 + v] == Vz[nv * num1 + v]) {
                 for (itype c = 0; c < nc; c++) {
-                  A[c][i][nv * num1 + v] = A[c][i][nv * nut0 + v];
-                  A[c][k][nv * num1 + v] = A[c][k][nv * nut0 + v];
-                  A[c][n][nv * num1 + v] = A[c][n][nv * nut0 + v];
-                  A[c][l][nv * nut0 + v] = A[c][l][nv * num1 + v];
-                  A[c][j][nv * nut0 + v] = A[c][j][nv * num1 + v];
-                  A[c][m][nv * nut0 + v] = A[c][m][nv * num1 + v];
+                  F[c][i][nv * num1 + v] = F[c][i][nv * nut0 + v];
+                  F[c][k][nv * num1 + v] = F[c][k][nv * nut0 + v];
+                  F[c][n][nv * num1 + v] = F[c][n][nv * nut0 + v];
+                  F[c][l][nv * nut0 + v] = F[c][l][nv * num1 + v];
+                  F[c][j][nv * nut0 + v] = F[c][j][nv * num1 + v];
+                  F[c][m][nv * nut0 + v] = F[c][m][nv * num1 + v];
                 }
                 for (itype w = 0; w < nw; w++) {
                   W[w][i][nv * num1 + v] = W[w][i][nv * nut0 + v];
@@ -1494,13 +1494,13 @@ do {                                            \
           for (itype u = 0; u < nu; u++) {
             for (itype v = 0; v < nv; v++) {
               ftype normal[nc] = {0};
-              for (itype a = 0; a < na; a++) {
+              for (itype f = 0; f < nf; f++) {
                 ftype weight = 1;
                 for (itype w = 0; w < nw; w++) {
-                  weight *= W[w][a][nv * u + v];
+                  weight *= W[w][f][nv * u + v];
                 }
                 for (itype c = 0; c < nc; c++) {
-                  normal[c] += A[c][a][nv * u + v] * weight;
+                  normal[c] += F[c][f][nv * u + v] * weight;
                 }
               }
               const ftype length = std::sqrt(normal[x] * normal[x] + normal[y] * normal[y] + normal[z] * normal[z]);
@@ -1521,8 +1521,8 @@ do {                                            \
               ftype normal1[nc] = {0};
               ftype normal2[nc] = {0};
               for (itype c = 0; c < nc; c++) {
-                normal1[c] += A[c][i][nv * up0 + vp0];
-                normal2[c] += A[c][l][nv * up1 + vp1];
+                normal1[c] += F[c][i][nv * up0 + vp0];
+                normal2[c] += F[c][l][nv * up1 + vp1];
               }
               normals->insert(normals->end(), three, Vec3(normal1[x], normal1[y], normal1[z]));
               normals->insert(normals->end(), three, Vec3(normal2[x], normal2[y], normal2[z]));
