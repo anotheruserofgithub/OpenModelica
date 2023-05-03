@@ -41,6 +41,7 @@
 #include <osg/Array>
 #include <osg/Geometry>
 
+enum class SurfacePolygonsRasterMode {plain = 0b00, wireframe = 0b01, pointcloud = 0b10};
 enum class SurfaceClosenessCheckState {inactive = 0b0, active = 0b1};
 enum class SurfaceStripsWrappingMethod {restart = 0b0, degenerate = 0b1};
 enum class SurfaceNormalsAverageWeights {none = 0b000, equal = 0b001, area = 0b010, angle = 0b100, bothAreaAndAngle = 0b110};
@@ -83,6 +84,7 @@ private: // TODO: Remove
                           ftype* Nx, ftype* Ny, ftype* Nz,
                           ftype* Cr, ftype* Cg, ftype* Cb) const;
 private:
+  SurfacePolygonsRasterMode mPolygonsRasterMode;
   SurfaceClosenessCheckState mClosenessCheckState;
   SurfaceStripsWrappingMethod mStripsWrappingMethod;
   SurfaceNormalsAverageWeights mNormalsAverageWeights;

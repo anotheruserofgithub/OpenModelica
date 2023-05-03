@@ -73,6 +73,7 @@ AbstractVisualProperties::Transparency::Type VisualProperties<SurfaceObject>::Tr
 
 SurfaceObject::SurfaceObject()
     : AbstractVisualizerObjectWithVisualProperties(VisualizerType::surface),
+      mPolygonsRasterMode(SurfacePolygonsRasterMode::plain),
       mClosenessCheckState(SurfaceClosenessCheckState::active),
       mStripsWrappingMethod(SurfaceStripsWrappingMethod::degenerate),
       mNormalsAverageWeights(SurfaceNormalsAverageWeights::bothAreaAndAngle),
@@ -845,6 +846,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const bool vertexes =                 mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::vertices; // Normals animated for vertices
   const bool facets   = !degenerated && mNormalsAnimationTypes & SurfaceNormalsAnimationTypes::facets;   // Normals animated for facets
 
+  const bool clouded  =                            mPolygonsRasterMode == SurfacePolygonsRasterMode::pointcloud; // Polygons rasterized as point cloud
+  const bool outlined = (!clouded && wireframe) || mPolygonsRasterMode == SurfacePolygonsRasterMode::wireframe;  // Polygons rasterized as wireframe
+
   const bool degenerate = !degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::degenerate; // Degenerate triangles
   const bool restart    = !degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
 
@@ -1159,17 +1163,20 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   /* Attributes */
   constexpr osg::StateAttribute::GLModeValue mode = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
   const osg::ref_ptr<osg::StateSet> ss = geometry->getOrCreateStateSet();
-  if (point) {
+  if (point || clouded) {
     ss->setAttributeAndModes(new osg::Point(ps), mode);
   }
-  if (line || wireframe || vertexes || facets) {
+  if (line || outlined || vertexes || facets) {
     ss->setAttributeAndModes(new osg::LineWidth(lw), mode);
   }
   if (restart) {
     ss->setAttributeAndModes(new osg::PrimitiveRestartIndex(ri), mode);
     ss->setMode(GL_PRIMITIVE_RESTART, mode);
   }
-  if (wireframe) {
+  if (clouded) {
+    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::Face::FRONT_AND_BACK, osg::PolygonMode::Mode::POINT), mode);
+  }
+  if (outlined) {
     ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::Face::FRONT_AND_BACK, osg::PolygonMode::Mode::LINE), mode);
   }
   if (doublesided) {
