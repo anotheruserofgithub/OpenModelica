@@ -465,8 +465,8 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   const     ftype pres = (pmax - pmin) / H; // Resolution on latitude
   const     ftype tres = (tmax - tmin) / L; // Resolution on longitude
   constexpr ftype zoff = offset ? rmid : 0; // Offset on altitude
-  constexpr ftype cpmid = bevel ? 1 : std::cos(pmid); // Middle latitude's cosine
-  constexpr ftype spmid = bevel ? 0 : std::sin(pmid); // Middle latitude's sine
+  const     ftype cpmid = bevel ? 1 : std::cos(pmid); // Middle latitude's cosine
+  const     ftype spmid = bevel ? 0 : std::sin(pmid); // Middle latitude's sine
   // Attributes
   const ftype colorR = _color[0].exp;
   const ftype colorG = _color[1].exp;
