@@ -1637,6 +1637,7 @@ void VariablesWidget::updateVariablesTreeHelper(QMdiSubWindow *pSubWindow)
    * When active PlotWindow is changed.
    * When active PlotWindow variables are updated.
    * When clearing the PlotWindow curves
+   * TODO uncheck all variables when the last plot window is closed
    */
   pauseVisualization();
   if (!pSubWindow) {
@@ -1986,8 +1987,13 @@ void VariablesWidget::plotVariables(const QModelIndex &index, qreal curveThickne
             pPlotWindow->toggleSign(pPlotCurve, true);
           }
         } else {/* ie. (pPlotWindow->getPlotType() == PlotWindow::PLOTARRAY)*/
-          double timePercent = mpTimeTextBox->text().toDouble();
-          pPlotWindow->plotArray(timePercent, pPlotCurve);
+          try {
+          double timePercent = mpTimeTextBox->text().toDouble(); // TODO use visTime instead
+          pPlotWindow->plotArray(timePercent, pPlotCurve); // TODO uncheck variable if exception thrown before any curve drawn
+          } catch (PlotException &e) {
+            checkVariable(index, false);
+            throw e;
+          }
         }
         /* Ticket:4231
          * Only update the variables browser value and unit when updating some curve not when checking/unchecking variable.
@@ -2391,6 +2397,35 @@ void VariablesWidget::updateBrowserTime(double time)
  */
 void VariablesWidget::updatePlotWindows()
 {
+  /*VariablesTreeItem *pVariablesTreeItem = findVariablesTreeItem(variable, mpRootVariablesTreeItem);
+  if (pVariablesTreeItem) {
+    // if we are going to remove an active VariablesTreeItem then we should disable the visualization controls.
+    if (pVariablesTreeItem->isActive()) {
+    }
+  }*/
+  // FIXME uncheck array variable when error trying an array parametric plot by shift-selecting from one simulation then selecting from another simulation
+  // FIXME or check it after navigating back to the array parametric plot because the shift-selected variable is kept in memory even if not plotted
+  // FIXME set x-axis label for array parametric plot to be the name of the shift-selected variable (parametric plot adds bold vs in each variable name...)
+  // FIXME add unit in parentheses after variable name in array plots and array parametric plots like in other plot types
+  // FIXME array plot tooltip show value with time unit (s) while it is an array index instead
+  // FIXME array plot erases variables from other result files when time is changed
+  // FIXME is it possible to display plots as a mosaique? -> must update all plots => yes in View > Windows > Cascade Windows (or Tile Windows H/V)
+  // FIXME even if subwindow is maximized, other subwindows can "Stay on top" of the current subwindow in tabbed view mode => much easier to just update all!
+  /*switch (MainWindow::instance()->getPlotWindowContainer()->viewMode()) {
+    case QMdiArea::SubWindowView:
+        MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, QString("SubWindowView"), Helper::scriptingKind, Helper::errorLevel));
+      break;
+    case QMdiArea::TabbedView:
+        MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, QString("TabbedView"), Helper::scriptingKind, Helper::errorLevel));
+      break;
+    default:
+      break;
+  }*/
+  /*if (MainWindow::instance()->getPlotWindowContainer()->currentSubWindow()->isMaximized()) {
+    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, QString("maximized"), Helper::scriptingKind, Helper::errorLevel));
+  } else {
+    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, QString("NOT maximized"), Helper::scriptingKind, Helper::errorLevel));
+  }*/
   double time = mpTimeManager->getVisTime();
   foreach (QMdiSubWindow *pSubWindow, MainWindow::instance()->getPlotWindowContainer()->subWindowList(QMdiArea::StackingOrder)) {
     try {
