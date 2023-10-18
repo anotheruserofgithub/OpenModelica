@@ -456,6 +456,7 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   assert(tmax - tmin <= 2 * pi);
   assert(pmax <= +pi / 2);
   assert(pmin >= -pi / 2);
+  assert(rmax <= std::numeric_limits<ftype>::max());
   assert(rmin >= (bevel ? 0 : rmax * std::sin((pmax - pmin) / 2)));
   // Helpers
   constexpr ftype rmid = (rmax + rmin) / 2; // Middle altitude
