@@ -449,22 +449,26 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   constexpr bool bevel = false; // If true, the bevel is due to an angular slice at pmax and pmin, else the height is constant from rmax
   constexpr bool offset = true; // If true, the surface is shifted by {0, 0, (rmin + rmax) / 2}, else it is centered at the frame origin
   constexpr ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
+  // Ranges
+  constexpr ftype rdif = rmax - rmin; // Difference in altitude
+  constexpr ftype pdif = pmax - pmin; // Difference in latitude
+  constexpr ftype tdif = tmax - tmin; // Difference in longitude
   // Boundaries
   assert(tmin < tmax);
   assert(pmin < pmax);
   assert(rmin < rmax);
-  assert(tmax - tmin <= 2 * pi);
+  assert(tdif <= +pi * 2);
   assert(pmax <= +pi / 2);
   assert(pmin >= -pi / 2);
   assert(rmax <= std::numeric_limits<ftype>::max());
-  assert(rmin >= (bevel ? 0 : rmax * std::sin((pmax - pmin) / 2)));
+  assert(rmin >= (bevel ? 0 : rmax * std::sin(pdif / 2)));
   // Helpers
-  constexpr ftype rmid = (rmax - rmin) / 2 + rmin; // Middle altitude
-  constexpr ftype pmid = (pmax - pmin) / 2 + pmin; // Middle latitude
-  constexpr ftype tmid = (tmax - tmin) / 2 + tmin; // Middle longitude
-  const     ftype rres = (rmax - rmin) / W; // Resolution on altitude
-  const     ftype pres = (pmax - pmin) / H; // Resolution on latitude
-  const     ftype tres = (tmax - tmin) / L; // Resolution on longitude
+  constexpr ftype rmid = rdif / 2 + rmin; // Middle altitude
+  constexpr ftype pmid = pdif / 2 + pmin; // Middle latitude
+  constexpr ftype tmid = tdif / 2 + tmin; // Middle longitude
+  const     ftype rres = rdif / W; // Resolution on altitude
+  const     ftype pres = pdif / H; // Resolution on latitude
+  const     ftype tres = tdif / L; // Resolution on longitude
   constexpr ftype zoff = offset ? rmid : 0; // Offset on altitude
   const     ftype cpmid = bevel ? 1 : std::cos(pmid); // Middle latitude's cosine
   const     ftype spmid = bevel ? 0 : std::sin(pmid); // Middle latitude's sine
