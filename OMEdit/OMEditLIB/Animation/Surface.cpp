@@ -447,7 +447,7 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   constexpr ftype tmin = -pi / 4; // Minimum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
   constexpr ftype tmax = +pi / 4; // Maximum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
   constexpr bool bevel = false; // If true, the bevel is due to an angular slice at pmax and pmin, else the height is constant from rmax
-  constexpr bool offset = true; // If true, the surface is shifted by [0, 0, (rmax + rmin) / 2], else it is centered at the frame origin
+  constexpr bool offset = true; // If true, the surface is shifted by {0, 0, (rmin + rmax) / 2}, else it is centered at the frame origin
   constexpr ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
   // Boundaries
   assert(tmin < tmax);
@@ -459,9 +459,9 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   assert(rmax <= std::numeric_limits<ftype>::max());
   assert(rmin >= (bevel ? 0 : rmax * std::sin((pmax - pmin) / 2)));
   // Helpers
-  constexpr ftype rmid = (rmax + rmin) / 2; // Middle altitude
-  constexpr ftype pmid = (pmax + pmin) / 2; // Middle latitude
-  constexpr ftype tmid = (tmax + tmin) / 2; // Middle longitude
+  constexpr ftype rmid = (rmax - rmin) / 2 + rmin; // Middle altitude
+  constexpr ftype pmid = (pmax - pmin) / 2 + pmin; // Middle latitude
+  constexpr ftype tmid = (tmax - tmin) / 2 + tmin; // Middle longitude
   const     ftype rres = (rmax - rmin) / W; // Resolution on altitude
   const     ftype pres = (pmax - pmin) / H; // Resolution on latitude
   const     ftype tres = (tmax - tmin) / L; // Resolution on longitude
