@@ -185,31 +185,20 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
                                        ftype* Cr, ftype* Cg, ftype* Cb) const
 {
   /* Inspired by https://stackoverflow.com/a/65961094 */
+  // Conditions
+  assert(nu > 0);
+  assert(nv > 0);
+  if (nu > 1 && nu != nv) {
+    constexpr itype max = std::numeric_limits<itype>::max();
+    assert(max / nu >= 3);
+    assert(max - nu * 3 >= 8);
+    assert(nv >= nu * 3 + 8);
+    assert((nv - nu * 3) % 4 == 0);
+  }
   // Dimensions
   const itype W = nu - 1; // Width
   const itype H = nu - 1; // Height
-  const itype L = nu > 1 ? (nv == nu ? 0 : (nv - nu * 3) / 4 - 1) : nv - 1; // Length
-  // Conditions
-  const itype Wp1 = W + 1;
-  const itype Hp1 = H + 1;
-  const itype Lp1 = L + 1;
-  assert(nu > 0);
-  assert(nv > 0);
-  if (H == 0) {
-    assert(Wp1 == Hp1);
-    assert(Hp1 == nu);
-    assert(Lp1 == nv);
-  } else if (L == 0) {
-    assert(nv == nu);
-    assert(Wp1 == Hp1);
-    assert(Hp1 == nu);
-    assert(Lp1 == 1);
-  } else {
-    assert(nv >= nu * 3 + 4);
-    assert(Wp1 == Hp1);
-    assert(Hp1 == nu);
-    assert(Lp1 * 4 + Wp1 * 2 + Hp1 * 1 == nv);
-  }
+  const itype L = nu > 1 ? nu != nv ? (nv - nu * 3) / 4 - 1 : 0 : nv - 1; // Length
   // Parameters
   constexpr ftype xscale = 1;
   constexpr ftype yscale = 1;
@@ -413,31 +402,20 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
                                      ftype* Cr, ftype* Cg, ftype* Cb) const
 {
   /* Inspired by https://stackoverflow.com/a/65961094 */
+  // Conditions
+  assert(nu > 0);
+  assert(nv > 0);
+  if (nu > 1 && nu != nv) {
+    constexpr itype max = std::numeric_limits<itype>::max();
+    assert(max / nu >= 3);
+    assert(max - nu * 3 >= 8);
+    assert(nv >= nu * 3 + 8);
+    assert((nv - nu * 3) % 4 == 0);
+  }
   // Dimensions
   const itype W = nu - 1; // Width
   const itype H = nu - 1; // Height
-  const itype L = nu > 1 ? (nv == nu ? 0 : (nv - nu * 3) / 4 - 1) : nv - 1; // Length
-  // Conditions
-  const itype Wp1 = W + 1;
-  const itype Hp1 = H + 1;
-  const itype Lp1 = L + 1;
-  assert(nu > 0);
-  assert(nv > 0);
-  if (H == 0) {
-    assert(Wp1 == Hp1);
-    assert(Hp1 == nu);
-    assert(Lp1 == nv);
-  } else if (L == 0) {
-    assert(nv == nu);
-    assert(Wp1 == Hp1);
-    assert(Hp1 == nu);
-    assert(Lp1 == 1);
-  } else {
-    assert(nv >= nu * 3 + 4);
-    assert(Wp1 == Hp1);
-    assert(Hp1 == nu);
-    assert(Lp1 * 4 + Wp1 * 2 + Hp1 * 1 == nv);
-  }
+  const itype L = nu > 1 ? nu != nv ? (nv - nu * 3) / 4 - 1 : 0 : nv - 1; // Length
   // Parameters
   constexpr ftype pi = M_PI;
   constexpr ftype rmin = 1;       // Minimum altitude (radial distance r as geographic altitude) in [0, +inf)
