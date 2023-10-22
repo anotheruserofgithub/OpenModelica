@@ -800,8 +800,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   if (nu < one || nv < one) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                          QString(QObject::tr("A dimension is empty for surface \"%1\" "
-                                                              "(nu = %2, nv = %3)."))
+                                                          QObject::tr("A dimension is empty for surface \"%1\" "
+                                                              "(nu = %2, nv = %3).")
                                                               .arg(id)
                                                               .arg(nu)
                                                               .arg(nv),
@@ -923,8 +923,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     }
   } catch (const std::overflow_error& ex) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                          QString(QObject::tr("Too many vertices for surface \"%1\" "
-                                                              "(nu = %2, nv = %3):\n%4."))
+                                                          QObject::tr("Too many vertices for surface \"%1\" "
+                                                              "(nu = %2, nv = %3):\n%4.")
                                                               .arg(id)
                                                               .arg(nu)
                                                               .arg(nv)
@@ -959,8 +959,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
     } catch (const std::overflow_error& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                            QString(QObject::tr("Too many vertices for surface \"%1\" "
-                                                                "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6."))
+                                                            QObject::tr("Too many vertices for surface \"%1\" "
+                                                                "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6.")
                                                                 .arg(id)
                                                                 .arg(ne)
                                                                 .arg(nc)
@@ -985,8 +985,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
     } catch (const std::overflow_error& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                            QString(QObject::tr("Too many vertices for surface \"%1\" "
-                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6."))
+                                                            QObject::tr("Too many vertices for surface \"%1\" "
+                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6.")
                                                                 .arg(id)
                                                                 .arg(no)
                                                                 .arg(na)
@@ -1027,8 +1027,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
     } catch (const std::bad_alloc& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                            QString(QObject::tr("Not enough memory to allocate elements for surface \"%1\" "
-                                                                "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6."))
+                                                            QObject::tr("Not enough memory to allocate elements for surface \"%1\" "
+                                                                "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6.")
                                                                 .arg(id)
                                                                 .arg(ne)
                                                                 .arg(nc)
@@ -1066,8 +1066,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       }
     } catch (const std::bad_alloc& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
-                                                            QString(QObject::tr("Not enough memory to allocate objects for surface \"%1\" "
-                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6."))
+                                                            QObject::tr("Not enough memory to allocate objects for surface \"%1\" "
+                                                                "(no = %2, na = %3, nu = %4, nv = %5):\n%6.")
                                                                 .arg(id)
                                                                 .arg(no)
                                                                 .arg(na)
