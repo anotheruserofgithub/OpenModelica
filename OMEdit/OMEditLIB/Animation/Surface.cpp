@@ -453,15 +453,6 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   constexpr ftype rdif = rmax - rmin; // Difference in altitude
   constexpr ftype pdif = pmax - pmin; // Difference in latitude
   constexpr ftype tdif = tmax - tmin; // Difference in longitude
-  // Boundaries
-  assert(tmin < tmax);
-  assert(pmin < pmax);
-  assert(rmin < rmax);
-  assert(tdif <= +pi * 2);
-  assert(pmax <= +pi / 2);
-  assert(pmin >= -pi / 2);
-  assert(rmax <= std::numeric_limits<ftype>::max());
-  assert(rmin >= (bevel ? 0 : rmax * std::sin(pdif / 2)));
   // Helpers
   constexpr ftype rmid = rdif / 2 + rmin; // Middle altitude
   constexpr ftype pmid = pdif / 2 + pmin; // Middle latitude
@@ -472,6 +463,15 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   constexpr ftype zoff = offset ? rmid : 0; // Offset on altitude
   const     ftype cpmid = bevel ? 1 : std::cos(pmid); // Middle latitude's cosine
   const     ftype spmid = bevel ? 0 : std::sin(pmid); // Middle latitude's sine
+  // Boundaries
+  assert(rmin < rmax);
+  assert(pmin < pmax);
+  assert(tmin < tmax);
+  assert(tdif <= +pi * 2);
+  assert(pmax <= +pi / 2);
+  assert(pmin >= -pi / 2);
+  assert(rmax <= std::numeric_limits<ftype>::max());
+  assert(rmin >= (bevel ? 0 : rmax * std::sin(pdif / 2) / std::cos(pmid)));
   // Attributes
   const ftype colorR = _color[0].exp;
   const ftype colorG = _color[1].exp;
