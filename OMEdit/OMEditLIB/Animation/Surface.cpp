@@ -769,6 +769,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 {
   osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
 
+#define SURFACE_GEOMETRY_RETURN()               \
+  return geometry.release();
+
 #define SURFACE_DRAW_SPHERICAL_ARC   1
 #define SURFACE_DRAW_RECTANGULAR_BOX 0
 #define SURFACE_DRAW_TORUS           0
@@ -807,7 +810,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                               .arg(nv),
                                                           Helper::scriptingKind,
                                                           Helper::errorLevel));
-    return geometry.release();
+    SURFACE_GEOMETRY_RETURN();
   }
 
   const ftype ps = mPointSize; // Point size
@@ -931,7 +934,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                               .arg(ex.what()),
                                                           Helper::scriptingKind,
                                                           Helper::errorLevel));
-    return geometry.release();
+    SURFACE_GEOMETRY_RETURN();
   }
 
   const itype ri = nPoints; // Restart index
@@ -969,7 +972,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                                 .arg(ex.what()),
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
-      return geometry.release();
+      SURFACE_GEOMETRY_RETURN();
     }
   }
 
@@ -995,7 +998,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
                                                                 .arg(ex.what()),
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
-      return geometry.release();
+      SURFACE_GEOMETRY_RETURN();
     }
   }
 
@@ -1040,7 +1043,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       delete[] Eecuv;
       delete[] Eec;
       delete[] Ee;
-      return geometry.release();
+      SURFACE_GEOMETRY_RETURN();
     }
 
     E = Ee;
@@ -1082,13 +1085,25 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       delete[] E[0][0];
       delete[] E[0];
       delete[] E;
-      return geometry.release();
+      SURFACE_GEOMETRY_RETURN();
     }
 
     O = Oo;
 
     A = O;
     W = A + nc;
+  }
+
+#define SURFACE_GEOMETRY_DELETE()               \
+  if (objects) {                                \
+    delete[] O[0][0];                           \
+    delete[] O[0];                              \
+    delete[] O;                                 \
+  }                                             \
+  {                                             \
+    delete[] E[0][0];                           \
+    delete[] E[0];                              \
+    delete[] E;                                 \
   }
 
   ftype** V = nullptr;
@@ -1176,18 +1191,46 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   osg::ref_ptr<osg::PrimitiveSet> indices;
   osg::ref_ptr<Vec3Array> facetsCenters;
   osg::ref_ptr<Vec3Array> facetsNormals;
+  if (!degenerated && !faceted) {
+    indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
+  } else {
+    const osg::PrimitiveSet::Mode mode = point ? osg::PrimitiveSet::POINTS : line ? osg::PrimitiveSet::LINE_STRIP : osg::PrimitiveSet::TRIANGLES;
+    indices = new osg::DrawArrays(mode, zero, nIndices);
+  }
   if (facets) {
     facetsCenters = new Vec3Array();
     facetsNormals = new Vec3Array();
   }
 
-  vertices->reserveArray(nVertices);
-  normals ->reserveArray(nVertices);
-  colors  ->reserveArray(nVertices);
-  texels  ->reserveArray(nVertices);
-  if (facets) {
-    facetsCenters->reserveArray(nFacets);
-    facetsNormals->reserveArray(nFacets);
+  try {
+    vertices->reserveArray(nVertices);
+    normals ->reserveArray(nVertices);
+    texels  ->reserveArray(nVertices);
+    if (multicolored) {
+      colors->reserveArray(nVertices);
+    } else {
+      colors->reserveArray(one);
+      colors->setBinding(osg::Array::BIND_OVERALL);
+    }
+    if (!degenerated && !faceted) {
+      indices->getDrawElements()->reserveElements(nIndices);
+    }
+    if (facets) {
+      facetsCenters->reserveArray(nFacets);
+      facetsNormals->reserveArray(nFacets);
+    }
+  } catch (const std::bad_alloc& ex) {
+    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                          QObject::tr("Not enough memory to allocate arrays for surface \"%1\" "
+                                                              "(nu = %2, nv = %3):\n%4.")
+                                                              .arg(id)
+                                                              .arg(nu)
+                                                              .arg(nv)
+                                                              .arg(ex.what()),
+                                                          Helper::scriptingKind,
+                                                          Helper::errorLevel));
+    SURFACE_GEOMETRY_DELETE();
+    SURFACE_GEOMETRY_RETURN();
   }
 
   if (degenerated) {
@@ -1207,7 +1250,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
         if (multicolored) {
           colors  ->push_back(Vec4(Cr[nv * u + v], Cg[nv * u + v], Cb[nv * u + v], opacity));
-        } else {
+        } else if (colors->empty()) {
           colors  ->push_back(Vec4(colorR, colorG, colorB, opacity));
         }
 
@@ -1218,8 +1261,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
       }
     }
-
-    indices = new osg::DrawArrays(point ? osg::PrimitiveSet::POINTS : osg::PrimitiveSet::LINE_STRIP, zero, nIndices);
   } else {
     const ftype fnum1 = ftype(num1);
     const ftype fnvm1 = ftype(nvm1);
@@ -1507,8 +1548,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         }
       }
     } else {
-      colors->trim();
-      colors->setBinding(osg::Array::BIND_OVERALL);
       colors->push_back(Vec4(colorR, colorG, colorB, opacity));
     }
 
@@ -1538,9 +1577,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
     /* Indices */
     if (!faceted) {
-      indices = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLE_STRIP);
       const osg::ref_ptr<osg::DrawElements> strip = indices->getDrawElements();
-      strip->reserveElements(nIndices);
       const bool num2g0 = num2 > 0;
       const itype num2tnv = num2 * nv;
       itype up0tnvpv = 0;
@@ -1575,8 +1612,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         SURFACE_INDICES_FRST();
         SURFACE_INDICES_LOOP();
       }
-    } else {
-      indices = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES, zero, nIndices);
     }
   }
 
@@ -1584,8 +1619,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   if (restart) { // Insert a dummy vertex (see OSG commit 353b18b)
     vertices->push_back(Vec3());
     normals ->push_back(Vec3());
-    colors  ->push_back(Vec4());
     texels  ->push_back(Vec2());
+    if (multicolored) {
+      colors->push_back(Vec4());
+    }
   }
 
   /* Debug */
@@ -1637,16 +1674,6 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   geometry->setTexCoordArray(zero, texels.get());
   geometry->addPrimitiveSet(indices.get());
 
-  if (objects) {
-    delete[] O[0][0];
-    delete[] O[0];
-    delete[] O;
-  }
-  {
-    delete[] E[0][0];
-    delete[] E[0];
-    delete[] E;
-  }
-
-  return geometry.release();
+  SURFACE_GEOMETRY_DELETE();
+  SURFACE_GEOMETRY_RETURN();
 }
