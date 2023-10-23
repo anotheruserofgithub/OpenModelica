@@ -1157,10 +1157,10 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     ss->setMode(GL_PRIMITIVE_RESTART, mode);
   }
   if (clouded) {
-    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::Face::FRONT_AND_BACK, osg::PolygonMode::Mode::POINT), mode);
+    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::POINT), mode);
   }
   if (outlined) {
-    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::Face::FRONT_AND_BACK, osg::PolygonMode::Mode::LINE), mode);
+    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE), mode);
   }
   if (doublesided) {
     const osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
