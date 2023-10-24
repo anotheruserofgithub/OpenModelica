@@ -81,6 +81,8 @@ SurfaceObject::SurfaceObject()
       mPointSize(1.0),
       mLineWidth(1.0),
       mNormalScale(1.0),
+      mNormalColorVertex{1.0, 1.0, 1.0},
+      mNormalColorFacet{0.0, 0.0, 0.0},
       _nu(VisualizerAttribute(0.0)),
       _nv(VisualizerAttribute(0.0)),
       _wireframe(VisualizerAttribute(0.0)),
@@ -817,6 +819,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const ftype lw = mLineWidth; // Line width
   const ftype ns = mNormalScale; // Normal scale
 
+  const ftype* ncv = mNormalColorVertex; // Normal color of vertex
+  const ftype* ncf = mNormalColorFacet;  // Normal color of facet
+
   const bool point = nu == one && nv == one;            // Surface degenerated to a single point
   const bool line = (nu == one || nv == one) && !point; // Surface degenerated to a line strip
 
@@ -1209,8 +1214,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     if (multicolored) {
       colors->reserveArray(nVertices);
     } else {
-      colors->reserveArray(one);
-      colors->setBinding(osg::Array::BIND_OVERALL);
+      colors->reserveArray(one + vertexes + facets);
+      colors->setBinding(osg::Array::BIND_PER_PRIMITIVE_SET);
     }
     if (!degenerated && !faceted) {
       indices->getDrawElements()->reserveElements(nIndices);
@@ -1641,9 +1646,11 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     texels  ->push_back(texel0);                \
     texels  ->push_back(texel1);                \
   }                                             \
+  const Vec4 color = Vec4(r, g, b, opacity);    \
   if (multicolored) {                           \
-    colors->insert(colors->end(), c,            \
-        Vec4(r, g, b, opacity));                \
+    colors->insert(colors->end(), c, color);    \
+  } else {                                      \
+    colors->push_back(color);                   \
   }                                             \
   const osg::ref_ptr<osg::PrimitiveSet> lines = \
       new osg::DrawArrays(                      \
@@ -1655,7 +1662,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         size,
         vertices,
         normals,
-        1, 0, 0);
+        ncv[x], ncv[y], ncv[z]);
   }
   if (facets) {
     const itype size = facetsCenters->size();
@@ -1663,7 +1670,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
         size,
         facetsCenters,
         facetsNormals,
-        0, 0, 1);
+        ncf[x], ncf[y], ncf[z]);
   }
 
   /* Geometry */
@@ -1672,7 +1679,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   geometry->setNormalArray(normals.get());
   geometry->setColorArray(colors.get());
   geometry->setTexCoordArray(zero, texels.get());
-  geometry->addPrimitiveSet(indices.get());
+  geometry->insertPrimitiveSet(zero, indices.get());
 
   SURFACE_GEOMETRY_DELETE();
   SURFACE_GEOMETRY_RETURN();

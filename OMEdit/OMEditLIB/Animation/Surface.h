@@ -92,6 +92,8 @@ private:
   ftype mPointSize;
   ftype mLineWidth;
   ftype mNormalScale;
+  ftype mNormalColorVertex[3];
+  ftype mNormalColorFacet[3];
 public:
   VisualizerAttribute _nu;
   VisualizerAttribute _nv;
