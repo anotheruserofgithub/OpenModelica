@@ -1159,28 +1159,28 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 #endif
 
   /* Attributes */
-  constexpr osg::StateAttribute::GLModeValue mode = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
+  constexpr osg::StateAttribute::GLModeValue value = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
   const osg::ref_ptr<osg::StateSet> ss = geometry->getOrCreateStateSet();
   if (point || clouded) {
-    ss->setAttributeAndModes(new osg::Point(ps), mode);
+    ss->setAttributeAndModes(new osg::Point(ps), value);
   }
   if (line || outlined || vertexes || facets) {
-    ss->setAttributeAndModes(new osg::LineWidth(lw), mode);
+    ss->setAttributeAndModes(new osg::LineWidth(lw), value);
   }
   if (restart) {
-    ss->setAttributeAndModes(new osg::PrimitiveRestartIndex(ri), mode);
-    ss->setMode(GL_PRIMITIVE_RESTART, mode);
+    ss->setAttributeAndModes(new osg::PrimitiveRestartIndex(ri), value);
+    ss->setMode(GL_PRIMITIVE_RESTART, value);
   }
   if (clouded) {
-    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::POINT), mode);
+    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::POINT), value);
   }
   if (outlined) {
-    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE), mode);
+    ss->setAttributeAndModes(new osg::PolygonMode(osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::LINE), value);
   }
   if (doublesided) {
     const osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
     lightModel->setTwoSided(true);
-    ss->setAttributeAndModes(lightModel.get(), mode);
+    ss->setAttributeAndModes(lightModel.get(), value);
   }
 
   /* Arrays */
