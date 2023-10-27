@@ -772,7 +772,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   osg::ref_ptr<osg::Geometry> geometry = new osg::Geometry();
 
 #define SURFACE_GEOMETRY_RETURN()               \
-  return geometry.release();
+do {                                            \
+  return geometry.release();                    \
+} while (0)
 
 #define SURFACE_DRAW_SPHERICAL_ARC   1
 #define SURFACE_DRAW_RECTANGULAR_BOX 0
@@ -1100,6 +1102,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   }
 
 #define SURFACE_GEOMETRY_DELETE()               \
+do {                                            \
   if (objects) {                                \
     delete[] O[0][0];                           \
     delete[] O[0];                              \
@@ -1109,7 +1112,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
     delete[] E[0][0];                           \
     delete[] E[0];                              \
     delete[] E;                                 \
-  }
+  }                                             \
+} while (0)
 
   ftype** V = nullptr;
   ftype** N = nullptr;
@@ -1598,20 +1602,26 @@ osg::Geometry* SurfaceObject::drawGeometry() const
       itype up0tnvpv = 0;
       itype up1tnv = nv;
 #define SURFACE_INDICES_FRST()                  \
+do {                                            \
   if (degenerate) {                             \
     strip->addElement(up0tnvpv);                \
-  }
+  }                                             \
+} while (0)
 #define SURFACE_INDICES_LOOP()                  \
+do {                                            \
   for (; up0tnvpv < up1tnv; up0tnvpv++) {       \
     strip->addElement(up0tnvpv);                \
     strip->addElement(up0tnvpv + nv);           \
-  }
+  }                                             \
+} while (0)
 #define SURFACE_INDICES_LAST()                  \
+do {                                            \
   if (degenerate) {                             \
     strip->addElement(up0tnvpv + nvm1);         \
   } else if (restart) {                         \
     strip->addElement(ri);                      \
-  }
+  }                                             \
+} while (0)
       {
         SURFACE_INDICES_LOOP();
       }
@@ -1642,6 +1652,7 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 
   /* Debug */
 #define SURFACE_NORMALS_DEBUG(s, v, n, r, g, b) \
+do {                                            \
   const itype l = vertices->size();             \
   const itype c = two * s;                      \
   for (itype i = 0; i < s; i++) {               \
@@ -1665,7 +1676,8 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const osg::ref_ptr<osg::PrimitiveSet> lines = \
       new osg::DrawArrays(                      \
           osg::PrimitiveSet::LINES, l, c);      \
-  geometry->addPrimitiveSet(lines.get());
+  geometry->addPrimitiveSet(lines.get());       \
+} while (0)
   if (vertexes) {
     const itype size = itype(vertices->size()) - itype(restart);
     SURFACE_NORMALS_DEBUG(
