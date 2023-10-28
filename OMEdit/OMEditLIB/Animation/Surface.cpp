@@ -143,7 +143,7 @@ void SurfaceObject::fakeTorus(const itype nu, const itype nv,
       }
       if (multicolored) {
         Cr[nv * u + v] = 0;
-        Cg[nv * u + v] = 1;
+        Cg[nv * u + v] = 255;
         Cb[nv * u + v] = 0;
       }
     }
@@ -208,7 +208,7 @@ void SurfaceObject::fakeRectangularBox(const itype nu, const itype nv,
   const     ftype xmin = -xscale * L / 2;
   const     ftype ymin = -yscale * H / 2;
   const     ftype zmin = -zscale * W / 2;
-  constexpr ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
+  constexpr ftype colors[6][3] = {/*-Z*/{255, 0, 0}, /*-Y*/{0, 0, 255}, /*+Z*/{0, 255, 0}, /*+Y*/{255, 255, 0}, /*-X*/{255, 0, 255}, /*+X*/{0, 255, 255}};
   // Attributes
   const ftype colorR = _color[0].exp;
   const ftype colorG = _color[1].exp;
@@ -428,7 +428,7 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
   constexpr ftype tmax = +pi / 4; // Maximum longitude (azimuthal angle theta as geographic longitude) in [-pi, +pi]
   constexpr bool bevel = false; // If true, the bevel is due to an angular slice at pmax and pmin, else the height is constant from rmax
   constexpr bool offset = true; // If true, the surface is shifted by {0, 0, (rmin + rmax) / 2}, else it is centered at the frame origin
-  constexpr ftype colors[6][3] = {/*-Z*/{1, 0, 0}, /*-Y*/{0, 0, 1}, /*+Z*/{0, 1, 0}, /*+Y*/{1, 1, 0}, /*-X*/{1, 0, 1}, /*+X*/{0, 1, 1}};
+  constexpr ftype colors[6][3] = {/*-Z*/{255, 0, 0}, /*-Y*/{0, 0, 255}, /*+Z*/{0, 255, 0}, /*+Y*/{255, 255, 0}, /*-X*/{255, 0, 255}, /*+X*/{0, 255, 255}};
   // Ranges
   constexpr ftype rdif = rmax - rmin; // Difference in altitude
   constexpr ftype pdif = pmax - pmin; // Difference in latitude
@@ -794,9 +794,9 @@ osg::Geometry* SurfaceObject::drawGeometry() const
   const bool doublesided = _doublesided.exp;
   const bool multicolored = _multicolored.exp;
   const ftype opacity = 1.0 - _transparency.exp;
-  const ftype colorR = _color[0].exp;
-  const ftype colorG = _color[1].exp;
-  const ftype colorB = _color[2].exp;
+  const ftype colorR = _color[0].exp / 255;
+  const ftype colorG = _color[1].exp / 255;
+  const ftype colorB = _color[2].exp / 255;
 
   constexpr itype zero  = 0;
   constexpr itype one   = 1;
@@ -1162,6 +1162,16 @@ osg::Geometry* SurfaceObject::drawGeometry() const
 #elif SURFACE_DRAW_TORUS
   fakeTorus         (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cr, Cg, Cb);
 #endif
+
+  if (multicolored) {
+    for (itype u = 0; u < nu; u++) {
+      for (itype v = 0; v < nv; v++) {
+        Cr[nv * u + v] /= 255;
+        Cg[nv * u + v] /= 255;
+        Cb[nv * u + v] /= 255;
+      }
+    }
+  }
 
   /* Attributes */
   constexpr osg::StateAttribute::GLModeValue value = osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED;
