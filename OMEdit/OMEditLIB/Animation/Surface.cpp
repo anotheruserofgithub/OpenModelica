@@ -1029,12 +1029,6 @@ do {                                            \
       Ee  = new ftype**[ne];
       Eec  = new ftype*[netnc];
       Eecuv = new ftype[netnctnutnv]{0};
-      for (itype e = 0; e < ne; e++, Eec += nc) {
-        Ee[e] = Eec;
-        for (itype c = 0; c < nc; c++, Eecuv += nutnv) {
-          Ee[e][c] = Eecuv;
-        }
-      }
     } catch (const std::bad_alloc& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Not enough memory to allocate elements for surface \"%1\" "
@@ -1053,6 +1047,13 @@ do {                                            \
       SURFACE_GEOMETRY_RETURN();
     }
 
+    for (itype e = 0; e < ne; e++, Eec += nc) {
+      Ee[e] = Eec;
+      for (itype c = 0; c < nc; c++, Eecuv += nutnv) {
+        Ee[e][c] = Eecuv;
+      }
+    }
+
     E = Ee;
   }
 
@@ -1068,12 +1069,6 @@ do {                                            \
       Oo  = new ftype**[no];
       Ooa  = new ftype*[notna];
       Ooauv = new ftype[notnatnutnv]{0};
-      for (itype o = 0; o < no; o++, Ooa += na) {
-        Oo[o] = Ooa;
-        for (itype a = 0; a < na; a++, Ooauv += nutnv) {
-          Oo[o][a] = Ooauv;
-        }
-      }
     } catch (const std::bad_alloc& ex) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Not enough memory to allocate objects for surface \"%1\" "
@@ -1093,6 +1088,13 @@ do {                                            \
       delete[] E[0];
       delete[] E;
       SURFACE_GEOMETRY_RETURN();
+    }
+
+    for (itype o = 0; o < no; o++, Ooa += na) {
+      Oo[o] = Ooa;
+      for (itype a = 0; a < na; a++, Ooauv += nutnv) {
+        Oo[o][a] = Ooauv;
+      }
     }
 
     O = Oo;
