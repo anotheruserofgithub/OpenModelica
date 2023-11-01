@@ -931,14 +931,14 @@ do {                                            \
       }
       nIndices += nMLinesDoubled;
     }
-  } catch (const std::overflow_error& ex) {
+  } catch (const std::overflow_error& exception) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                           QObject::tr("Too many vertices for surface \"%1\" "
                                                               "(nu = %2, nv = %3):\n%4.")
                                                               .arg(id)
                                                               .arg(nu)
                                                               .arg(nv)
-                                                              .arg(ex.what()),
+                                                              .arg(exception.what()),
                                                           Helper::scriptingKind,
                                                           Helper::errorLevel));
     SURFACE_GEOMETRY_RETURN();
@@ -967,7 +967,7 @@ do {                                            \
       if (smax / nv < netnctnu) {
         throw std::overflow_error("[Array size for elements] Overflow of ne * nc * nu * nv");
       }
-    } catch (const std::overflow_error& ex) {
+    } catch (const std::overflow_error& exception) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Too many vertices for surface \"%1\" "
                                                                 "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6.")
@@ -976,7 +976,7 @@ do {                                            \
                                                                 .arg(nc)
                                                                 .arg(nu)
                                                                 .arg(nv)
-                                                                .arg(ex.what()),
+                                                                .arg(exception.what()),
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
       SURFACE_GEOMETRY_RETURN();
@@ -993,7 +993,7 @@ do {                                            \
       if (smax / nv < notnftnu) {
         throw std::overflow_error("[Array size for objects] Overflow of no * nf * nu * nv");
       }
-    } catch (const std::overflow_error& ex) {
+    } catch (const std::overflow_error& exception) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Too many vertices for surface \"%1\" "
                                                                 "(no = %2, nf = %3, nu = %4, nv = %5):\n%6.")
@@ -1002,7 +1002,7 @@ do {                                            \
                                                                 .arg(nf)
                                                                 .arg(nu)
                                                                 .arg(nv)
-                                                                .arg(ex.what()),
+                                                                .arg(exception.what()),
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
       SURFACE_GEOMETRY_RETURN();
@@ -1029,7 +1029,7 @@ do {                                            \
       Ee  = new ftype**[ne];
       Eec  = new ftype*[netnc];
       Eecuv = new ftype[netnctnutnv]{0};
-    } catch (const std::bad_alloc& ex) {
+    } catch (const std::bad_alloc& exception) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Not enough memory to allocate elements for surface \"%1\" "
                                                                 "(ne = %2, nc = %3, nu = %4, nv = %5):\n%6.")
@@ -1038,7 +1038,7 @@ do {                                            \
                                                                 .arg(nc)
                                                                 .arg(nu)
                                                                 .arg(nv)
-                                                                .arg(ex.what()),
+                                                                .arg(exception.what()),
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
       delete[] Eecuv;
@@ -1069,7 +1069,7 @@ do {                                            \
       Oo  = new ftype**[no];
       Oof  = new ftype*[notnf];
       Oofuv = new ftype[notnftnutnv]{0};
-    } catch (const std::bad_alloc& ex) {
+    } catch (const std::bad_alloc& exception) {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                             QObject::tr("Not enough memory to allocate objects for surface \"%1\" "
                                                                 "(no = %2, nf = %3, nu = %4, nv = %5):\n%6.")
@@ -1078,7 +1078,7 @@ do {                                            \
                                                                 .arg(nf)
                                                                 .arg(nu)
                                                                 .arg(nv)
-                                                                .arg(ex.what()),
+                                                                .arg(exception.what()),
                                                             Helper::scriptingKind,
                                                             Helper::errorLevel));
       delete[] Oofuv;
@@ -1240,14 +1240,14 @@ do {                                            \
       facetsCenters->reserveArray(nFacets);
       facetsNormals->reserveArray(nFacets);
     }
-  } catch (const std::bad_alloc& ex) {
+  } catch (const std::bad_alloc& exception) {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
                                                           QObject::tr("Not enough memory to allocate arrays for surface \"%1\" "
                                                               "(nu = %2, nv = %3):\n%4.")
                                                               .arg(id)
                                                               .arg(nu)
                                                               .arg(nv)
-                                                              .arg(ex.what()),
+                                                              .arg(exception.what()),
                                                           Helper::scriptingKind,
                                                           Helper::errorLevel));
     SURFACE_GEOMETRY_DELETE();
