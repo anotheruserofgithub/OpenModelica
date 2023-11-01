@@ -1168,6 +1168,20 @@ do {                                            \
 #elif SURFACE_DRAW_TORUS
   fakeTorus         (nu, nv, Vx, Vy, Vz, Nx, Ny, Nz, Cr, Cg, Cb);
 #endif
+  const itype error = 0;
+  if (!!error) {
+    MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica,
+                                                          QObject::tr("Failed to retrieve data for surface \"%1\" "
+                                                              "(nu = %2, nv = %3) with error code %4.")
+                                                              .arg(id)
+                                                              .arg(nu)
+                                                              .arg(nv)
+                                                              .arg(error),
+                                                          Helper::scriptingKind,
+                                                          Helper::errorLevel));
+    SURFACE_GEOMETRY_DELETE();
+    SURFACE_GEOMETRY_RETURN();
+  }
 
   if (multicolored) {
     for (itype u = 0; u < nu; u++) {
