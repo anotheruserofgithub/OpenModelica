@@ -63,7 +63,7 @@ public:
 private:
   typedef int itype;
   typedef double ftype;
-  typedef std::size_t ltype;
+  typedef std::size_t stype;
   typedef osg::Vec2Array Vec2Array;
   typedef osg::Vec3Array Vec3Array;
   typedef osg::Vec4Array Vec4Array;

@@ -682,12 +682,12 @@ void SurfaceObject::fakeSphericalArc(const itype nu, const itype nv,
  * @note @c nutnv = nu * nv never overflows because @c nPoints < @c nFacetsTripled, i.e. nu * nv < 3 * 2 * (nu - 1) * (nv - 1),
  * and one/both of them is/are checked for overflow of the same integer type.
  *
- * @note @c itype, @c ftype, @c ltype typedefs are not arbitrary, they must satisfy the following constraints:
+ * @note @c itype, @c ftype, @c stype typedefs are not arbitrary, they must satisfy the following constraints:
  * typedef int itype; // Unsigned integers use modulo arithmetic (for wrapping) which is slower than undefined behavior of under/overflow with signed integers,
  * and anyway the last bit is not needed in practice especially because Modelica Integer type maps to a C signed int type
  * but also it must fit in OSG & OpenGL array types (i.e., conservatively, int)
  * typedef double ftype; // Should be double since Modelica Real primitive type is equivalent to a C double primitive type
- * typedef std::size_t ltype; // Max size is size of address (i.e., pointer size)
+ * typedef std::size_t stype; // Max size is size of address (i.e., pointer size)
  *
  * @note @c Vec2Array, @c Vec3Array, @c Vec4Array are in single precision instead of double precision
  * because @ref osgUtil::LineSegmentIntersector segfaults with @ref osg::Vec3dArray for vertices (it tries to cast it to @ref osg::Vec3Array)
@@ -846,7 +846,7 @@ do {                                            \
   const bool restart    = !degenerated && !faceted && mStripsWrappingMethod == SurfaceStripsWrappingMethod::restart; // Primitive restart index
 
   constexpr itype imax = std::numeric_limits<itype>::max();
-  constexpr ltype lmax = std::numeric_limits<ltype>::max();
+  constexpr stype smax = std::numeric_limits<stype>::max();
 
   const itype num1 = nu - one;
   const itype nvm1 = nv - one;
@@ -959,12 +959,12 @@ do {                                            \
 
   {
     try {
-      const ltype netnc = ne * nc;
-      if (lmax / nu < netnc) {
+      const stype netnc = ne * nc;
+      if (smax / nu < netnc) {
         throw std::overflow_error("[Array size for elements] Overflow of ne * nc * nu");
       }
-      const ltype netnctnu = netnc * nu;
-      if (lmax / nv < netnctnu) {
+      const stype netnctnu = netnc * nu;
+      if (smax / nv < netnctnu) {
         throw std::overflow_error("[Array size for elements] Overflow of ne * nc * nu * nv");
       }
     } catch (const std::overflow_error& ex) {
@@ -985,12 +985,12 @@ do {                                            \
 
   if (objects) {
     try {
-      const ltype notnf = no * nf;
-      if (lmax / nu < notnf) {
+      const stype notnf = no * nf;
+      if (smax / nu < notnf) {
         throw std::overflow_error("[Array size for objects] Overflow of no * nf * nu");
       }
-      const ltype notnftnu = notnf * nu;
-      if (lmax / nv < notnftnu) {
+      const stype notnftnu = notnf * nu;
+      if (smax / nv < notnftnu) {
         throw std::overflow_error("[Array size for objects] Overflow of no * nf * nu * nv");
       }
     } catch (const std::overflow_error& ex) {
@@ -1018,8 +1018,8 @@ do {                                            \
   ftype*** W = nullptr;
 
   {
-    const ltype netnc = ne * nc;
-    const ltype netnctnutnv = netnc * nutnv;
+    const stype netnc = ne * nc;
+    const stype netnctnutnv = netnc * nutnv;
 
     ftype*** Ee  = nullptr;
     ftype** Eec  = nullptr;
@@ -1058,8 +1058,8 @@ do {                                            \
   }
 
   if (objects) {
-    const ltype notnf = no * nf;
-    const ltype notnftnutnv = notnf * nutnv;
+    const stype notnf = no * nf;
+    const stype notnftnutnv = notnf * nutnv;
 
     ftype*** Oo  = nullptr;
     ftype** Oof  = nullptr;
