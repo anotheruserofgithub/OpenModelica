@@ -79,7 +79,7 @@ SurfaceObject::SurfaceObject()
       mNormalsAnimationTypes(SurfaceNormalsAnimationTypes::bothVerticesAndFacets), // FIXME should be none by default
       mPointSize(1.0),
       mLineWidth(1.0),
-      mNormalScale(0.25),
+      mNormalScale(1.0),
       _nu(VisualizerAttribute(0.0)),
       _nv(VisualizerAttribute(0.0)),
       _wireframe(VisualizerAttribute(0.0)),
