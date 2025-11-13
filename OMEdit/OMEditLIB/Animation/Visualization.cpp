@@ -1390,8 +1390,10 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
 */
       osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(shape._fileName);
       if (node.valid())
-      {
-        //MSL assumes 3dfaces are two-sided
+      { //https://build.openmodelica.org/Documentation/Modelica.Mechanics.MultiBody.Visualizers.Advanced.Shape.html
+        //MSL: As a default it is assumed that the DXF coordinates are in the "frame_a"-system and in meters
+        // TODO: De-offset DXF vertices by min bound?
+        //MSL: As a default it is assumed that the 3dfaces are two-sided
         const osg::ref_ptr<osg::StateSet> ss = node->getOrCreateStateSet();
         const osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
         lightModel->setTwoSided(true);
