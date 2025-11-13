@@ -1018,6 +1018,7 @@ void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float
       }
     }
   }
+  // TODO: Scale translation part of MatrixTransforms!
 }
 
 /*!
@@ -1049,4 +1050,5 @@ void CADVisitor::apply(osg::Geode& geode)
       }
     }
   }
+  traverse(geode); // TODO: Can there be nested geodes in CAD shapes???
 }
