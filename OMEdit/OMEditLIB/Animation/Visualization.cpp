@@ -1392,7 +1392,6 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
       if (node.valid())
       { //https://build.openmodelica.org/Documentation/Modelica.Mechanics.MultiBody.Visualizers.Advanced.Shape.html
         //MSL: As a default it is assumed that the DXF coordinates are in the "frame_a"-system and in meters
-        // TODO: De-offset DXF vertices by min bound?
         //MSL: As a default it is assumed that the 3dfaces are two-sided
         const osg::ref_ptr<osg::StateSet> ss = node->getOrCreateStateSet();
         const osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
@@ -1480,8 +1479,11 @@ void UpdateVisitor::apply(osg::Transform& node)
 void UpdateVisitor::apply(osg::AutoTransform& node)
 {
   //std::cout<<"AT "<<node.className()<<"  "<<node.getName()<<std::endl;
-  node.setPosition(_visualizer->_mat.getTrans());
-  node.setRotation(_visualizer->_mat.getRotate());
+  if (node.asTransform() == _visualizer->getTransformNode())
+  {
+    node.setPosition(_visualizer->_mat.getTrans());
+    node.setRotation(_visualizer->_mat.getRotate());
+  }
   traverse(node);
 }
 
@@ -1491,7 +1493,10 @@ void UpdateVisitor::apply(osg::AutoTransform& node)
 void UpdateVisitor::apply(osg::MatrixTransform& node)
 {
   //std::cout<<"MT "<<node.className()<<"  "<<node.getName()<<std::endl;
-  node.setMatrix(_visualizer->_mat);
+  if (node.asTransform() == _visualizer->getTransformNode())
+  {
+    node.setMatrix(_visualizer->_mat);
+  }
   traverse(node);
 }
 
