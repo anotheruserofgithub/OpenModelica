@@ -44,6 +44,7 @@
 #include <osg/Array>
 #include <osg/Drawable>
 #include <osg/Geometry>
+#include <osg/LightModel>
 #include <osg/Shape>
 #include <osg/ShapeDrawable>
 #include <osg/StateAttribute>
@@ -1378,7 +1379,7 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
     else if (isDXFType(shape._type))
     { //geode with dxf drawable
       //std::cout<<"It's a dxf and the filename is "<<shape._fileName<<std::endl;
-      osg::ref_ptr<DXFile> dxfDraw = new DXFile(shape._fileName);
+/*      osg::ref_ptr<DXFile> dxfDraw = new DXFile(shape._fileName);
 
       osg::ref_ptr<osg::Geode> geode = new osg::Geode();
       geode->addDrawable(dxfDraw.get());
@@ -1386,6 +1387,20 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
       osg::ref_ptr<CADFile> cad = new CADFile(geode.get());
 
       transf->addChild(cad.get());
+*/
+      osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(shape._fileName);
+      if (node.valid())
+      {
+        //MSL assumes 3dfaces are two-sided
+        const osg::ref_ptr<osg::StateSet> ss = node->getOrCreateStateSet();
+        const osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
+        lightModel->setTwoSided(true);
+        ss->setAttributeAndModes(lightModel.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
+
+        osg::ref_ptr<CADFile> cad = new CADFile(node.get());
+
+        transf->addChild(cad.get());
+      }
     }
     else
     { //geode with shape drawable
