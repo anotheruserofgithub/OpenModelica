@@ -1497,6 +1497,23 @@ void UpdateVisitor::apply(osg::MatrixTransform& node)
   {
     node.setMatrix(_visualizer->_mat);
   }
+  else if (_visualizer->isShape())
+  {
+    ShapeObject* shape = _visualizer->asShape();
+    if (isCADType(shape->_type))
+    {
+      //it's a cad file so we have to rescale the underlying transform translation
+      osg::ref_ptr<osg::Transform> transformNode = shape->getTransformNode();
+      if (transformNode.valid() && transformNode->getNumChildren() > 0)
+      {
+        osg::ref_ptr<CADFile> cad = dynamic_cast<CADFile*>(transformNode->getChild(0));
+        if (cad.valid())
+        {
+          cad->scaleTranslation(node, shape->_extra.exp, shape->_length.exp, shape->_width.exp, shape->_height.exp);
+        }
+      }
+    }
+  }
   traverse(node);
 }
 

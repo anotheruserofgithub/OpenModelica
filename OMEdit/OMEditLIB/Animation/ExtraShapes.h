@@ -126,9 +126,11 @@ class CADFile : public osg::Group
 public:
   CADFile(osg::Node* subgraph);
   ~CADFile() = default;
+  void scaleTranslation(osg::MatrixTransform& node, bool scaling, float scaleX, float scaleY, float scaleZ);
   void scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float scaleY, float scaleZ);
 
 private:
+  std::unordered_map<const osg::ref_ptr<osg::Transform>, osg::Vec3d> unscaledTransformTranslations;
   std::unordered_map<const osg::ref_ptr<osg::Geometry>, osg::ref_ptr<osg::Vec3Array>> unscaledGeometryVertices;
 
   friend class CADVisitor;
@@ -139,6 +141,7 @@ class CADVisitor : public osg::NodeVisitor
 public:
   CADVisitor(CADFile* cadFile);
   ~CADVisitor() {cadFile.release();}
+  void apply(osg::MatrixTransform& node) override;
   void apply(osg::Geode& geode) override;
 
 private:

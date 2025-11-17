@@ -980,6 +980,35 @@ CADFile::CADFile(osg::Node* subgraph)
 }
 
 /*!
+ * \brief CADFile::scaleTranslation
+ * \param osg::MatrixTransform& node
+ * \param bool scaling
+ * \param float scaleX
+ * \param float scaleY
+ * \param float scaleZ
+ */
+void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float scaleX, float scaleY, float scaleZ)
+{
+  if (!scaling) {
+    scaleX = scaleY = scaleZ = 1;
+  }
+  osg::Transform* transform = node.asTransform();
+  if (transform) {
+    decltype(unscaledTransformTranslations)::iterator unscaledTransformTranslation = unscaledTransformTranslations.find(transform);
+    if (unscaledTransformTranslation != unscaledTransformTranslations.end()) {
+      osg::Vec3d& unscaledTranslation = unscaledTransformTranslation->second;
+      osg::Vec3d translation = osg::Vec3d();
+      translation.x() = unscaledTranslation.x() * scaleX;
+      translation.y() = unscaledTranslation.y() * scaleY;
+      translation.z() = unscaledTranslation.z() * scaleZ;
+      osg::Matrix matrix = osg::Matrix(node.getMatrix());
+      matrix.setTrans(translation);
+      node.setMatrix(matrix);
+    }
+  }
+}
+
+/*!
  * \brief CADFile::scaleVertices
  * \param osg::Geode& geode
  * \param bool scaling
@@ -1018,7 +1047,6 @@ void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float
       }
     }
   }
-  // TODO: Scale translation part of MatrixTransforms!
 }
 
 /*!
@@ -1029,6 +1057,20 @@ CADVisitor::CADVisitor(CADFile* cadFile)
   : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
 {
   this->cadFile = cadFile;
+}
+
+/*!
+ * \brief CADVisitor::apply
+ * \param osg::MatrixTransform& node
+ */
+void CADVisitor::apply(osg::MatrixTransform& node)
+{
+  osg::Transform* transform = node.asTransform();
+  if (transform) {
+    osg::Vec3d translation = node.getMatrix().getTrans();
+    cadFile->unscaledTransformTranslations[transform] = osg::Vec3d(translation);
+  }
+  traverse(node);
 }
 
 /*!
