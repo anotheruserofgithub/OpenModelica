@@ -130,7 +130,7 @@ public:
   void scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float scaleY, float scaleZ);
 
 private:
-  std::unordered_map<const osg::ref_ptr<osg::Transform>, osg::Vec3d> unscaledTransformTranslations;
+  std::unordered_map<const osg::ref_ptr<osg::Transform>, osg::Vec3d> unscaledTransformTranslation;
   std::unordered_map<const osg::ref_ptr<osg::Geometry>, osg::ref_ptr<osg::Vec3Array>> unscaledGeometryVertices;
 
   friend class CADVisitor;

@@ -994,17 +994,19 @@ void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float s
   }
   osg::Transform* transform = node.asTransform();
   if (transform) {
-    decltype(unscaledTransformTranslations)::iterator unscaledTransformTranslation = unscaledTransformTranslations.find(transform);
-    if (unscaledTransformTranslation != unscaledTransformTranslations.end()) {
-      osg::Vec3d& unscaledTranslation = unscaledTransformTranslation->second;
-      osg::Vec3d translation = osg::Vec3d();
-      translation.x() = unscaledTranslation.x() * scaleX;
-      translation.y() = unscaledTranslation.y() * scaleY;
-      translation.z() = unscaledTranslation.z() * scaleZ;
-      osg::Matrix matrix = osg::Matrix(node.getMatrix());
-      matrix.setTrans(translation);
-      node.setMatrix(matrix);
-    }
+    //decltype(unscaledTransformTranslations)::iterator unscaledTransformTranslation = unscaledTransformTranslations.find(transform);
+    //if (unscaledTransformTranslation != unscaledTransformTranslations.end()) {
+      //osg::Vec3d& unscaledTranslation = unscaledTransformTranslation->second;
+    //osg::Vec3d& unscaledTranslation = unscaledTransformTranslation[transform];
+    osg::Vec3d& unscaledTranslation = unscaledTransformTranslation.at(transform);
+    osg::Vec3d translation = osg::Vec3d();
+    translation.x() = unscaledTranslation.x() * scaleX;
+    translation.y() = unscaledTranslation.y() * scaleY;
+    translation.z() = unscaledTranslation.z() * scaleZ;
+    osg::Matrix matrix = osg::Matrix(node.getMatrix());
+    matrix.setTrans(translation);
+    node.setMatrix(matrix);
+    //}
   }
 }
 
@@ -1068,7 +1070,10 @@ void CADVisitor::apply(osg::MatrixTransform& node)
   osg::Transform* transform = node.asTransform();
   if (transform) {
     osg::Vec3d translation = node.getMatrix().getTrans();
-    cadFile->unscaledTransformTranslations[transform] = osg::Vec3d(translation);
+    //cadFile->unscaledTransformTranslation[transform] = translation;
+    //cadFile->unscaledTransformTranslation.insert({transform, translation});
+    //cadFile->unscaledTransformTranslation.insert(std::make_pair(transform, translation));
+    cadFile->unscaledTransformTranslation.insert_or_assign(transform, translation); // TODO: Since C++17 only
   }
   traverse(node);
 }
