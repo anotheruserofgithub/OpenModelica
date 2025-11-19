@@ -995,13 +995,15 @@ void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float s
   osg::Transform* transform = node.asTransform();
   if (transform) {
     osg::Vec3d& unscaledTranslation = unscaledTransformTranslation[transform];
-    osg::Vec3d translation = osg::Vec3d();
-    translation.x() = unscaledTranslation.x() * scaleX;
-    translation.y() = unscaledTranslation.y() * scaleY;
-    translation.z() = unscaledTranslation.z() * scaleZ;
-    osg::Matrix matrix = osg::Matrix(node.getMatrix());
-    matrix.setTrans(translation);
-    node.setMatrix(matrix);
+    if (unscaledTranslation.valid()) {
+      osg::Vec3d translation = osg::Vec3d();
+      translation.x() = unscaledTranslation.x() * scaleX;
+      translation.y() = unscaledTranslation.y() * scaleY;
+      translation.z() = unscaledTranslation.z() * scaleZ;
+      osg::Matrix matrix = osg::Matrix(node.getMatrix());
+      matrix.setTrans(translation);
+      node.setMatrix(matrix);
+    }
   }
 }
 
@@ -1065,7 +1067,9 @@ void CADVisitor::apply(osg::MatrixTransform& node)
   osg::Transform* transform = node.asTransform();
   if (transform) {
     osg::Vec3d translation = node.getMatrix().getTrans();
-    cadFile->unscaledTransformTranslation[transform] = translation;
+    if (translation.valid()) {
+      cadFile->unscaledTransformTranslation[transform] = translation;
+    }
   }
   traverse(node);
 }
