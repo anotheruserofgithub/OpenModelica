@@ -1479,10 +1479,13 @@ void UpdateVisitor::apply(osg::Transform& node)
 void UpdateVisitor::apply(osg::AutoTransform& node)
 {
   //std::cout<<"AT "<<node.className()<<"  "<<node.getName()<<std::endl;
-  if (node.asTransform() == _visualizer->getTransformNode())
+  if (_visualizer->getStateSetAction() == StateSetAction::update)
   {
-    node.setPosition(_visualizer->_mat.getTrans());
-    node.setRotation(_visualizer->_mat.getRotate());
+    if (node.asTransform() == _visualizer->getTransformNode())
+    {
+      node.setPosition(_visualizer->_mat.getTrans());
+      node.setRotation(_visualizer->_mat.getRotate());
+    }
   }
   traverse(node);
 }
@@ -1493,23 +1496,26 @@ void UpdateVisitor::apply(osg::AutoTransform& node)
 void UpdateVisitor::apply(osg::MatrixTransform& node)
 {
   //std::cout<<"MT "<<node.className()<<"  "<<node.getName()<<std::endl;
-  if (node.asTransform() == _visualizer->getTransformNode())
+  if (_visualizer->getStateSetAction() == StateSetAction::update)
   {
-    node.setMatrix(_visualizer->_mat);
-  }
-  else if (_visualizer->isShape())
-  {
-    ShapeObject* shape = _visualizer->asShape();
-    if (isCADType(shape->_type))
+    if (node.asTransform() == _visualizer->getTransformNode())
     {
-      //it's a cad file so we have to rescale the underlying transform translation
-      osg::ref_ptr<osg::Transform> transformNode = shape->getTransformNode();
-      if (transformNode.valid() && transformNode->getNumChildren() > 0)
+      node.setMatrix(_visualizer->_mat);
+    }
+    else if (_visualizer->isShape())
+    {
+      ShapeObject* shape = _visualizer->asShape();
+      if (isCADType(shape->_type))
       {
-        osg::ref_ptr<CADFile> cad = dynamic_cast<CADFile*>(transformNode->getChild(0));
-        if (cad.valid())
+        //it's a cad file so we have to rescale the underlying transform translation
+        osg::ref_ptr<osg::Transform> transformNode = shape->getTransformNode();
+        if (transformNode.valid() && transformNode->getNumChildren() > 0)
         {
-          cad->scaleTranslation(node, shape->_extra.exp, shape->_length.exp, shape->_width.exp, shape->_height.exp);
+          osg::ref_ptr<CADFile> cad = dynamic_cast<CADFile*>(transformNode->getChild(0));
+          if (cad.valid())
+          {
+            cad->scaleTranslation(node, shape->_extra.exp, shape->_length.exp, shape->_width.exp, shape->_height.exp);
+          }
         }
       }
     }
