@@ -231,8 +231,8 @@ public:
   virtual VisualizerType getVisualizerType() const final {return mVisualizerType;}
   virtual StateSetAction getStateSetAction() const final {return mStateSetAction;}
   virtual void setStateSetAction(const StateSetAction action) final {mStateSetAction = action;}
-  virtual osg::ref_ptr<osg::Transform> getTransformNode() const final {return mTransformNode;}
-  virtual void setTransformNode(const osg::ref_ptr<osg::Transform> transform) final {mTransformNode = transform;}
+  virtual osg::Transform* getTransformNode() const final {return mTransformNode;}
+  virtual void setTransformNode(osg::Transform* transform) final {mTransformNode = transform;}
 private:
   VisualizerType mVisualizerType;
   StateSetAction mStateSetAction;

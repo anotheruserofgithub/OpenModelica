@@ -1330,9 +1330,9 @@ OSGScene::OSGScene(VisualizationAbstract* visualization)
 {
 }
 
-osg::ref_ptr<osg::Group> OSGScene::getRootNode()
+osg::Group* OSGScene::getRootNode()
 {
-  return _rootNode;
+  return _rootNode.get();
 }
 
 std::string OSGScene::getPath() const
@@ -1393,8 +1393,8 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
       { //https://build.openmodelica.org/Documentation/Modelica.Mechanics.MultiBody.Visualizers.Advanced.Shape.html
         //MSL: As a default it is assumed that the DXF coordinates are in the "frame_a"-system and in meters
         //MSL: As a default it is assumed that the 3dfaces are two-sided
-        const osg::ref_ptr<osg::StateSet> ss = node->getOrCreateStateSet();
-        const osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
+        osg::ref_ptr<osg::StateSet> ss = node->getOrCreateStateSet();
+        osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
         lightModel->setTwoSided(true);
         ss->setAttributeAndModes(lightModel.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
 
@@ -1415,7 +1415,7 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
 
     _rootNode->addChild(transf.get());
 
-    shape.setTransformNode(transf);
+    shape.setTransformNode(transf.get());
   }
 }
 
@@ -1449,7 +1449,7 @@ void OSGScene::setUpScene(std::vector<VectorObject>& vectors)
 
     _rootNode->addChild(transf.get());
 
-    vector.setTransformNode(transf);
+    vector.setTransformNode(transf.get());
   }
 }
 

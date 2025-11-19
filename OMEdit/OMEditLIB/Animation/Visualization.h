@@ -163,7 +163,7 @@ public:
   ~OSGScene() = default;
   OSGScene(const OSGScene& osgs) = delete;
   OSGScene& operator=(const OSGScene& osgs) = delete;
-  osg::ref_ptr<osg::Group> getRootNode();
+  osg::Group* getRootNode();
   std::string getPath() const;
   void setPath(const std::string path);
   void setUpScene(std::vector<ShapeObject>& shapes);
