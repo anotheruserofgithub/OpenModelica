@@ -1089,5 +1089,5 @@ void CADVisitor::apply(osg::Geode& geode)
       }
     }
   }
-  traverse(geode); // TODO: Can there be nested geodes in CAD shapes???
+  traverse(geode);
 }

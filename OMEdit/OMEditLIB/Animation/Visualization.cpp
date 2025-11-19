@@ -1718,7 +1718,7 @@ void UpdateVisitor::apply(osg::Geode& node)
     }
   }
 
-  traverse(node); // TODO: Can there be nested geodes in CAD shapes???
+  traverse(node);
 }
 
 osg::Image* UpdateVisitor::convertImage(const QImage& iImage)
