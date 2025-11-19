@@ -88,7 +88,7 @@ public:
   virtual ~UpdateVisitor() = default;
   UpdateVisitor(const UpdateVisitor& uv) = delete;
   UpdateVisitor& operator=(const UpdateVisitor& uv) = delete;
-  virtual void apply(osg::Geode& node) override;
+  virtual void apply(osg::Geode& geode) override;
   virtual void apply(osg::Transform& node) override;
 #if OSG_MIN_VERSION_REQUIRED(3, 6, 0)
   virtual void apply(osg::AutoTransform& node) override;
@@ -116,7 +116,7 @@ public:
   InfoVisitor& operator=(const InfoVisitor& iv) = delete;
   std::string spaces();
   virtual void apply(osg::Node& node) override;
-  virtual void apply(osg::Geode& node) override;
+  virtual void apply(osg::Geode& geode) override;
 private:
   unsigned int _level;
 };

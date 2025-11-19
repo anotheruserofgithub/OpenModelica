@@ -1520,7 +1520,7 @@ void UpdateVisitor::apply(osg::MatrixTransform& node)
 /**
  Geode
  */
-void UpdateVisitor::apply(osg::Geode& node)
+void UpdateVisitor::apply(osg::Geode& geode)
 {
   //std::cout<<"GEODE "<<_visualizer->_id<<std::endl;
   bool changeMaterial = _changeMaterialProperties;
@@ -1544,27 +1544,27 @@ void UpdateVisitor::apply(osg::Geode& node)
           osg::ref_ptr<CADFile> cad = dynamic_cast<CADFile*>(transformNode->getChild(0));
           if (cad.valid())
           {
-            cad->scaleVertices(node, shape->_extra.exp, shape->_length.exp, shape->_width.exp, shape->_height.exp);
+            cad->scaleVertices(geode, shape->_extra.exp, shape->_length.exp, shape->_width.exp, shape->_height.exp);
           }
         }
       }
       else
       {
         //it's a drawable and not a cad file so we have to create a new drawable
-        osg::ref_ptr<osg::Drawable> draw = node.getDrawable(0);
+        osg::ref_ptr<osg::Drawable> draw = geode.getDrawable(0);
         draw->dirtyBound();
         draw->dirtyDisplayList();
         if (shape->_type == "pipe")
         {
-          node.setDrawable(0, new Pipecylinder(shape->_width.exp * shape->_extra.exp / 2, shape->_width.exp / 2, shape->_length.exp));
+          geode.setDrawable(0, new Pipecylinder(shape->_width.exp * shape->_extra.exp / 2, shape->_width.exp / 2, shape->_length.exp));
         }
         else if (shape->_type == "pipecylinder")
         {
-          node.setDrawable(0, new Pipecylinder(shape->_width.exp * shape->_extra.exp / 2, shape->_width.exp / 2, shape->_length.exp));
+          geode.setDrawable(0, new Pipecylinder(shape->_width.exp * shape->_extra.exp / 2, shape->_width.exp / 2, shape->_length.exp));
         }
         else if (shape->_type == "spring")
         {
-          node.setDrawable(0, new Spring(shape->_width.exp, shape->_height.exp, shape->_extra.exp, shape->_length.exp));
+          geode.setDrawable(0, new Spring(shape->_width.exp, shape->_height.exp, shape->_extra.exp, shape->_length.exp));
         }
         else if (shape->_type == "cone")
         {
@@ -1622,19 +1622,19 @@ void UpdateVisitor::apply(osg::Geode& node)
       head1Shape->setCenter(head1Shape->getCenter() - vectorDirection * head1Shape->getBaseOffset());
       head2Shape->setCenter(head2Shape->getCenter() - vectorDirection * head2Shape->getBaseOffset());
 
-      osg::ref_ptr<osg::Drawable> draw0 = node.getDrawable(0); // shaft cylinder
+      osg::ref_ptr<osg::Drawable> draw0 = geode.getDrawable(0); // shaft cylinder
       draw0->dirtyBound();
       draw0->dirtyDisplayList();
       draw0->setShape(shaftShape.get());
       //std::cout<<"VECTOR shaft "<<draw0->getShape()->className()<<std::endl;
 
-      osg::ref_ptr<osg::Drawable> draw1 = node.getDrawable(1); // first head cone
+      osg::ref_ptr<osg::Drawable> draw1 = geode.getDrawable(1); // first head cone
       draw1->dirtyBound();
       draw1->dirtyDisplayList();
       draw1->setShape(head1Shape.get());
       //std::cout<<"VECTOR first head "<<draw1->getShape()->className()<<std::endl;
 
-      osg::ref_ptr<osg::Drawable> draw2 = node.getDrawable(2); // second head cone
+      osg::ref_ptr<osg::Drawable> draw2 = geode.getDrawable(2); // second head cone
       draw2->dirtyBound();
       draw2->dirtyDisplayList();
       if (vector->isTwoHeadedArrow())
@@ -1689,7 +1689,7 @@ void UpdateVisitor::apply(osg::Geode& node)
       }
     }
 
-    osg::ref_ptr<osg::StateSet> ss = stateSet.valid() ? stateSet.get() : node.getOrCreateStateSet();
+    osg::ref_ptr<osg::StateSet> ss = stateSet.valid() ? stateSet.get() : geode.getOrCreateStateSet();
     osg::Material::ColorMode mode = geometryColors ? osg::Material::AMBIENT_AND_DIFFUSE : osg::Material::OFF;
 
     QColor      color            = visualProperties->getColor().get();
@@ -1705,9 +1705,9 @@ void UpdateVisitor::apply(osg::Geode& node)
       changeTransparencyOfMaterial(ss, transparency);
       if (geometryColors) {
         if (is3DSShape) {
-          changeTransparencyOfGeometry<osg::Vec4ubArray, 255>(node, transparency);
+          changeTransparencyOfGeometry<osg::Vec4ubArray, 255>(geode, transparency);
         } else {
-          changeTransparencyOfGeometry<osg::Vec4Array, 1>    (node, transparency);
+          changeTransparencyOfGeometry<osg::Vec4Array, 1>    (geode, transparency);
         }
       }
     }
@@ -1718,7 +1718,7 @@ void UpdateVisitor::apply(osg::Geode& node)
     }
   }
 
-  traverse(node);
+  traverse(geode);
 }
 
 osg::Image* UpdateVisitor::convertImage(const QImage& iImage)
