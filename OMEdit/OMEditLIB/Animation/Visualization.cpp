@@ -1846,12 +1846,12 @@ void UpdateVisitor::changeTransparencyOfGeometry(osg::Geode& geode, const float 
   type opacity = (1.0 - transparency) * scale;
   unsigned int num = geode.getNumDrawables();
   for (unsigned int i = 0; i < num; i++) {
-    osg::Drawable* drawable = geode.getDrawable(i);
-    if (drawable) {
-      osg::Geometry* geometry = drawable->asGeometry();
-      if (geometry) {
-        Vec4Array* colors = dynamic_cast<Vec4Array*>(geometry->getColorArray());
-        if (colors) {
+    osg::ref_ptr<osg::Drawable> drawable = geode.getDrawable(i);
+    if (drawable.valid()) {
+      osg::ref_ptr<osg::Geometry> geometry = drawable->asGeometry();
+      if (geometry.valid()) {
+        osg::ref_ptr<Vec4Array> colors = dynamic_cast<Vec4Array*>(geometry->getColorArray());
+        if (colors.valid()) {
           for (Vec4& color : colors->asVector()) {
             color.a() = opacity;
           }

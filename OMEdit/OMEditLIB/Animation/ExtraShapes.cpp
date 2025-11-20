@@ -992,8 +992,8 @@ void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float s
   if (!scaling) {
     scaleX = scaleY = scaleZ = 1;
   }
-  osg::Transform* transform = node.asTransform();
-  if (transform) {
+  osg::ref_ptr<osg::Transform> transform = node.asTransform();
+  if (transform.valid()) {
     osg::Vec3d& unscaledTranslation = unscaledTransformTranslation[transform];
     osg::Vec3d translation = osg::Vec3d();
     translation.x() = unscaledTranslation.x() * scaleX;
@@ -1020,14 +1020,14 @@ void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float
   }
   unsigned int num = geode.getNumDrawables();
   for (unsigned int i = 0; i < num; i++) {
-    osg::Drawable* drawable = geode.getDrawable(i);
-    if (drawable) {
-      osg::Geometry* geometry = drawable->asGeometry();
-      if (geometry) {
-        osg::Vec3Array* vertices = dynamic_cast<osg::Vec3Array*>(geometry->getVertexArray());
-        if (vertices) {
-          osg::Vec3Array* unscaledVertices = unscaledGeometryVertices[geometry];
-          if (unscaledVertices) {
+    osg::ref_ptr<osg::Drawable> drawable = geode.getDrawable(i);
+    if (drawable.valid()) {
+      osg::ref_ptr<osg::Geometry> geometry = drawable->asGeometry();
+      if (geometry.valid()) {
+        osg::ref_ptr<osg::Vec3Array> vertices = dynamic_cast<osg::Vec3Array*>(geometry->getVertexArray());
+        if (vertices.valid()) {
+          osg::ref_ptr<osg::Vec3Array> unscaledVertices = unscaledGeometryVertices[geometry];
+          if (unscaledVertices.valid()) {
             osg::Vec3Array::size_type size = unscaledVertices->size();
             for (osg::Vec3Array::size_type j = 0; j < size; j++) {
               osg::Vec3& unscaledVertex = unscaledVertices->at(j);
@@ -1062,8 +1062,8 @@ CADVisitor::CADVisitor(CADFile* cadFile)
  */
 void CADVisitor::apply(osg::MatrixTransform& node)
 {
-  osg::Transform* transform = node.asTransform();
-  if (transform) {
+  osg::ref_ptr<osg::Transform> transform = node.asTransform();
+  if (transform.valid()) {
     osg::Vec3d translation = node.getMatrix().getTrans();
     cadFile->unscaledTransformTranslation[transform] = translation;
   }
@@ -1078,12 +1078,12 @@ void CADVisitor::apply(osg::Geode& geode)
 {
   unsigned int num = geode.getNumDrawables();
   for (unsigned int i = 0; i < num; i++) {
-    osg::Drawable* drawable = geode.getDrawable(i);
-    if (drawable) {
-      osg::Geometry* geometry = drawable->asGeometry();
-      if (geometry) {
-        osg::Vec3Array* vertices = dynamic_cast<osg::Vec3Array*>(geometry->getVertexArray());
-        if (vertices) {
+    osg::ref_ptr<osg::Drawable> drawable = geode.getDrawable(i);
+    if (drawable.valid()) {
+      osg::ref_ptr<osg::Geometry> geometry = drawable->asGeometry();
+      if (geometry.valid()) {
+        osg::ref_ptr<osg::Vec3Array> vertices = dynamic_cast<osg::Vec3Array*>(geometry->getVertexArray());
+        if (vertices.valid()) {
           cadFile->unscaledGeometryVertices[geometry] = dynamic_cast<osg::Vec3Array*>(vertices->clone(osg::CopyOp::DEEP_COPY_ARRAYS));
         }
       }
