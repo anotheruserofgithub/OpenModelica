@@ -994,7 +994,7 @@ void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float s
   }
   osg::ref_ptr<osg::Transform> transform = node.asTransform();
   if (transform.valid()) {
-    osg::Vec3d& unscaledTranslation = unscaledTransformTranslation[transform];
+    osg::Vec3d unscaledTranslation = unscaledTransformTranslation[transform];
     osg::Vec3d translation = osg::Vec3d();
     translation.x() = unscaledTranslation.x() * scaleX;
     translation.y() = unscaledTranslation.y() * scaleY;
@@ -1026,7 +1026,7 @@ void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float
       if (geometry.valid()) {
         osg::ref_ptr<osg::Vec3Array> vertices = dynamic_cast<osg::Vec3Array*>(geometry->getVertexArray());
         if (vertices.valid()) {
-          osg::ref_ptr<osg::Vec3Array>& unscaledVertices = unscaledGeometryVertices[geometry];
+          osg::ref_ptr<osg::Vec3Array> unscaledVertices = unscaledGeometryVertices[geometry];
           if (unscaledVertices.valid()) {
             osg::Vec3Array::size_type size = unscaledVertices->size();
             for (osg::Vec3Array::size_type j = 0; j < size; j++) {
