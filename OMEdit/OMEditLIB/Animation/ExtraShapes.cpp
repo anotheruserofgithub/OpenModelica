@@ -968,8 +968,8 @@ DXFile::DXFile(std::string filename)
 
 
 /*!
- * \brief CADFile constructor
- * \param osg::Node* subgraph
+ * \brief Construct a node representing a scalable CAD shape.
+ * \param subgraph The CAD shape.
  */
 CADFile::CADFile(osg::Node* subgraph)
   : osg::Group()
@@ -980,12 +980,12 @@ CADFile::CADFile(osg::Node* subgraph)
 }
 
 /*!
- * \brief CADFile::scaleTranslation
- * \param osg::MatrixTransform& node
- * \param bool scaling
- * \param float scaleX
- * \param float scaleY
- * \param float scaleZ
+ * \brief Scale the translation part of a matrix transform.
+ * \param node The matrix transform.
+ * \param scaling Whether scaling must be applied.
+ * \param scaleX The x-axis scale factor.
+ * \param scaleY The y-axis scale factor.
+ * \param scaleZ The z-axis scale factor.
  */
 void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float scaleX, float scaleY, float scaleZ)
 {
@@ -1006,12 +1006,12 @@ void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float s
 }
 
 /*!
- * \brief CADFile::scaleVertices
- * \param osg::Geode& geode
- * \param bool scaling
- * \param float scaleX
- * \param float scaleY
- * \param float scaleZ
+ * \brief Scale the vertices of each geometry attached to a geode.
+ * \param geode The geode.
+ * \param scaling Whether scaling must be applied.
+ * \param scaleX The x-axis scale factor.
+ * \param scaleY The y-axis scale factor.
+ * \param scaleZ The z-axis scale factor.
  */
 void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float scaleY, float scaleZ)
 {
@@ -1047,8 +1047,8 @@ void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float
 }
 
 /*!
- * \brief CADVisitor constructor
- * \param CADFile* cadFile
+ * \brief Construct a node visitor to clone the originally unscaled data of a scalable CAD shape.
+ * \param cadFile The scalable CAD shape.
  */
 CADVisitor::CADVisitor(CADFile* cadFile)
   : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
@@ -1057,8 +1057,8 @@ CADVisitor::CADVisitor(CADFile* cadFile)
 }
 
 /*!
- * \brief CADVisitor::apply
- * \param osg::MatrixTransform& node
+ * \brief Clone the translation part of a matrix transform.
+ * \param node The matrix transform.
  */
 void CADVisitor::apply(osg::MatrixTransform& node)
 {
@@ -1071,8 +1071,8 @@ void CADVisitor::apply(osg::MatrixTransform& node)
 }
 
 /*!
- * \brief CADVisitor::apply
- * \param osg::Geode& geode
+ * \brief Clone the vertices of each geometry attached to a geode.
+ * \param geode The geode.
  */
 void CADVisitor::apply(osg::Geode& geode)
 {
