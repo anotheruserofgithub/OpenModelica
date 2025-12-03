@@ -1997,22 +1997,20 @@ rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r, osg::Vec3f r_shape, osg::
   rAndT res;
 
   Directions dirs = fixDirections(lDir, wDir);
-  osg::Vec3f hDir = dirs._lDir ^ dirs._wDir;
+  osg::Vec3f hDir = cross(dirs._lDir, dirs._wDir); // TODO move hDir inside Directions
   //std::cout << "lDir " << dirs._lDir[0] << ", " << dirs._lDir[1] << ", " << dirs._lDir[2] << std::endl;
   //std::cout << "wDir " << dirs._wDir[0] << ", " << dirs._wDir[1] << ", " << dirs._wDir[2] << std::endl;
   //std::cout << "hDir " <<       hDir[0] << ", " <<       hDir[1] << ", " <<       hDir[2] << std::endl;
 
   osg::Matrix3 T0;
   if (isCADType(type))
-  {
     T0 = osg::Matrix3(dirs._lDir[0], dirs._lDir[1], dirs._lDir[2],
                       dirs._wDir[0], dirs._wDir[1], dirs._wDir[2],
                             hDir[0],       hDir[1],       hDir[2]);
-  } else {
+  else
     T0 = osg::Matrix3(dirs._wDir[0], dirs._wDir[1], dirs._wDir[2],
                             hDir[0],       hDir[1],       hDir[2],
                       dirs._lDir[0], dirs._lDir[1], dirs._lDir[2]);
-  }
   //std::cout << "T0 " << T0[0] << ", " << T0[1] << ", " << T0[2] << std::endl;
   //std::cout << "   " << T0[3] << ", " << T0[4] << ", " << T0[5] << std::endl;
   //std::cout << "   " << T0[6] << ", " << T0[7] << ", " << T0[8] << std::endl;
@@ -2037,7 +2035,7 @@ rAndT rotateModelica2OSG(osg::Matrix3 T, osg::Vec3f r, osg::Vec3f dir)
   wDir[j] = +lDir[i];
 
   Directions dirs = fixDirections(lDir, wDir);
-  osg::Vec3f hDir = dirs._lDir ^ dirs._wDir;
+  osg::Vec3f hDir = cross(dirs._lDir, dirs._wDir);
   //std::cout << "lDir " << dirs._lDir[0] << ", " << dirs._lDir[1] << ", " << dirs._lDir[2] << std::endl;
   //std::cout << "wDir " << dirs._wDir[0] << ", " << dirs._wDir[1] << ", " << dirs._wDir[2] << std::endl;
   //std::cout << "hDir " <<       hDir[0] << ", " <<       hDir[1] << ", " <<       hDir[2] << std::endl;

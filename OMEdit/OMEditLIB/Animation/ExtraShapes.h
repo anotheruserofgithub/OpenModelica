@@ -35,8 +35,6 @@
 #ifndef EXTRASHAPES_H
 #define EXTRASHAPES_H
 
-#include "Visualization.h"
-
 #include <QOpenGLContext> // must be included before OSG headers
 
 #include <osg/Node>

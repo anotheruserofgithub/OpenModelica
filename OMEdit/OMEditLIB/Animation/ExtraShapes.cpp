@@ -846,7 +846,10 @@ osg::Vec3f DXF3dFace::calcNormal()
 {
   osg::Vec3f v1 = osg::Vec3f(vec1[0] - vec2[0], vec1[1] - vec2[1], vec1[2] - vec2[2]);
   osg::Vec3f v2 = osg::Vec3f(vec1[0] - vec3[0], vec1[1] - vec3[1], vec1[2] - vec3[2]);
-  osg::Vec3f normal = normalize(cross(normalize(v1), normalize(v2)));
+  v1.normalize();
+  v2.normalize();
+  osg::Vec3f normal = v1 ^ v2;
+  normal.normalize();
   return normal;
 }
 
