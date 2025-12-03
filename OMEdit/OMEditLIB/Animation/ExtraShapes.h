@@ -47,9 +47,6 @@
 #include <osg/Transform>
 #include <osg/MatrixTransform>
 
-#include <QTextStream>
-#include <QFile>
-
 #include <unordered_map>
 
 // TODO: Support is missing for the following shape types:
@@ -85,35 +82,6 @@ private:
 
   osg::Vec3Array* mpOuterVertices;
   osg::Vec3Array* mpSplineVertices;
-};
-
-class DXF3dFace
-{
-public:
-  DXF3dFace();
-  ~DXF3dFace();
-  void dumpDXF3DFace();
-  QString fill3dFace(QTextStream* stream);
-  osg::Vec3f calcNormal();
-
-public:
-  osg::Vec3 vec1;
-  osg::Vec3 vec2;
-  osg::Vec3 vec3;
-  osg::Vec3 vec4;
-  std::string layer;
-  int colorCode;
-  osg::Vec4f color;
-};
-
-class DXFile : public osg::Geometry
-{
-public:
-  DXFile(std::string filename);
-  ~DXFile() = default;
-
-public:
-  std::string fileName;
 };
 
 template<typename T>
