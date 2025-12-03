@@ -37,11 +37,15 @@
 
 #include <QOpenGLContext> // must be included before OSG headers
 
-#include <osg/Node>
-#include <osg/Group>
-#include <osg/Geode>
+#include <osg/Array>
+#include <osg/Drawable>
 #include <osg/Geometry>
-#include <osg/Shape>
+#include <osg/Geode>
+#include <osg/Group>
+#include <osg/Node>
+#include <osg/NodeVisitor>
+#include <osg/Transform>
+#include <osg/MatrixTransform>
 
 #include <QTextStream>
 #include <QFile>
