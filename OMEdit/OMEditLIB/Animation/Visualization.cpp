@@ -1377,22 +1377,12 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
       }
     }
     else if (isDXFType(shape._type))
-    { //geode with dxf drawable
+    { //dxf node
       //std::cout<<"It's a dxf and the filename is "<<shape._fileName<<std::endl;
-/*      osg::ref_ptr<DXFile> dxfDraw = new DXFile(shape._fileName);
-
-      osg::ref_ptr<osg::Geode> geode = new osg::Geode();
-      geode->addDrawable(dxfDraw.get());
-
-      osg::ref_ptr<CADFile> cad = new CADFile(geode.get());
-
-      transf->addChild(cad.get());
-*/
       osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(shape._fileName);
       if (node.valid())
-      { //https://build.openmodelica.org/Documentation/Modelica.Mechanics.MultiBody.Visualizers.Advanced.Shape.html
-        //MSL: As a default it is assumed that the DXF coordinates are in the "frame_a"-system and in meters
-        //MSL: As a default it is assumed that the 3dfaces are two-sided
+      { // https://build.openmodelica.org/Documentation/Modelica.Mechanics.MultiBody.Visualizers.Advanced.Shape.html
+        // MSL: As a default it is assumed that the 3dfaces are two-sided
         osg::ref_ptr<osg::StateSet> ss = node->getOrCreateStateSet();
         osg::ref_ptr<osg::LightModel> lightModel = new osg::LightModel();
         lightModel->setTwoSided(true);
