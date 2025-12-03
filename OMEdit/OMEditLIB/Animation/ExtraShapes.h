@@ -123,11 +123,11 @@ struct std::hash<const osg::ref_ptr<T>> {
   }
 };
 
-class CADFile : public osg::Group
+class CADShape : public osg::Group
 {
 public:
-  CADFile(osg::Node* subgraph);
-  ~CADFile() = default;
+  CADShape(osg::Node* subgraph);
+  ~CADShape() = default;
   void scaleTranslation(osg::MatrixTransform& node, bool scaling, float scaleX, float scaleY, float scaleZ);
   void scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float scaleY, float scaleZ);
 
@@ -141,13 +141,13 @@ private:
 class CADVisitor : public osg::NodeVisitor
 {
 public:
-  CADVisitor(CADFile* cadFile);
-  ~CADVisitor() {cadFile.release();}
+  CADVisitor(CADShape* cadShape);
+  ~CADVisitor() {cadShape.release();}
   void apply(osg::MatrixTransform& node) override;
   void apply(osg::Geode& geode) override;
 
 private:
-  osg::ref_ptr<CADFile> cadFile;
+  osg::ref_ptr<CADShape> cadShape;
 };
 
 #endif //end EXTRASHAPES_H

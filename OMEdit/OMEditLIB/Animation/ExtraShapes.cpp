@@ -974,7 +974,7 @@ DXFile::DXFile(std::string filename)
  * \brief Construct a node representing a scalable CAD shape.
  * \param subgraph The CAD shape.
  */
-CADFile::CADFile(osg::Node* subgraph)
+CADShape::CADShape(osg::Node* subgraph)
   : osg::Group()
 {
   addChild(subgraph);
@@ -990,7 +990,7 @@ CADFile::CADFile(osg::Node* subgraph)
  * \param scaleY The y-axis scale factor.
  * \param scaleZ The z-axis scale factor.
  */
-void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float scaleX, float scaleY, float scaleZ)
+void CADShape::scaleTranslation(osg::MatrixTransform& node, bool scaling, float scaleX, float scaleY, float scaleZ)
 {
   if (!scaling) {
     scaleX = scaleY = scaleZ = 1;
@@ -1016,7 +1016,7 @@ void CADFile::scaleTranslation(osg::MatrixTransform& node, bool scaling, float s
  * \param scaleY The y-axis scale factor.
  * \param scaleZ The z-axis scale factor.
  */
-void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float scaleY, float scaleZ)
+void CADShape::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float scaleY, float scaleZ)
 {
   if (!scaling) {
     scaleX = scaleY = scaleZ = 1;
@@ -1051,12 +1051,12 @@ void CADFile::scaleVertices(osg::Geode& geode, bool scaling, float scaleX, float
 
 /*!
  * \brief Construct a node visitor to clone the originally unscaled data of a scalable CAD shape.
- * \param cadFile The scalable CAD shape.
+ * \param cadShape The scalable CAD shape.
  */
-CADVisitor::CADVisitor(CADFile* cadFile)
+CADVisitor::CADVisitor(CADShape* cadShape)
   : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
 {
-  this->cadFile = cadFile;
+  this->cadShape = cadShape;
 }
 
 /*!
@@ -1068,7 +1068,7 @@ void CADVisitor::apply(osg::MatrixTransform& node)
   osg::ref_ptr<osg::Transform> transform = node.asTransform();
   if (transform.valid()) {
     osg::Vec3d translation = node.getMatrix().getTrans();
-    cadFile->unscaledTransformTranslation[transform] = translation;
+    cadShape->unscaledTransformTranslation[transform] = translation;
   }
   traverse(node);
 }
@@ -1087,7 +1087,7 @@ void CADVisitor::apply(osg::Geode& geode)
       if (geometry.valid()) {
         osg::ref_ptr<osg::Vec3Array> vertices = dynamic_cast<osg::Vec3Array*>(geometry->getVertexArray());
         if (vertices.valid()) {
-          cadFile->unscaledGeometryVertices[geometry] = dynamic_cast<osg::Vec3Array*>(vertices->clone(osg::CopyOp::DEEP_COPY_ARRAYS));
+          cadShape->unscaledGeometryVertices[geometry] = dynamic_cast<osg::Vec3Array*>(vertices->clone(osg::CopyOp::DEEP_COPY_ARRAYS));
         }
       }
     }

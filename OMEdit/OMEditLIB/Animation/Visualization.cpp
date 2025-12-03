@@ -1358,7 +1358,7 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
       osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(shape._fileName);
       if (node.valid())
       {
-        osg::ref_ptr<CADFile> cad = new CADFile(node.get());
+        osg::ref_ptr<CADShape> cad = new CADShape(node.get());
 
         transf->addChild(cad.get());
       }
@@ -1371,7 +1371,7 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
       osg::ref_ptr<osg::Node> node = osgDB::readNodeFile(shape._fileName, options.get());
       if (node.valid())
       {
-        osg::ref_ptr<CADFile> cad = new CADFile(node.get());
+        osg::ref_ptr<CADShape> cad = new CADShape(node.get());
 
         transf->addChild(cad.get());
       }
@@ -1388,7 +1388,7 @@ void OSGScene::setUpScene(std::vector<ShapeObject>& shapes)
         lightModel->setTwoSided(true);
         ss->setAttributeAndModes(lightModel.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
 
-        osg::ref_ptr<CADFile> cad = new CADFile(node.get());
+        osg::ref_ptr<CADShape> cad = new CADShape(node.get());
 
         transf->addChild(cad.get());
       }
@@ -1501,7 +1501,7 @@ void UpdateVisitor::apply(osg::MatrixTransform& node)
         osg::ref_ptr<osg::Transform> transformNode = shape->getTransformNode();
         if (transformNode.valid() && transformNode->getNumChildren() > 0)
         {
-          osg::ref_ptr<CADFile> cad = dynamic_cast<CADFile*>(transformNode->getChild(0));
+          osg::ref_ptr<CADShape> cad = dynamic_cast<CADShape*>(transformNode->getChild(0));
           if (cad.valid())
           {
             cad->scaleTranslation(node, shape->_extra.exp, shape->_length.exp, shape->_width.exp, shape->_height.exp);
@@ -1537,7 +1537,7 @@ void UpdateVisitor::apply(osg::Geode& geode)
         osg::ref_ptr<osg::Transform> transformNode = shape->getTransformNode();
         if (transformNode.valid() && transformNode->getNumChildren() > 0)
         {
-          osg::ref_ptr<CADFile> cad = dynamic_cast<CADFile*>(transformNode->getChild(0));
+          osg::ref_ptr<CADShape> cad = dynamic_cast<CADShape*>(transformNode->getChild(0));
           if (cad.valid())
           {
             cad->scaleVertices(geode, shape->_extra.exp, shape->_length.exp, shape->_width.exp, shape->_height.exp);
@@ -1675,7 +1675,7 @@ void UpdateVisitor::apply(osg::Geode& geode)
       if (isCADType(shape->_type)) {
         osg::ref_ptr<osg::Transform> transformNode = shape->getTransformNode();
         if (transformNode.valid() && transformNode->getNumChildren() > 0) {
-          osg::ref_ptr<CADFile> cad = dynamic_cast<CADFile*>(transformNode->getChild(0));
+          osg::ref_ptr<CADShape> cad = dynamic_cast<CADShape*>(transformNode->getChild(0));
           if (cad.valid()) {
             stateSet = cad->getOrCreateStateSet();
             geometryColors = !visualProperties->getColor().custom();
