@@ -36,6 +36,7 @@
 
 #include <QMainWindow>
 #include <QToolBar>
+#include <QDockWidget>
 #include <QSlider>
 #include <QLineEdit>
 #include <QComboBox>
@@ -109,11 +110,11 @@ protected:
   int mSliderRange;
 
   void resetCamera();
+  void cameraPosition(const osg::Quat& rotation);
   void cameraPositionIsometric();
   void cameraPositionSide();
   void cameraPositionFront();
   void cameraPositionTop();
-  double computeDistanceToOrigin();
   void openFMUSettingsDialog(VisualizationFMU *pVisualizationFMU);
   void updateControlPanelValues();
   void updateSceneTime(double time);

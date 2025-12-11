@@ -33,22 +33,16 @@
 
 #include <QOpenGLContext> // must be included before OSG headers
 
-#include <osg/MatrixTransform>
-#include <osg/Vec3>
-#include <osgDB/ReadFile>
+#include <osgGA/OrbitManipulator>
 
 #include "AbstractAnimationWindow.h"
 #include "Modeling/MessagesWidget.h"
 #include "Options/OptionsDialog.h"
-#include "Modeling/MessagesWidget.h"
-#include "Plotting/PlotWindowContainer.h"
 #include "ViewerWidget.h"
 #include "Visualization.h"
 #include "VisualizationMAT.h"
 #include "VisualizationCSV.h"
 #include "VisualizationFMU.h"
-
-#include <QDockWidget>
 
 /*!
  * \class AbstractAnimationWindow
@@ -447,86 +441,80 @@ void AbstractAnimationWindow::resetCamera()
 }
 
 /*!
+ * \brief AbstractAnimationWindow::cameraPosition
+ * sets the camera position to the current distance and with the specified orientation
+ */
+void AbstractAnimationWindow::cameraPosition(const osg::Quat& rotation)
+{
+  osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
+  /*osg::Vec3d eye, center, up;
+  manipulator->getHomePosition(eye, center, up);
+  manipulator->setCenter(center);*/
+  double distance = manipulator->getDistance();
+  mpViewerWidget->getSceneView()->home();
+  manipulator->setDistance(distance);
+  manipulator->setRotation(rotation);
+  mpViewerWidget->update();
+}
+
+/*!
  * \brief AbstractAnimationWindow::cameraPositionIsometric
  * sets the camera position to isometric view
  */
 void AbstractAnimationWindow::cameraPositionIsometric()
 {
-  double d = computeDistanceToOrigin();
+  /*double d = computeDistanceToOrigin();
   osg::Matrixd mat = osg::Matrixd(0.7071, 0, -0.7071, 0,
                                   -0.409, 0.816, -0.409, 0,
                                   0.57735,  0.57735, 0.57735, 0,
                                   0.57735*d, 0.57735*d, 0.57735*d, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);
-  mpViewerWidget->update();
+  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
+  cameraPosition(osg::Quat(-3.1415/5, osg::Vec3d(1, 0, 0), 3.1415/5, osg::Vec3d(0, 1, 0), 0.0, osg::Vec3d(0, 0, 1)));
 }
 
 /*!
  * \brief AbstractAnimationWindow::cameraPositionSide
- * sets the camera position to Side
+ * sets the camera position to side view
  */
 void AbstractAnimationWindow::cameraPositionSide()
 {
-  double d = computeDistanceToOrigin();
+  /*double d = computeDistanceToOrigin();
   osg::Matrixd mat = osg::Matrixd(1, 0, 0, 0,
                                   0, 1, 0, 0,
                                   0, 0, 1, 0,
                                   0, 0, d, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);
-  mpViewerWidget->update();
+  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
+  cameraPosition(osg::Quat(0.0, osg::Vec3d(0, 0, 1)));
 }
 
 /*!
  * \brief AbstractAnimationWindow::cameraPositionFront
- * sets the camera position to Front
+ * sets the camera position to front view
  */
 void AbstractAnimationWindow::cameraPositionFront()
 {
-  double d = computeDistanceToOrigin();
+  /*double d = computeDistanceToOrigin();
   osg::Matrixd mat = osg::Matrixd(0, 0, 1, 0,
                                   1, 0, 0, 0,
                                   0, 1, 0, 0,
                                   0, d, 0, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);
-  mpViewerWidget->update();
+  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
+  cameraPosition(osg::Quat(3.1415/2, osg::Vec3d(0, 1, 0)));
 }
 
 /*!
  * \brief AbstractAnimationWindow::cameraPositionTop
- * sets the camera position to Top
+ * sets the camera position to top view
  */
 void AbstractAnimationWindow::cameraPositionTop()
 {
-  double d = computeDistanceToOrigin();
+  /*double d = computeDistanceToOrigin();
   osg::Matrixd mat = osg::Matrixd( 0, 0,-1, 0,
                                    0, 1, 0, 0,
                                    1, 0, 0, 0,
                                    d, 0, 0, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);
-  mpViewerWidget->update();
-}
-
-/*!
- * \brief AbstractAnimationWindow::computeDistanceToOrigin
- * computes distance to origin using pythagoras theorem
- */
-double AbstractAnimationWindow::computeDistanceToOrigin()
-{
-  osg::ref_ptr<osgGA::CameraManipulator> manipulator = mpViewerWidget->getSceneView()->getCameraManipulator();
-  osg::Matrixd mat = manipulator->getMatrix();
-  //assemble
-
-  //Compute distance to center using pythagoras theorem
-  double d = sqrt(abs(mat(3,0))*abs(mat(3,0))+
-                  abs(mat(3,1))*abs(mat(3,1))+
-                  abs(mat(3,2))*abs(mat(3,2)));
-
-  //If d is very small (~0), set it to 1 as default
-  if(d < 1e-10) {
-    d=1;
-  }
-
-  return d;
+  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
+  cameraPosition(osg::Quat(-3.1415/2, osg::Vec3d(1, 0, 0)));
 }
 
 /*!
@@ -710,10 +698,10 @@ void AbstractAnimationWindow::setPerspective(int value)
       cameraPositionSide();
       break;
     case 2:
-      cameraPositionTop();
+      cameraPositionFront();
       break;
     case 3:
-      cameraPositionFront();
+      cameraPositionTop();
       break;
   }
 }
