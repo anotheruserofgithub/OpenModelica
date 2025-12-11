@@ -921,7 +921,7 @@ void OMVisualBase::chooseVectorScales(osgViewer::View* view, OpenThreads::Mutex*
 
       // Get the initial camera distance to the focal center
       view->home();
-      const osgGA::OrbitManipulator* manipulator = static_cast<osgGA::OrbitManipulator*>(view->getCameraManipulator());
+      osg::ref_ptr<const osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(view->getCameraManipulator());
       const double initialDistance = manipulator->getDistance();
 
       // Initialize a map of adjustable-length vectors paired with their length scale, and grouped by their respective quantity
@@ -1006,7 +1006,8 @@ void OMVisualBase::chooseVectorScales(osgViewer::View* view, OpenThreads::Mutex*
                   updateVectorCoords(vector, s + 1 == samples ? timeStop : timeStart + timeIncrement * s);
                 }
                 const float length = vector.getLength();
-                if (length > 0 && length < vector.getHeadLength() * ((countUpToApex ? vector.isTwoHeadedArrow() ? 1.5f : 1.f : 0.f) + marginLength / 100.f)) {
+                const float headsFactor = countUpToApex ? vector.isTwoHeadedArrow() ? 1.5f : 1.f : 0.f;
+                if (length > 0 && length < vector.getHeadLength() * (headsFactor + marginLength / 100.f)) {
                   squeezedTooMuch = true;
                   break;
                 }
@@ -1080,10 +1081,11 @@ void OMVisualBase::chooseVectorScales(osgViewer::View* view, OpenThreads::Mutex*
       // Check if the adjusted length scales have unzoomed the scene too much
       if (finalDistance > initialDistance * (1.f + factorDistance / 100.f)) {
         // Inform that the home position will be reset
-        MessagesWidget::instance()->addPendingMessage(MessageItem(MessageItem::Modelica,
-                                                                  GUIMessages::getMessage(GUIMessages::VISUALIZATION_VECTORS_SCALING_ZOOMED_OUT_SCENE_TOO_MUCH),
-                                                                  Helper::scriptingKind,
-                                                                  Helper::warningLevel));
+        MessageItem message = MessageItem(MessageItem::Modelica,
+                                          GUIMessages::getMessage(GUIMessages::VISUALIZATION_VECTORS_SCALING_ZOOMED_OUT_SCENE_TOO_MUCH),
+                                          Helper::scriptingKind,
+                                          Helper::warningLevel);
+        MessagesWidget::instance()->addPendingMessage(message);
 
         // Make all adjustable-length vectors invisible
         for (VectorObject& vector : adjustableLengthVectors) {
