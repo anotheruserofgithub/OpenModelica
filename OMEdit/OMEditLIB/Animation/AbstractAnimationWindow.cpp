@@ -46,6 +46,7 @@
 #include "Visualization.h"
 #include "VisualizationMAT.h"
 #include "VisualizationCSV.h"
+#include "VisualizationFMU.h"
 
 #include <QDockWidget>
 
@@ -133,15 +134,12 @@ void AbstractAnimationWindow::openAnimationFile(QString fileName, bool stashCame
       /* Only use isometric view as default for csv file type.
        * Otherwise use side view as default which suits better for Modelica models.
        */
-      if (isCSV(mFileName)) {
+      if (mpVisualization->getVisType() == VisType::CSV) {
         mpPerspectiveDropDownBox->setCurrentIndex(0);
         cameraPositionIsometric();
       } else {
         mpPerspectiveDropDownBox->setCurrentIndex(1);
         cameraPositionSide();
-      }
-      if (isFMU(mFileName)) {
-        initInteractiveControlPanel();
       }
 
       if(stashCamera && !mCameraInitialized) {         // mCameraInitialized is used to make sure the view is never stashed
@@ -340,9 +338,9 @@ void AbstractAnimationWindow::setStateSolveSystem(double val, int idx)
     VisualizationFMU* FMUvis = dynamic_cast<VisualizationFMU*>(mpVisualization);
     if (FMUvis) {
       FMUvis->getFMU()->getFMUData()->_states[idx] = val;
+      FMUvis->updateSystem();
+      mpViewerWidget->update();
     }
-    FMUvis->updateSystem();
-    mpViewerWidget->update();
   }
 }
 
@@ -425,7 +423,7 @@ bool AbstractAnimationWindow::loadVisualization()
   //add window title
   setWindowTitle(QString::fromStdString(mFileName));
   //open settings dialog for FMU simulation
-  if (visType == VisType::FMU) {
+  if (mpVisualization->getVisType() == VisType::FMU) {
     openFMUSettingsDialog(dynamic_cast<VisualizationFMU*>(mpVisualization));
     mpInteractiveControlAction->setEnabled(true);
     initInteractiveControlPanel();
