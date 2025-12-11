@@ -1717,29 +1717,30 @@ void UpdateVisitor::apply(osg::Geode& geode)
   traverse(geode);
 }
 
-osg::Image* UpdateVisitor::convertImage(const QImage& iImage)
+osg::Image* UpdateVisitor::convertImage(const QImage& qImage)
 {
-  osg::Image* osgImage = new osg::Image();
-  if (!iImage.isNull()) {
+  osg::ref_ptr<osg::Image> osgImage = nullptr;
+  if (!qImage.isNull())
+  {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 2, 0)
-    QImage glImage = iImage.convertToFormat(QImage::Format_RGBA8888_Premultiplied);
+    QImage glImage = qImage.convertToFormat(QImage::Format_RGBA8888_Premultiplied);
 #else
-    QImage glImage = QGLWidget::convertToGLFormat(iImage);
+    QImage glImage = QGLWidget::convertToGLFormat(qImage);
 #endif
-    if (!glImage.isNull()) {
+    if (!glImage.isNull())
+    {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
       int bytesSize = glImage.sizeInBytes();
 #else // QT_VERSION_CHECK
       int bytesSize = glImage.byteCount();
 #endif // QT_VERSION_CHECK
       unsigned char* data = new unsigned char[bytesSize];
-      for (int i = 0; i < bytesSize; ++i) {
-        data[i] = glImage.bits()[i];
-      }
-      osgImage->setImage(glImage.width(), glImage.height(), 1, 4, GL_RGBA, GL_UNSIGNED_BYTE, data, osg::Image::USE_NEW_DELETE, 1);
+      std::memcpy(data, glImage.constBits(), bytesSize);
+      osgImage = new osg::Image();
+      osgImage->setImage(glImage.width(), glImage.height(), 1, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, data, osg::Image::USE_NEW_DELETE);
     }
   }
-  return osgImage;
+  return osgImage.release();
 }
 
 /*!
@@ -1750,19 +1751,13 @@ void UpdateVisitor::applyTexture(osg::StateSet* ss, const std::string& imagePath
 {
   if (ss)
   {
-    if (imagePath.compare(""))
+    if (imagePath.compare("") != 0)
     {
       osg::ref_ptr<osg::Image> image = nullptr;
       std::string resIdent = ":/Resources";
-      if (!imagePath.compare(0, resIdent.length(), resIdent))
+      if (imagePath.compare(0, resIdent.length(), resIdent) == 0)
       {
-        QImage* qim = new QImage(QString::fromStdString(imagePath));
-        image = convertImage(*qim);
-        delete qim;
-        if (image.valid())
-        {
-          image->setInternalTextureFormat(GL_RGBA);
-        }
+        image = convertImage(QImage(QString::fromStdString(imagePath)));
       }
       else
       {
@@ -1776,8 +1771,13 @@ void UpdateVisitor::applyTexture(osg::StateSet* ss, const std::string& imagePath
         texture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
         texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP);
         texture->setImage(image.get());
-        texture->setResizeNonPowerOfTwoHint(false);// don't output console message about scaling
+        texture->setUnRefImageDataAfterApply(true); // Delete image within osg::Texture2D::apply()
+        texture->setResizeNonPowerOfTwoHint(false); // Do not output console message about scaling
         ss->setTextureAttributeAndModes(0, texture.get(), osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+      }
+      else
+      {
+        // TODO: Error message!
       }
     }
     else
