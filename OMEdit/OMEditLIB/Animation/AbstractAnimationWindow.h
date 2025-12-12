@@ -110,7 +110,7 @@ protected:
   int mSliderRange;
 
   void resetCamera();
-  void cameraPosition(const osg::Quat& rotation);
+  void cameraPosition(const osg::Quat& rotation, const bool centerAtOrigin = false);
   void cameraPositionIsometric();
   void cameraPositionSide();
   void cameraPositionFront();

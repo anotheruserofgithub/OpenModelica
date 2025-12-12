@@ -449,15 +449,22 @@ void AbstractAnimationWindow::resetCamera()
  * \brief AbstractAnimationWindow::cameraPosition
  * sets the camera position to the current distance and with the specified orientation
  */
-void AbstractAnimationWindow::cameraPosition(const osg::Quat& rotation)
+void AbstractAnimationWindow::cameraPosition(const osg::Quat& rotation, const bool centerAtOrigin)
 {
   osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
-  /*osg::Vec3d eye, center, up;
-  manipulator->getHomePosition(eye, center, up);
-  manipulator->setCenter(center);*/
-  double distance = manipulator->getDistance();
-  mpViewerWidget->getSceneView()->home();
-  manipulator->setDistance(distance);
+  if (centerAtOrigin) {
+    manipulator->setCenter(osg::Vec3d());
+  } else {
+#if 1 // Center at initial home
+    osg::Vec3d eye, center, up;
+    manipulator->getHomePosition(eye, center, up);
+    manipulator->setCenter(center);
+#else // Center at recomputed home
+    double distance = manipulator->getDistance();
+    mpViewerWidget->getSceneView()->home(); // FIXME fails vectors scaling when unzoomed scene too much? (+ weird jitter with dynamic scene)
+    manipulator->setDistance(distance);
+#endif
+  }
   manipulator->setRotation(rotation);
   mpViewerWidget->update();
 }
