@@ -1081,11 +1081,8 @@ void OMVisualBase::chooseVectorScales(osgViewer::View* view, OpenThreads::Mutex*
       // Check if the adjusted length scales have unzoomed the scene too much
       if (finalDistance > initialDistance * (1.f + factorDistance / 100.f)) {
         // Inform that the home position will be reset
-        MessageItem message = MessageItem(MessageItem::Modelica,
-                                          GUIMessages::getMessage(GUIMessages::VISUALIZATION_VECTORS_SCALING_ZOOMED_OUT_SCENE_TOO_MUCH),
-                                          Helper::scriptingKind,
-                                          Helper::warningLevel);
-        MessagesWidget::instance()->addPendingMessage(message);
+        QString message = GUIMessages::getMessage(GUIMessages::VISUALIZATION_VECTORS_SCALING_ZOOMED_OUT_SCENE_TOO_MUCH);
+        MessagesWidget::instance()->addPendingMessage(MessageItem(MessageItem::Modelica, message, Helper::scriptingKind, Helper::warningLevel));
 
         // Make all adjustable-length vectors invisible
         for (VectorObject& vector : adjustableLengthVectors) {
