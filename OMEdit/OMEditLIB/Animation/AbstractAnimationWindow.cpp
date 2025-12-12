@@ -31,6 +31,11 @@
  * @author Volker Waurich <volker.waurich@tu-dresden.de>
  */
 
+#ifndef _USE_MATH_DEFINES
+  #define _USE_MATH_DEFINES
+#endif
+#include <cmath>
+
 #include <QOpenGLContext> // must be included before OSG headers
 
 #include <osgGA/OrbitManipulator>
@@ -469,7 +474,7 @@ void AbstractAnimationWindow::cameraPositionIsometric()
                                   0.57735,  0.57735, 0.57735, 0,
                                   0.57735*d, 0.57735*d, 0.57735*d, 1);
   mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
-  cameraPosition(osg::Quat(-3.1415/5, osg::Vec3d(1, 0, 0), 3.1415/5, osg::Vec3d(0, 1, 0), 0.0, osg::Vec3d(0, 0, 1)));
+  cameraPosition(osg::Quat(-std::asin(std::tan(M_PI/6.0)), osg::Vec3d(1, 0, 0), M_PI/4.0, osg::Vec3d(0, 1, 0), 0.0, osg::Vec3d(0, 0, 1)));
 }
 
 /*!
@@ -499,7 +504,7 @@ void AbstractAnimationWindow::cameraPositionFront()
                                   0, 1, 0, 0,
                                   0, d, 0, 1);
   mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
-  cameraPosition(osg::Quat(3.1415/2, osg::Vec3d(0, 1, 0)));
+  cameraPosition(osg::Quat(M_PI/2.0, osg::Vec3d(0, 1, 0)));
 }
 
 /*!
@@ -514,7 +519,7 @@ void AbstractAnimationWindow::cameraPositionTop()
                                    1, 0, 0, 0,
                                    d, 0, 0, 1);
   mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
-  cameraPosition(osg::Quat(-3.1415/2, osg::Vec3d(1, 0, 0)));
+  cameraPosition(osg::Quat(-M_PI/2.0, osg::Vec3d(1, 0, 0)));
 }
 
 /*!
@@ -721,7 +726,7 @@ void AbstractAnimationWindow::rotateCameraLeft()
   osg::Vec3d rotationAxis = center-eye;
 
   osg::Matrixd rotMatrix;
-  rotMatrix.makeRotate(3.1415/2.0, rotationAxis);
+  rotMatrix.makeRotate(M_PI/2.0, rotationAxis);
 
   mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);
   mpViewerWidget->update();
@@ -742,7 +747,7 @@ void AbstractAnimationWindow::rotateCameraRight()
   osg::Vec3d rotationAxis = center-eye;
 
   osg::Matrixd rotMatrix;
-  rotMatrix.makeRotate(-3.1415/2.0, rotationAxis);
+  rotMatrix.makeRotate(-M_PI/2.0, rotationAxis);
 
   mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);
   mpViewerWidget->update();
