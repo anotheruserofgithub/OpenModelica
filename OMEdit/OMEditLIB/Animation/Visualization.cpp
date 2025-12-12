@@ -1768,7 +1768,7 @@ void UpdateVisitor::applyTexture(osg::StateSet* ss, const std::string& imagePath
       if (image.valid())
       {
         osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D();
-        texture->setDataVariance(osg::Object::DYNAMIC);
+        //texture->setDataVariance(osg::Object::DYNAMIC);
         texture->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
         texture->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
         texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP);
