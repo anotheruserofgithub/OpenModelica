@@ -338,6 +338,8 @@ void ViewerWidget::showVisualizerPickContextMenu(const QPoint& pos)
   visualizerMenu.addAction(&action7);
 
   contextMenu.exec(this->mapToGlobal(pos));
+
+  mpSelectedVisualizer = nullptr;
 }
 
 /*!
@@ -356,7 +358,6 @@ void ViewerWidget::changeVisualizerTransparency()
       mpSelectedVisualizer->getVisualProperties()->getTransparency().set((float) (transparency - min) / (max - min));
       mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
-    mpSelectedVisualizer = nullptr;
   }
 }
 
@@ -369,7 +370,6 @@ void ViewerWidget::makeVisualizerInvisible()
   if (mpSelectedVisualizer) {
     mpSelectedVisualizer->getVisualProperties()->getTransparency().set(1.0);
     mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
-    mpSelectedVisualizer = nullptr;
   }
 }
 
@@ -386,7 +386,6 @@ void ViewerWidget::changeVisualizerColor()
       mpSelectedVisualizer->getVisualProperties()->getColor().set(color);
       mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
-    mpSelectedVisualizer = nullptr;
   }
 }
 
@@ -406,7 +405,6 @@ void ViewerWidget::changeVisualizerSpec()
       mpSelectedVisualizer->getVisualProperties()->getSpecular().set((float) (specular - min) / (max - min));
       mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
-    mpSelectedVisualizer = nullptr;
   }
 }
 
@@ -423,13 +421,11 @@ void ViewerWidget::applyCheckerTexture()
         QString msg = tr("Texture feature is not applicable for %1 files.").arg(shape->_type.c_str());
         MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, msg,
                                                               Helper::scriptingKind, Helper::notificationLevel));
-        mpSelectedVisualizer = nullptr;
         return;
       }
     }
     mpSelectedVisualizer->getVisualProperties()->getTextureImagePath().set(":/Resources/bitmaps/check.png");
     mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
-    mpSelectedVisualizer = nullptr;
   }
 }
 
@@ -446,7 +442,6 @@ void ViewerWidget::applyCustomTexture()
         QString msg = tr("Texture feature is not applicable for %1 files.").arg(shape->_type.c_str());
         MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, msg,
                                                               Helper::scriptingKind, Helper::notificationLevel));
-        mpSelectedVisualizer = nullptr;
         return;
       }
     }
@@ -457,7 +452,6 @@ void ViewerWidget::applyCustomTexture()
       mpSelectedVisualizer->getVisualProperties()->getTextureImagePath().set(fileName.toStdString());
       mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
-    mpSelectedVisualizer = nullptr;
   }
 }
 
@@ -474,13 +468,11 @@ void ViewerWidget::removeTexture()
         QString msg = tr("Texture feature is not applicable for %1 files.").arg(shape->_type.c_str());
         MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, msg,
                                                               Helper::scriptingKind, Helper::notificationLevel));
-        mpSelectedVisualizer = nullptr;
         return;
       }
     }
     mpSelectedVisualizer->getVisualProperties()->getTextureImagePath().set("");
     mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
-    mpSelectedVisualizer = nullptr;
   }
 }
 
@@ -503,13 +495,6 @@ void ViewerWidget::resetVisualPropertiesForAllVisualizers()
  */
 void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-  switch (event->button()) {
-    case Qt::RightButton:
-      mpSelectedVisualizer = nullptr;
-      break;
-    default:
-      break;
-  }
   int pixelRatio = qCeil(qApp->devicePixelRatio());
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   getEventQueue()->mouseButtonRelease(static_cast<float>(event->position().x() * pixelRatio), static_cast<float>(event->position().y() * pixelRatio), mMouseButton);
