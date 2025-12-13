@@ -1140,6 +1140,19 @@ void AutoTransformCullCallback::operator()(osg::Node* node, osg::NodeVisitor* nv
           rb->setDrawCallback(rb->getBinNum() == VectorObject::kAutoScaleRenderBinNum ? _atDrawCallback.get() : nullptr);
         }
       }
+      /*
+       * TODO: Explain that the scene graph should not be updated during cull traversal
+       * if OSG runs multithreaded, but this is where AutoTransform computes its scale
+       * right before handling this callback, hence this auto scale is canceled inside
+       * a cull callback rather than an update callback.
+       * That is not an issue in single-threaded mode.
+       * A proper solution would be to separate the representation of the vector with
+       * two different AutoTransforms, one for the shaft and one for the heads,
+       * and override the scales of these AutoTransforms rather than
+       * updating the size of the vector, as explained and shown in
+       * https://github.com/OpenModelica/OpenModelica/pull/11663#issue-2017565856
+       * under "Approach > Alternative" section.
+       */
       if (_visualization) {
         AbstractVisualizerObject* visualizer = nullptr;
         osg::ref_ptr<AutoTransformVisualizer> atv = dynamic_cast<AutoTransformVisualizer*>(at.get()); // Work-around for avoiding search in containers
