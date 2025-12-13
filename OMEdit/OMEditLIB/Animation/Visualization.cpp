@@ -1118,6 +1118,7 @@ AutoTransformDrawCallback::AutoTransformDrawCallback()
 
 void AutoTransformDrawCallback::drawImplementation(osgUtil::RenderBin* bin, osg::RenderInfo& renderInfo, osgUtil::RenderLeaf*& previous)
 {
+  // TODO: Use ClearNode instead but have to change the bin number (-1 by default)
   glClear(GL_DEPTH_BUFFER_BIT); // Render on top of everything drawn so far
   bin->drawImplementation(renderInfo, previous);
 }
