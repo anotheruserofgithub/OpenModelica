@@ -1421,7 +1421,7 @@ void OSGScene::setUpScene(std::vector<VectorObject>& vectors)
     transf->setAutoScaleTransitionWidthRatio(0);
     transf->setAutoScaleToScreen(isScaleInvariant);
     transf->setCullingActive(!isScaleInvariant); // Work-around for osg::AutoTransform::setAutoScaleToScreen(bool) (see OSG commit 5c48904)
-    transf->getOrCreateStateSet()->setMode(GL_NORMALIZE, isScaleInvariant ? osg::StateAttribute::ON : osg::StateAttribute::OFF);
+    transf->getOrCreateStateSet()->setMode(GL_RESCALE_NORMAL, isScaleInvariant ? osg::StateAttribute::ON : osg::StateAttribute::OFF);
     transf->getOrCreateStateSet()->setRenderBinDetails(VectorObject::kAutoScaleRenderBinNum - !isDrawnOnTop, VectorObject::kAutoScaleRenderBinName);
     transf->addCullCallback(_atCullCallback.get());
 
