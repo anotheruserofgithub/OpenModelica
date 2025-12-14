@@ -448,7 +448,8 @@ void AbstractAnimationWindow::resetCamera()
 
 /*!
  * \brief AbstractAnimationWindow::cameraPosition
- * sets the camera position to the current distance and with the specified orientation
+ * sets the camera position with the specified rotation from the focal center, which is reset at the home center,
+ * maintaining the current distance to the focal center
  */
 void AbstractAnimationWindow::cameraPosition(const osg::Quat& rotation, const bool centerAtOrigin)
 {
@@ -697,7 +698,7 @@ void AbstractAnimationWindow::setPerspective(int value)
 
 /*!
  * \brief AbstractAnimationWindow::rotateCameraLeft
- * rotates the camera 90 degress left about the line of sight
+ * rotates the camera 90 degrees left about the line of sight
  */
 void AbstractAnimationWindow::rotateCameraLeft()
 {
@@ -709,7 +710,7 @@ void AbstractAnimationWindow::rotateCameraLeft()
 
 /*!
  * \brief AbstractAnimationWindow::rotateCameraRight
- * rotates the camera 90 degress right about the line of sight
+ * rotates the camera 90 degrees right about the line of sight
  */
 void AbstractAnimationWindow::rotateCameraRight()
 {
