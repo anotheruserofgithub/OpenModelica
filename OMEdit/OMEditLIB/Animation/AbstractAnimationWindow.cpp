@@ -211,9 +211,10 @@ void AbstractAnimationWindow::createActions()
   // perspective drop down
   mpPerspectiveDropDownBox = new QComboBox;
   mpPerspectiveDropDownBox->addItem(QIcon(":/Resources/icons/perspective0.svg"), QString("Isometric"));
-  mpPerspectiveDropDownBox->addItem(QIcon(":/Resources/icons/perspective1.svg"),QString("Side"));
-  mpPerspectiveDropDownBox->addItem(QIcon(":/Resources/icons/perspective2.svg"),QString("Front"));
-  mpPerspectiveDropDownBox->addItem(QIcon(":/Resources/icons/perspective3.svg"),QString("Top"));
+  mpPerspectiveDropDownBox->addItem(QIcon(":/Resources/icons/perspective1.svg"), QString("Side"));
+  mpPerspectiveDropDownBox->addItem(QIcon(":/Resources/icons/perspective2.svg"), QString("Front"));
+  mpPerspectiveDropDownBox->addItem(QIcon(":/Resources/icons/perspective3.svg"), QString("Top"));
+  mpPerspectiveDropDownBox->view()->setMinimumWidth(mpPerspectiveDropDownBox->minimumSizeHint().width()); // See https://stackoverflow.com/a/54005207
   connect(mpPerspectiveDropDownBox, SIGNAL(activated(int)), this, SLOT(setPerspective(int)));
   // rotate camera left action
   mpRotateCameraLeftAction = new QAction(QIcon(":/Resources/icons/rotateCameraLeft.svg"), tr("Rotate Left"), this);
