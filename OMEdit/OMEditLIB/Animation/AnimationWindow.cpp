@@ -71,11 +71,8 @@ void AnimationWindow::createActions()
   mpAnimationToolBar->addAction(mpAnimationChooseFileAction);
   mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addAction(mpAnimationInitializeAction);
-  mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addAction(mpAnimationPlayAction);
-  mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addAction(mpAnimationPauseAction);
-  mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addAction(mpAnimationRepeatAction);
   mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addWidget(mpAnimationSlider);
@@ -89,5 +86,6 @@ void AnimationWindow::createActions()
   mpAnimationToolBar->addWidget(mpPerspectiveDropDownBox);
   mpAnimationToolBar->addAction(mpRotateCameraLeftAction);
   mpAnimationToolBar->addAction(mpRotateCameraRightAction);
+  mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addAction(mpInteractiveControlAction);
 }

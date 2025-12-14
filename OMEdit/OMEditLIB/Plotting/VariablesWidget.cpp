@@ -1502,7 +1502,6 @@ VariablesWidget::VariablesWidget(QWidget *pParent)
   connect(mpSpeedComboBox->lineEdit(), SIGNAL(textChanged(QString)), SLOT(visualizationSpeedChanged()));
   // add actions to toolbar
   mpToolBar->addAction(mpRewindAction);
-  mpToolBar->addSeparator();
   mpToolBar->addAction(mpPlayAction);
   mpToolBar->addAction(mpPauseAction);
   mpToolBar->addSeparator();
