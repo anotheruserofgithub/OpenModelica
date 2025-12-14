@@ -693,7 +693,7 @@ void AbstractAnimationWindow::setPerspective(int value)
 void AbstractAnimationWindow::rotateCameraLeft()
 {
   osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
-  osg::Quat rotation = osg::Quat(-M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
+  const osg::Quat rotation = osg::Quat(-M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
   manipulator->setRotation(rotation);
   mpViewerWidget->update();
 }
@@ -705,7 +705,7 @@ void AbstractAnimationWindow::rotateCameraLeft()
 void AbstractAnimationWindow::rotateCameraRight()
 {
   osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
-  osg::Quat rotation = osg::Quat(+M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
+  const osg::Quat rotation = osg::Quat(+M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
   manipulator->setRotation(rotation);
   mpViewerWidget->update();
 }
