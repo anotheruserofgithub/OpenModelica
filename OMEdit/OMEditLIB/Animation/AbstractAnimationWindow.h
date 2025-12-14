@@ -103,6 +103,8 @@ protected:
   QComboBox *mpPerspectiveDropDownBox;
   QAction *mpRotateCameraLeftAction;
   QAction *mpRotateCameraRightAction;
+  QAction *mpCenterAtOriginAction;
+  QAction *mpFitToViewAction;
   QVector<DoubleSpinBoxIndexed*> mSpinBoxVector;
   QVector<QLabel*> mStateLabels;
   osg::Matrixd mStashedViewMatrix;
@@ -133,6 +135,8 @@ public slots:
   void rotateCamera(double angle);
   void rotateCameraLeft();
   void rotateCameraRight();
+  void centerAtOrigin();
+  void fitToView();
   void initInteractiveControlPanel();
   void setStateSolveSystem(double val, int idx);
 };

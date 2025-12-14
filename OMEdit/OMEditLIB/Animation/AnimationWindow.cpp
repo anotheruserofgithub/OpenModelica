@@ -86,6 +86,8 @@ void AnimationWindow::createActions()
   mpAnimationToolBar->addWidget(mpPerspectiveDropDownBox);
   mpAnimationToolBar->addAction(mpRotateCameraLeftAction);
   mpAnimationToolBar->addAction(mpRotateCameraRightAction);
+  mpAnimationToolBar->addAction(mpCenterAtOriginAction);
+  mpAnimationToolBar->addAction(mpFitToViewAction);
   mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addAction(mpInteractiveControlAction);
 }

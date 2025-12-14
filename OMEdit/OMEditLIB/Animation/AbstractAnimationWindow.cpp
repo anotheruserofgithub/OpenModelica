@@ -79,6 +79,8 @@ AbstractAnimationWindow::AbstractAnimationWindow(QWidget *pParent)
     mpPerspectiveDropDownBox(nullptr),
     mpRotateCameraLeftAction(nullptr),
     mpRotateCameraRightAction(nullptr),
+    mpCenterAtOriginAction(nullptr),
+    mpFitToViewAction(nullptr),
     mCameraInitialized(false),
     mSliderRange(1000)
 {
@@ -224,6 +226,14 @@ void AbstractAnimationWindow::createActions()
   mpRotateCameraRightAction = new QAction(QIcon(":/Resources/icons/rotateCameraRight.svg"), tr("Rotate Right"), this);
   mpRotateCameraRightAction->setStatusTip(tr("Rotate the scene right"));
   connect(mpRotateCameraRightAction, SIGNAL(triggered()), this, SLOT(rotateCameraRight()));
+  // center at origin action
+  mpCenterAtOriginAction = new QAction(QIcon(":/Resources/icons/center-at-origin.svg"), tr("Center at Origin"), this);
+  mpCenterAtOriginAction->setStatusTip(tr("Center the scene at the origin"));
+  connect(mpCenterAtOriginAction, SIGNAL(triggered()), this, SLOT(centerAtOrigin()));
+  // fit to view action
+  mpFitToViewAction = new QAction(QIcon(":/Resources/icons/fit-to-view.svg"), tr("Fit to View"), this);
+  mpFitToViewAction->setStatusTip(tr("Fit the scene to the view"));
+  connect(mpFitToViewAction, SIGNAL(triggered()), this, SLOT(fitToView()));
   // interactive control action
   mpInteractiveControlAction = mpAnimationParameterDockerWidget->toggleViewAction();
   mpInteractiveControlAction->setIcon(QIcon(":/Resources/icons/control-panel.svg"));
@@ -714,6 +724,30 @@ void AbstractAnimationWindow::rotateCameraLeft()
 void AbstractAnimationWindow::rotateCameraRight()
 {
   rotateCamera(+M_PI/2.0);
+}
+
+/*!
+ * \brief AbstractAnimationWindow::centerAtOrigin
+ * centers the scene at the origin
+ */
+void AbstractAnimationWindow::centerAtOrigin()
+{
+  osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
+  manipulator->setCenter(osg::Vec3d());
+  mpViewerWidget->update();
+}
+
+/*!
+ * \brief AbstractAnimationWindow::fitToView
+ * fist the scene to the view
+ */
+void AbstractAnimationWindow::fitToView()
+{
+  osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
+  const osg::Quat rotation = manipulator->getRotation();
+  mpViewerWidget->getSceneView()->home();
+  manipulator->setRotation(rotation);
+  mpViewerWidget->update();
 }
 
 /*!

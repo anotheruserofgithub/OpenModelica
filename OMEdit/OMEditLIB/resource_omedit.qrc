@@ -158,6 +158,8 @@
         <file>Resources/icons/perspective3.svg</file>
         <file>Resources/icons/rotateCameraLeft.svg</file>
         <file>Resources/icons/rotateCameraRight.svg</file>
+        <file>Resources/icons/center-at-origin.svg</file>
+        <file>Resources/icons/fit-to-view.svg</file>
         <file>Resources/icons/bold-icon.svg</file>
         <file>Resources/icons/italic-icon.svg</file>
         <file>Resources/icons/underline-icon.svg</file>
