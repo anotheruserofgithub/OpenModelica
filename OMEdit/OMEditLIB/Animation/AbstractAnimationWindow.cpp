@@ -218,11 +218,11 @@ void AbstractAnimationWindow::createActions()
   connect(mpPerspectiveDropDownBox, SIGNAL(activated(int)), this, SLOT(setPerspective(int)));
   // rotate camera left action
   mpRotateCameraLeftAction = new QAction(QIcon(":/Resources/icons/rotateCameraLeft.svg"), tr("Rotate Left"), this);
-  mpRotateCameraLeftAction->setStatusTip(tr("Rotate the camera left"));
+  mpRotateCameraLeftAction->setStatusTip(tr("Rotate the scene left"));
   connect(mpRotateCameraLeftAction, SIGNAL(triggered()), this, SLOT(rotateCameraLeft()));
   // rotate camera right action
   mpRotateCameraRightAction = new QAction(QIcon(":/Resources/icons/rotateCameraRight.svg"), tr("Rotate Right"), this);
-  mpRotateCameraRightAction->setStatusTip(tr("Rotate the camera right"));
+  mpRotateCameraRightAction->setStatusTip(tr("Rotate the scene right"));
   connect(mpRotateCameraRightAction, SIGNAL(triggered()), this, SLOT(rotateCameraRight()));
   // interactive control action
   mpInteractiveControlAction = mpAnimationParameterDockerWidget->toggleViewAction();
@@ -700,7 +700,7 @@ void AbstractAnimationWindow::rotateCamera(double angle)
 
 /*!
  * \brief AbstractAnimationWindow::rotateCameraLeft
- * rotates the camera 90 degrees left about the line of sight
+ * rotates the scene 90 degrees left about the line of sight
  */
 void AbstractAnimationWindow::rotateCameraLeft()
 {
@@ -709,7 +709,7 @@ void AbstractAnimationWindow::rotateCameraLeft()
 
 /*!
  * \brief AbstractAnimationWindow::rotateCameraRight
- * rotates the camera 90 degrees right about the line of sight
+ * rotates the scene 90 degrees right about the line of sight
  */
 void AbstractAnimationWindow::rotateCameraRight()
 {
