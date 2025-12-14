@@ -476,12 +476,6 @@ void AbstractAnimationWindow::cameraPosition(const osg::Quat& rotation, const bo
  */
 void AbstractAnimationWindow::cameraPositionIsometric()
 {
-  /*double d = computeDistanceToOrigin();
-  osg::Matrixd mat = osg::Matrixd(0.7071, 0, -0.7071, 0,
-                                  -0.409, 0.816, -0.409, 0,
-                                  0.57735,  0.57735, 0.57735, 0,
-                                  0.57735*d, 0.57735*d, 0.57735*d, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
   cameraPosition(osg::Quat(-std::asin(std::tan(M_PI/6.0)), osg::Vec3d(1, 0, 0), M_PI/4.0, osg::Vec3d(0, 1, 0), 0.0, osg::Vec3d(0, 0, 1)));
 }
 
@@ -491,12 +485,6 @@ void AbstractAnimationWindow::cameraPositionIsometric()
  */
 void AbstractAnimationWindow::cameraPositionSide()
 {
-  /*double d = computeDistanceToOrigin();
-  osg::Matrixd mat = osg::Matrixd(1, 0, 0, 0,
-                                  0, 1, 0, 0,
-                                  0, 0, 1, 0,
-                                  0, 0, d, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
   cameraPosition(osg::Quat(0.0, osg::Vec3d(0, 0, 1)));
 }
 
@@ -506,12 +494,6 @@ void AbstractAnimationWindow::cameraPositionSide()
  */
 void AbstractAnimationWindow::cameraPositionFront()
 {
-  /*double d = computeDistanceToOrigin();
-  osg::Matrixd mat = osg::Matrixd(0, 0, 1, 0,
-                                  1, 0, 0, 0,
-                                  0, 1, 0, 0,
-                                  0, d, 0, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
   cameraPosition(osg::Quat(+M_PI/2.0, osg::Vec3d(0, 1, 0)));
 }
 
@@ -521,12 +503,6 @@ void AbstractAnimationWindow::cameraPositionFront()
  */
 void AbstractAnimationWindow::cameraPositionTop()
 {
-  /*double d = computeDistanceToOrigin();
-  osg::Matrixd mat = osg::Matrixd( 0, 0,-1, 0,
-                                   0, 1, 0, 0,
-                                   1, 0, 0, 0,
-                                   d, 0, 0, 1);
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
   cameraPosition(osg::Quat(-M_PI/2.0, osg::Vec3d(1, 0, 0)));
 }
 
@@ -725,18 +701,6 @@ void AbstractAnimationWindow::setPerspective(int value)
  */
 void AbstractAnimationWindow::rotateCameraLeft()
 {
-  /*osg::ref_ptr<osgGA::CameraManipulator> manipulator = mpViewerWidget->getSceneView()->getCameraManipulator();
-  osg::Matrixd mat = manipulator->getMatrix();
-  osg::Camera *pCamera = mpViewerWidget->getSceneView()->getCamera();
-
-  osg::Vec3d eye, center, up;
-  pCamera->getViewMatrixAsLookAt(eye, center, up);
-  osg::Vec3d rotationAxis = center-eye;
-
-  osg::Matrixd rotMatrix;
-  rotMatrix.makeRotate(M_PI/2.0, rotationAxis);
-
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);*/
   osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
   osg::Quat rotation = osg::Quat(-M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
   manipulator->setRotation(rotation);
@@ -749,18 +713,6 @@ void AbstractAnimationWindow::rotateCameraLeft()
  */
 void AbstractAnimationWindow::rotateCameraRight()
 {
-  /*osg::ref_ptr<osgGA::CameraManipulator> manipulator = mpViewerWidget->getSceneView()->getCameraManipulator();
-  osg::Matrixd mat = manipulator->getMatrix();
-  osg::Camera *pCamera = mpViewerWidget->getSceneView()->getCamera();
-
-  osg::Vec3d eye, center, up;
-  pCamera->getViewMatrixAsLookAt(eye, center, up);
-  osg::Vec3d rotationAxis = center-eye;
-
-  osg::Matrixd rotMatrix;
-  rotMatrix.makeRotate(-M_PI/2.0, rotationAxis);
-
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);*/
   osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
   osg::Quat rotation = osg::Quat(+M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
   manipulator->setRotation(rotation);
