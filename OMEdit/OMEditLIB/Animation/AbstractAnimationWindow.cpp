@@ -512,7 +512,7 @@ void AbstractAnimationWindow::cameraPositionFront()
                                   0, 1, 0, 0,
                                   0, d, 0, 1);
   mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat);*/
-  cameraPosition(osg::Quat(M_PI/2.0, osg::Vec3d(0, 1, 0)));
+  cameraPosition(osg::Quat(+M_PI/2.0, osg::Vec3d(0, 1, 0)));
 }
 
 /*!
@@ -725,7 +725,7 @@ void AbstractAnimationWindow::setPerspective(int value)
  */
 void AbstractAnimationWindow::rotateCameraLeft()
 {
-  osg::ref_ptr<osgGA::CameraManipulator> manipulator = mpViewerWidget->getSceneView()->getCameraManipulator();
+  /*osg::ref_ptr<osgGA::CameraManipulator> manipulator = mpViewerWidget->getSceneView()->getCameraManipulator();
   osg::Matrixd mat = manipulator->getMatrix();
   osg::Camera *pCamera = mpViewerWidget->getSceneView()->getCamera();
 
@@ -736,7 +736,10 @@ void AbstractAnimationWindow::rotateCameraLeft()
   osg::Matrixd rotMatrix;
   rotMatrix.makeRotate(M_PI/2.0, rotationAxis);
 
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);
+  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);*/
+  osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
+  osg::Quat rotation = osg::Quat(-M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
+  manipulator->setRotation(rotation);
   mpViewerWidget->update();
 }
 
@@ -746,7 +749,7 @@ void AbstractAnimationWindow::rotateCameraLeft()
  */
 void AbstractAnimationWindow::rotateCameraRight()
 {
-  osg::ref_ptr<osgGA::CameraManipulator> manipulator = mpViewerWidget->getSceneView()->getCameraManipulator();
+  /*osg::ref_ptr<osgGA::CameraManipulator> manipulator = mpViewerWidget->getSceneView()->getCameraManipulator();
   osg::Matrixd mat = manipulator->getMatrix();
   osg::Camera *pCamera = mpViewerWidget->getSceneView()->getCamera();
 
@@ -757,7 +760,10 @@ void AbstractAnimationWindow::rotateCameraRight()
   osg::Matrixd rotMatrix;
   rotMatrix.makeRotate(-M_PI/2.0, rotationAxis);
 
-  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);
+  mpViewerWidget->getSceneView()->getCameraManipulator()->setByMatrix(mat*rotMatrix);*/
+  osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
+  osg::Quat rotation = osg::Quat(+M_PI/2.0, osg::Vec3d(0, 0, 1)) * manipulator->getRotation();
+  manipulator->setRotation(rotation);
   mpViewerWidget->update();
 }
 
