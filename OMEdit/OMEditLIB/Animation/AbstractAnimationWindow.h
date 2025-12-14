@@ -130,6 +130,7 @@ public slots:
   void jumpToTimeSlotFunction();
   void setSpeedSlotFunction();
   void setPerspective(int value);
+  void rotateCamera(double angle);
   void rotateCameraLeft();
   void rotateCameraRight();
   void initInteractiveControlPanel();
