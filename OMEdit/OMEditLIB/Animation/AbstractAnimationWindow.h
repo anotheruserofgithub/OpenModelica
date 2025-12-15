@@ -88,12 +88,12 @@ protected:
   //widgets
   ViewerWidget *mpViewerWidget;
   QToolBar* mpAnimationToolBar;
-  QDockWidget* mpAnimationParameterDockerWidget;
+  QDockWidget* mpAnimationCameraDockWidget;
+  QDockWidget* mpAnimationParameterDockWidget;
   QAction *mpAnimationChooseFileAction;
   QAction *mpAnimationInitializeAction;
   QAction *mpAnimationPlayAction;
   QAction *mpAnimationPauseAction;
-  QAction *mpInteractiveControlAction;
   QAction *mpAnimationRepeatAction;
   QSlider* mpAnimationSlider;
   Label *mpAnimationTimeLabel;
@@ -105,12 +105,17 @@ protected:
   QAction *mpRotateCameraRightAction;
   QAction *mpCenterAtOriginAction;
   QAction *mpFitToViewAction;
+  QAction *mpCameraControlAction;
+  QAction *mpInteractiveControlAction;
   QVector<DoubleSpinBoxIndexed*> mSpinBoxVector;
   QVector<QLabel*> mStateLabels;
   osg::Matrixd mStashedViewMatrix;
   bool mCameraInitialized;
   int mSliderRange;
 
+  void initCameraControlPanel();
+  void initInteractiveControlPanel();
+  void updateControlPanelValues();
   void resetCamera();
   void cameraPosition(const osg::Quat& rotation);
   void cameraPositionIsometric();
@@ -118,10 +123,10 @@ protected:
   void cameraPositionFront();
   void cameraPositionTop();
   void openFMUSettingsDialog(VisualizationFMU *pVisualizationFMU);
-  void updateControlPanelValues();
   void updateSceneTime(double time);
 
 public slots:
+  void setStateSolveSystem(double val, int idx);
   void updateScene();
   void chooseAnimationFileSlotFunction();
   void initSlotFunction();
@@ -135,10 +140,9 @@ public slots:
   void rotateCamera(double angle);
   void rotateCameraLeft();
   void rotateCameraRight();
+  void centerAtHomePosition();
   void centerAtOrigin();
   void fitToView();
-  void initInteractiveControlPanel();
-  void setStateSolveSystem(double val, int idx);
 };
 
 #endif // ABSTRACTANIMATIONWINDOW_H

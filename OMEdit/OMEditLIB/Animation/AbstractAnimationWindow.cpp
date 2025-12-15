@@ -65,7 +65,8 @@ AbstractAnimationWindow::AbstractAnimationWindow(QWidget *pParent)
     mpVisualization(nullptr),
     mpViewerWidget(nullptr),
     mpAnimationToolBar(new QToolBar(QString("Animation Toolbar"),this)),
-    mpAnimationParameterDockerWidget(new QDockWidget(QString("Parameter Settings"),this)),
+    mpAnimationCameraDockWidget(new QDockWidget(QString("Trackball Manipulator"),this)),
+    mpAnimationParameterDockWidget(new QDockWidget(QString("Parameter Settings"),this)),
     mpAnimationChooseFileAction(nullptr),
     mpAnimationInitializeAction(nullptr),
     mpAnimationPlayAction(nullptr),
@@ -81,6 +82,8 @@ AbstractAnimationWindow::AbstractAnimationWindow(QWidget *pParent)
     mpRotateCameraRightAction(nullptr),
     mpCenterAtOriginAction(nullptr),
     mpFitToViewAction(nullptr),
+    mpCameraControlAction(nullptr),
+    mpInteractiveControlAction(nullptr),
     mCameraInitialized(false),
     mSliderRange(1000)
 {
@@ -94,7 +97,8 @@ AbstractAnimationWindow::AbstractAnimationWindow(QWidget *pParent)
   int toolbarIconSize = OptionsDialog::instance()->getGeneralSettingsPage()->getToolbarIconSizeSpinBox()->value();
   mpAnimationToolBar->setIconSize(QSize(toolbarIconSize, toolbarIconSize));
   addToolBar(Qt::TopToolBarArea, mpAnimationToolBar);
-  addDockWidget(Qt::RightDockWidgetArea, mpAnimationParameterDockerWidget);
+  addDockWidget(Qt::RightDockWidgetArea, mpAnimationCameraDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, mpAnimationParameterDockWidget);
 
   // Viewer layout
   QGridLayout *pGridLayout = new QGridLayout;
@@ -234,26 +238,211 @@ void AbstractAnimationWindow::createActions()
   mpFitToViewAction = new QAction(QIcon(":/Resources/icons/fit-to-view.svg"), tr("Fit to View"), this);
   mpFitToViewAction->setStatusTip(tr("Fit the scene to the view"));
   connect(mpFitToViewAction, SIGNAL(triggered()), this, SLOT(fitToView()));
+  // camera control action
+  mpCameraControlAction = mpAnimationCameraDockWidget->toggleViewAction();
+  mpCameraControlAction->setIcon(QIcon(":/Resources/icons/joystick.svg"));
+  mpCameraControlAction->setText(tr("Camera Control"));
+  mpCameraControlAction->setStatusTip(tr("Open the camera control panel"));
+  //mpAnimationCameraDockWidget->hide();
   // interactive control action
-  mpInteractiveControlAction = mpAnimationParameterDockerWidget->toggleViewAction();
+  mpInteractiveControlAction = mpAnimationParameterDockWidget->toggleViewAction();
   mpInteractiveControlAction->setIcon(QIcon(":/Resources/icons/control-panel.svg"));
   mpInteractiveControlAction->setText(tr("Interactive Control"));
   mpInteractiveControlAction->setStatusTip(tr("Open the interactive control panel"));
   mpInteractiveControlAction->setEnabled(false);
-  mpAnimationParameterDockerWidget->hide();
+  mpAnimationParameterDockWidget->hide();
 }
 
 /*!
- * \brief AbstractAnimationWindow::updateControlPanelValues
+ * \brief AbstractAnimationWindow::initCameraControlPanel
  */
-void AbstractAnimationWindow::updateControlPanelValues()
+void AbstractAnimationWindow::initCameraControlPanel()
 {
-  if (getVisualization()) {
-    VisualizationFMU* FMUvis = dynamic_cast<VisualizationFMU*>(mpVisualization);
-    for (int stateIdx = 0; stateIdx < mSpinBoxVector.size(); stateIdx++) {
-      mStateLabels.at(stateIdx)->setText(QString::number(FMUvis->getFMU()->getFMUData()->_states[stateIdx]));
+  struct LLabel : public QLabel
+  {
+    LLabel(const QString &text) : QLabel(text)
+    {
+      setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+      setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    }
+  };
+
+  struct RLabel : public QLabel
+  {
+    RLabel(const QString &text) : QLabel(text)
+    {
+      setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+      setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    }
+  };
+
+  struct ADoubleSpinBox : public QDoubleSpinBox
+  {
+    ADoubleSpinBox() : QDoubleSpinBox()
+    {
+      setDecimals(3);
+      setRange(-DBL_MAX, DBL_MAX);
+      setStepType(QAbstractSpinBox::AdaptiveDecimalStepType);
+      setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+      setMinimumWidth(3 * OptionsDialog::instance()->getGeneralSettingsPage()->getToolbarIconSizeSpinBox()->value());
+    }
+  };
+
+  struct AScrollArea : public QScrollArea
+  {
+    QSize sizeHint() const override
+    {
+      // See https://github.com/qt/qtbase/blob/v6.10.1/src/widgets/widgets/qscrollarea.cpp#L364-L382
+      int f = 2 * frameWidth();
+      QSize sz(f, f);
+      sz += widgetResizable() ? widget()->minimumSizeHint() : widget()->size();
+      if (verticalScrollBarPolicy() == Qt::ScrollBarAlwaysOn)
+        sz.rwidth() += verticalScrollBar()->sizeHint().width();
+      if (horizontalScrollBarPolicy() == Qt::ScrollBarAlwaysOn)
+        sz.rheight() += horizontalScrollBar()->sizeHint().height();
+      return sz;
+    }
+  };
+
+  AScrollArea *pScrollArea = new AScrollArea();
+  pScrollArea->setWidgetResizable(true);
+
+  QWidget *pWidget = new QWidget();
+  pWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+
+  QVBoxLayout *pVBoxLayout = new QVBoxLayout();
+  pVBoxLayout->setSizeConstraint(QLayout::SetMinimumSize);
+
+  // Focal point
+  {
+    // Center
+    {
+      LLabel *pCenterLabel = new LLabel(QString("Center:"));
+      pCenterLabel->setToolTip(QString("Vector to the center of rotation in world coordinates."));
+      pVBoxLayout->addWidget(pCenterLabel);
+
+      QHBoxLayout *pCenterLayout = new QHBoxLayout();
+      pVBoxLayout->addLayout(pCenterLayout);
+      {
+        // X axis
+        {
+          RLabel *pCenterXLabel = new RLabel(QString("x ="));
+          pCenterLayout->addWidget(pCenterXLabel);
+
+          ADoubleSpinBox *pCenterXSpinBox = new ADoubleSpinBox();
+          pCenterLayout->addWidget(pCenterXSpinBox);
+        }
+
+        pCenterLayout->addStretch();
+
+        // Y axis
+        {
+          RLabel *pCenterYLabel = new RLabel(QString("y ="));
+          pCenterLayout->addWidget(pCenterYLabel);
+
+          ADoubleSpinBox *pCenterYSpinBox = new ADoubleSpinBox();
+          pCenterLayout->addWidget(pCenterYSpinBox);
+        }
+
+        pCenterLayout->addStretch();
+
+        // Z axis
+        {
+          RLabel *pCenterZLabel = new RLabel(QString("z ="));
+          pCenterLayout->addWidget(pCenterZLabel);
+
+          ADoubleSpinBox *pCenterZSpinBox = new ADoubleSpinBox();
+          pCenterLayout->addWidget(pCenterZSpinBox);
+        }
+
+        pCenterLayout->addStretch();
+
+        // Home center
+        {
+          QToolButton *pCenterHomeButton = new QToolButton();
+          pCenterHomeButton->setAutoRaise(true);
+          pCenterHomeButton->setIcon(QIcon(":/Resources/icons/center-at-home-position.svg"));
+          pCenterHomeButton->setToolTip(QString("Center the scene at the home position."));
+          connect(pCenterHomeButton, SIGNAL(clicked()), this, SLOT(centerAtHomePosition()));
+          pCenterLayout->addWidget(pCenterHomeButton);
+        }
+      }
+    }
+
+    // Rotation
+    {
+      LLabel *pRotationLabel = new LLabel(QString("Rotation:"));
+      pRotationLabel->setToolTip(QString("Quaternion for the orientation with respect to the focal center."));
+      pVBoxLayout->addWidget(pRotationLabel);
+
+      QHBoxLayout *pRotationLayout = new QHBoxLayout();
+      pVBoxLayout->addLayout(pRotationLayout);
+      {
+        // X basis
+        {
+          RLabel *pRotationXLabel = new RLabel(QString("x ="));
+          pRotationLayout->addWidget(pRotationXLabel);
+
+          ADoubleSpinBox *pRotationXSpinBox = new ADoubleSpinBox();
+          pRotationLayout->addWidget(pRotationXSpinBox);
+        }
+
+        pRotationLayout->addStretch();
+
+        // Y basis
+        {
+          RLabel *pRotationYLabel = new RLabel(QString("y ="));
+          pRotationLayout->addWidget(pRotationYLabel);
+
+          ADoubleSpinBox *pRotationYSpinBox = new ADoubleSpinBox();
+          pRotationLayout->addWidget(pRotationYSpinBox);
+        }
+
+        pRotationLayout->addStretch();
+
+        // Z basis
+        {
+          RLabel *pRotationZLabel = new RLabel(QString("z ="));
+          pRotationLayout->addWidget(pRotationZLabel);
+
+          ADoubleSpinBox *pRotationZSpinBox = new ADoubleSpinBox();
+          pRotationLayout->addWidget(pRotationZSpinBox);
+        }
+
+        pRotationLayout->addStretch();
+
+        // W basis
+        {
+          RLabel *pRotationWLabel = new RLabel(QString("w ="));
+          pRotationLayout->addWidget(pRotationWLabel);
+
+          ADoubleSpinBox *pRotationWSpinBox = new ADoubleSpinBox();
+          pRotationLayout->addWidget(pRotationWSpinBox);
+        }
+      }
+    }
+
+    // Distance
+    {
+      LLabel *pDistanceLabel = new LLabel(QString("Distance:"));
+      pDistanceLabel->setToolTip(QString("Scalar distance from the focal center to the camera along the line of sight."));
+      pVBoxLayout->addWidget(pDistanceLabel);
+
+      QHBoxLayout *pDistanceLayout = new QHBoxLayout();
+      pVBoxLayout->addLayout(pDistanceLayout);
+      {
+        // Value
+        {
+          ADoubleSpinBox *pDistanceSpinBox = new ADoubleSpinBox();
+          pDistanceLayout->addWidget(pDistanceSpinBox);
+        }
+      }
     }
   }
+
+  pWidget->setLayout(pVBoxLayout);
+  pScrollArea->setWidget(pWidget);
+  mpAnimationCameraDockWidget->setWidget(pScrollArea);
 }
 
 /*!
@@ -323,17 +512,29 @@ void AbstractAnimationWindow::initInteractiveControlPanel()
     widget->setLayout(layout);
     QScrollArea *scrollArea = new QScrollArea(this);
     scrollArea->setWidget(widget);
-    mpAnimationParameterDockerWidget->setWidget(scrollArea);
+    mpAnimationParameterDockWidget->setWidget(scrollArea);
     } else {
       MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, tr("Information about states could not be determined."),
                                                             Helper::scriptingKind, Helper::errorLevel));
-        mpAnimationParameterDockerWidget->hide();
-
+      mpAnimationParameterDockWidget->hide();
     }
   } else {
     MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, tr("Interactive Control needs an FMU ME 2.0"),
                                                           Helper::scriptingKind, Helper::errorLevel));
-    mpAnimationParameterDockerWidget->hide();
+    mpAnimationParameterDockWidget->hide();
+  }
+}
+
+/*!
+ * \brief AbstractAnimationWindow::updateControlPanelValues
+ */
+void AbstractAnimationWindow::updateControlPanelValues()
+{
+  if (getVisualization()) {
+    VisualizationFMU* FMUvis = dynamic_cast<VisualizationFMU*>(mpVisualization);
+    for (int stateIdx = 0; stateIdx < mSpinBoxVector.size(); stateIdx++) {
+      mStateLabels.at(stateIdx)->setText(QString::number(FMUvis->getFMU()->getFMUData()->_states[stateIdx]));
+    }
   }
 }
 
@@ -432,6 +633,8 @@ bool AbstractAnimationWindow::loadVisualization()
   }
   //add window title
   setWindowTitle(QString::fromStdString(mFileName));
+  //fill trackball manipulator widget
+  initCameraControlPanel();
   //open settings dialog for FMU simulation
   if (mpVisualization->getVisType() == VisType::FMU) {
     openFMUSettingsDialog(dynamic_cast<VisualizationFMU*>(mpVisualization));
@@ -440,7 +643,7 @@ bool AbstractAnimationWindow::loadVisualization()
   }
   else {
     mpInteractiveControlAction->setEnabled(false);
-    mpAnimationParameterDockerWidget->hide();
+    mpAnimationParameterDockWidget->hide();
   }
 
   return true;
@@ -724,6 +927,19 @@ void AbstractAnimationWindow::rotateCameraLeft()
 void AbstractAnimationWindow::rotateCameraRight()
 {
   rotateCamera(+M_PI/2.0);
+}
+
+/*!
+ * \brief AbstractAnimationWindow::centerAtHomePosition
+ * centers the scene at the home position
+ */
+void AbstractAnimationWindow::centerAtHomePosition()
+{
+  osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
+  osg::Vec3d eye, center, up;
+  manipulator->getHomePosition(eye, center, up);
+  manipulator->setCenter(center);
+  mpViewerWidget->update();
 }
 
 /*!
