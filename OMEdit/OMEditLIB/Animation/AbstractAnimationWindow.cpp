@@ -315,57 +315,51 @@ void AbstractAnimationWindow::initCameraControlPanel()
 
   // Focal point
   {
+    QGroupBox *pFocalPointGroupBox = new QGroupBox(QString("Focal point"));
+
+    QGridLayout *pFocalPointGridLayout = new QGridLayout();
+
     // Center
     {
       LLabel *pCenterLabel = new LLabel(QString("Center:"));
       pCenterLabel->setToolTip(QString("Vector to the center of rotation in world coordinates."));
-      pVBoxLayout->addWidget(pCenterLabel);
+      pFocalPointGridLayout->addWidget(pCenterLabel, 0, 0, 1, -1);
 
-      QHBoxLayout *pCenterLayout = new QHBoxLayout();
-      pVBoxLayout->addLayout(pCenterLayout);
+      // X axis
       {
-        // X axis
-        {
-          RLabel *pCenterXLabel = new RLabel(QString("x ="));
-          pCenterLayout->addWidget(pCenterXLabel);
+        RLabel *pCenterXLabel = new RLabel(QString("x ="));
+        pFocalPointGridLayout->addWidget(pCenterXLabel, 1, 0);
 
-          ADoubleSpinBox *pCenterXSpinBox = new ADoubleSpinBox();
-          pCenterLayout->addWidget(pCenterXSpinBox);
-        }
+        ADoubleSpinBox *pCenterXSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pCenterXSpinBox, 1, 1);
+      }
 
-        pCenterLayout->addStretch();
+      // Y axis
+      {
+        RLabel *pCenterYLabel = new RLabel(QString("y ="));
+        pFocalPointGridLayout->addWidget(pCenterYLabel, 1, 3);
 
-        // Y axis
-        {
-          RLabel *pCenterYLabel = new RLabel(QString("y ="));
-          pCenterLayout->addWidget(pCenterYLabel);
+        ADoubleSpinBox *pCenterYSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pCenterYSpinBox, 1, 4);
+      }
 
-          ADoubleSpinBox *pCenterYSpinBox = new ADoubleSpinBox();
-          pCenterLayout->addWidget(pCenterYSpinBox);
-        }
+      // Z axis
+      {
+        RLabel *pCenterZLabel = new RLabel(QString("z ="));
+        pFocalPointGridLayout->addWidget(pCenterZLabel, 1, 6);
 
-        pCenterLayout->addStretch();
+        ADoubleSpinBox *pCenterZSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pCenterZSpinBox, 1, 7);
+      }
 
-        // Z axis
-        {
-          RLabel *pCenterZLabel = new RLabel(QString("z ="));
-          pCenterLayout->addWidget(pCenterZLabel);
-
-          ADoubleSpinBox *pCenterZSpinBox = new ADoubleSpinBox();
-          pCenterLayout->addWidget(pCenterZSpinBox);
-        }
-
-        pCenterLayout->addStretch();
-
-        // Home center
-        {
-          QToolButton *pCenterHomeButton = new QToolButton();
-          pCenterHomeButton->setAutoRaise(true);
-          pCenterHomeButton->setIcon(QIcon(":/Resources/icons/center-at-home-position.svg"));
-          pCenterHomeButton->setToolTip(QString("Center the scene at the home position."));
-          connect(pCenterHomeButton, SIGNAL(clicked()), this, SLOT(centerAtHomePosition()));
-          pCenterLayout->addWidget(pCenterHomeButton);
-        }
+      // Home center
+      {
+        QToolButton *pCenterHomeButton = new QToolButton();
+        pCenterHomeButton->setAutoRaise(true);
+        pCenterHomeButton->setIcon(QIcon(":/Resources/icons/center-at-home-position.svg"));
+        pCenterHomeButton->setToolTip(QString("Center the scene at the home position."));
+        connect(pCenterHomeButton, SIGNAL(clicked()), this, SLOT(centerAtHomePosition()));
+        pFocalPointGridLayout->addWidget(pCenterHomeButton, 1, 9, 1, -1);
       }
     }
 
@@ -373,52 +367,42 @@ void AbstractAnimationWindow::initCameraControlPanel()
     {
       LLabel *pRotationLabel = new LLabel(QString("Rotation:"));
       pRotationLabel->setToolTip(QString("Quaternion for the orientation with respect to the focal center."));
-      pVBoxLayout->addWidget(pRotationLabel);
+      pFocalPointGridLayout->addWidget(pRotationLabel, 2, 0, 1, -1);
 
-      QHBoxLayout *pRotationLayout = new QHBoxLayout();
-      pVBoxLayout->addLayout(pRotationLayout);
+      // X basis
       {
-        // X basis
-        {
-          RLabel *pRotationXLabel = new RLabel(QString("x ="));
-          pRotationLayout->addWidget(pRotationXLabel);
+        RLabel *pRotationXLabel = new RLabel(QString("x ="));
+        pFocalPointGridLayout->addWidget(pRotationXLabel, 3, 0);
 
-          ADoubleSpinBox *pRotationXSpinBox = new ADoubleSpinBox();
-          pRotationLayout->addWidget(pRotationXSpinBox);
-        }
+        ADoubleSpinBox *pRotationXSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pRotationXSpinBox, 3, 1);
+      }
 
-        pRotationLayout->addStretch();
+      // Y basis
+      {
+        RLabel *pRotationYLabel = new RLabel(QString("y ="));
+        pFocalPointGridLayout->addWidget(pRotationYLabel, 3, 3);
 
-        // Y basis
-        {
-          RLabel *pRotationYLabel = new RLabel(QString("y ="));
-          pRotationLayout->addWidget(pRotationYLabel);
+        ADoubleSpinBox *pRotationYSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pRotationYSpinBox, 3, 4);
+      }
 
-          ADoubleSpinBox *pRotationYSpinBox = new ADoubleSpinBox();
-          pRotationLayout->addWidget(pRotationYSpinBox);
-        }
+      // Z basis
+      {
+        RLabel *pRotationZLabel = new RLabel(QString("z ="));
+        pFocalPointGridLayout->addWidget(pRotationZLabel, 3, 6);
 
-        pRotationLayout->addStretch();
+        ADoubleSpinBox *pRotationZSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pRotationZSpinBox, 3, 7);
+      }
 
-        // Z basis
-        {
-          RLabel *pRotationZLabel = new RLabel(QString("z ="));
-          pRotationLayout->addWidget(pRotationZLabel);
+      // W basis
+      {
+        RLabel *pRotationWLabel = new RLabel(QString("w ="));
+        pFocalPointGridLayout->addWidget(pRotationWLabel, 3, 9);
 
-          ADoubleSpinBox *pRotationZSpinBox = new ADoubleSpinBox();
-          pRotationLayout->addWidget(pRotationZSpinBox);
-        }
-
-        pRotationLayout->addStretch();
-
-        // W basis
-        {
-          RLabel *pRotationWLabel = new RLabel(QString("w ="));
-          pRotationLayout->addWidget(pRotationWLabel);
-
-          ADoubleSpinBox *pRotationWSpinBox = new ADoubleSpinBox();
-          pRotationLayout->addWidget(pRotationWSpinBox);
-        }
+        ADoubleSpinBox *pRotationWSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pRotationWSpinBox, 3, 10);
       }
     }
 
@@ -426,18 +410,17 @@ void AbstractAnimationWindow::initCameraControlPanel()
     {
       LLabel *pDistanceLabel = new LLabel(QString("Distance:"));
       pDistanceLabel->setToolTip(QString("Scalar distance from the focal center to the camera along the line of sight."));
-      pVBoxLayout->addWidget(pDistanceLabel);
+      pFocalPointGridLayout->addWidget(pDistanceLabel, 4, 0, 1, -1);
 
-      QHBoxLayout *pDistanceLayout = new QHBoxLayout();
-      pVBoxLayout->addLayout(pDistanceLayout);
+      // Value
       {
-        // Value
-        {
-          ADoubleSpinBox *pDistanceSpinBox = new ADoubleSpinBox();
-          pDistanceLayout->addWidget(pDistanceSpinBox);
-        }
+        ADoubleSpinBox *pDistanceSpinBox = new ADoubleSpinBox();
+        pFocalPointGridLayout->addWidget(pDistanceSpinBox, 5, 0, 1, -1);
       }
     }
+
+    pFocalPointGroupBox->setLayout(pFocalPointGridLayout);
+    pVBoxLayout->addWidget(pFocalPointGroupBox);
   }
 
   pWidget->setLayout(pVBoxLayout);
