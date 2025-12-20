@@ -245,9 +245,9 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
       if (event->modifiers() == Qt::ShiftModifier) {
         //qt counts pixels from upper left corner and osg from bottom left corner
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        pickVisualizer(event->position().x() * pixelRatio, (this->height() - event->position().y()) * pixelRatio);
+        pickVisualizer(event->position().x() * pixelRatio, (height() - event->position().y()) * pixelRatio);
 #else
-        pickVisualizer(event->x() * pixelRatio, (this->height() - event->y()) * pixelRatio);
+        pickVisualizer(event->x() * pixelRatio, (height() - event->y()) * pixelRatio);
 #endif
         showVisualizerPickContextMenu(event->pos());
         return;
@@ -337,7 +337,7 @@ void ViewerWidget::showVisualizerPickContextMenu(const QPoint& pos)
   visualizerMenu.addAction(&action6);
   visualizerMenu.addAction(&action7);
 
-  contextMenu.exec(this->mapToGlobal(pos));
+  contextMenu.exec(mapToGlobal(pos));
 
   mpSelectedVisualizer = nullptr;
 }
