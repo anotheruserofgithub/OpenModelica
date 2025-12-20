@@ -84,6 +84,7 @@ protected:
   template<typename T>
   int convertSizeDimension(T dimension);
   QPoint convertMousePosition(QMouseEvent *event, bool reverseY = false);
+  unsigned int convertMouseButton(QMouseEvent *event);
   virtual void paintEvent(QPaintEvent *paintEvent) override;
   virtual void paintGL() override;
   virtual void resizeGL(int width, int height) override;

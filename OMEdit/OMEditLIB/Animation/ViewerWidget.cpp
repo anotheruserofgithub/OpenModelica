@@ -156,6 +156,35 @@ QPoint ViewerWidget::convertMousePosition(QMouseEvent *event, bool reverseY)
 }
 
 /*!
+ * \brief ViewerWidget::convertMouseButton
+ * Converts the mouse button to the number expected by OSG.
+ * \param event
+ * \return
+ */
+unsigned int ViewerWidget::convertMouseButton(QMouseEvent *event)
+{
+  // 1 = left mouse button
+  // 2 = middle mouse button
+  // 3 = right mouse button
+  unsigned int button;
+  switch (event->button()) {
+    case Qt::LeftButton:
+      button = 1;
+      break;
+    case Qt::MiddleButton:
+      button = 2;
+      break;
+    case Qt::RightButton:
+      button = 3;
+      break;
+    default:
+      button = 0;
+      break;
+  }
+  return button;
+}
+
+/*!
  * \brief ViewerWidget::paintEvent
  * Reimplementation of QOpenGLWidget::paintEvent().
  * \sa ViewerWidget::paintGL()
@@ -258,35 +287,19 @@ void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
  */
 void ViewerWidget::mousePressEvent(QMouseEvent *event)
 {
-  // 1 = left mouse button
-  // 2 = middle mouse button
-  // 3 = right mouse button
-  unsigned int button = 0;
-  switch (event->button()) {
-    case Qt::LeftButton:
-      button = 1;
-      break;
-    case Qt::MiddleButton:
-      button = 2;
-      break;
-    case Qt::RightButton:
-      button = 3;
-      if (event->modifiers() == Qt::ShiftModifier) {
-        //qt counts pixels from upper left corner and osg from bottom left corner, thus pass reverseY = true
-        QPoint position = convertMousePosition(event, true);
+  if (event->button() == Qt::RightButton && event->modifiers() == Qt::ShiftModifier) {
+    //qt counts pixels from upper left corner and osg from bottom left corner, thus pass reverseY = true
+    QPoint position = convertMousePosition(event, true);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        QPoint mousePosition = event->position().toPoint();
+    QPoint mousePosition = event->position().toPoint();
 #else
-        QPoint mousePosition = event->pos();
+    QPoint mousePosition = event->pos();
 #endif
-        pickVisualizer(static_cast<float>(position.x()), static_cast<float>(position.y()));
-        showVisualizerPickContextMenu(mousePosition);
-        return;
-      }
-      break;
-    default:
-      break;
+    pickVisualizer(static_cast<float>(position.x()), static_cast<float>(position.y()));
+    showVisualizerPickContextMenu(mousePosition);
+    return;
   }
+  unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
   getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
@@ -523,23 +536,7 @@ void ViewerWidget::resetVisualPropertiesForAllVisualizers()
  */
 void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-  // 1 = left mouse button
-  // 2 = middle mouse button
-  // 3 = right mouse button
-  unsigned int button = 0;
-  switch (event->button()) {
-    case Qt::LeftButton:
-      button = 1;
-      break;
-    case Qt::MiddleButton:
-      button = 2;
-      break;
-    case Qt::RightButton:
-      button = 3;
-      break;
-    default:
-      break;
-  }
+  unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
   getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
