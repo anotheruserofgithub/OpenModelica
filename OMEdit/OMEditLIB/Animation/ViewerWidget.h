@@ -79,8 +79,6 @@ public:
   ViewerWidget(QWidget *pParent = 0, Qt::WindowFlags flags = Qt::WindowFlags());
   osgViewer::View* getSceneView() {return mpSceneView;}
   OpenThreads::Mutex* getFrameMutex() {return mpFrameMutex;}
-  AbstractVisualizerObject* getSelectedVisualizer() {return mpSelectedVisualizer;}
-  void setSelectedVisualizer(AbstractVisualizerObject* visualizer) {mpSelectedVisualizer = visualizer;}
   void pickVisualizer(int x, int y);
   void frame();
 protected:
