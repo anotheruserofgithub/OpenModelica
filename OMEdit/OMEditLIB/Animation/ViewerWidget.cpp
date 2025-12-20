@@ -542,6 +542,18 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 }
 
 /*!
+ * \brief ViewerWidget::mouseDoubleClickEvent
+ * Passes the QWidget::mouseDoubleClickEvent() to Graphics Window.
+ * \param event
+ */
+void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+  unsigned int button = convertMouseButton(event);
+  QPoint position = convertMousePosition(event);
+  getEventQueue()->mouseDoubleButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
+}
+
+/*!
  * \brief ViewerWidget::wheelEvent
  * Passes the QWidget::wheelEvent() to Graphics Window.
  * \param event
