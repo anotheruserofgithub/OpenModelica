@@ -104,7 +104,6 @@ private:
   OpenThreads::Mutex* mpFrameMutex;
   AbstractAnimationWindow* mpAnimationWidget;
   AbstractVisualizerObject* mpSelectedVisualizer;
-  unsigned int mMouseButton = 0;
 protected slots:
   void changeVisualizerTransparency();
   void makeVisualizerInvisible();

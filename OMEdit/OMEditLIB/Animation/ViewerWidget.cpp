@@ -261,20 +261,16 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
   // 1 = left mouse button
   // 2 = middle mouse button
   // 3 = right mouse button
-  mMouseButton = 0;
+  unsigned int button = 0;
   switch (event->button()) {
     case Qt::LeftButton:
-      if (event->modifiers() != Qt::ControlModifier) { // left mouse button without Ctrl
-        mMouseButton = 1;
-      } else { // left mouse button with Ctrl - do the same as middle mouse button, there is no middle button on laptops.
-        mMouseButton = 2;
-      }
+      button = 1;
       break;
     case Qt::MiddleButton:
-      mMouseButton = 2;
+      button = 2;
       break;
     case Qt::RightButton:
-      mMouseButton = 3;
+      button = 3;
       if (event->modifiers() == Qt::ShiftModifier) {
         //qt counts pixels from upper left corner and osg from bottom left corner, thus pass reverseY = true
         QPoint position = convertMousePosition(event, true);
@@ -292,7 +288,7 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
       break;
   }
   QPoint position = convertMousePosition(event);
-  getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), mMouseButton);
+  getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
 
 /*!
@@ -527,8 +523,25 @@ void ViewerWidget::resetVisualPropertiesForAllVisualizers()
  */
 void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+  // 1 = left mouse button
+  // 2 = middle mouse button
+  // 3 = right mouse button
+  unsigned int button = 0;
+  switch (event->button()) {
+    case Qt::LeftButton:
+      button = 1;
+      break;
+    case Qt::MiddleButton:
+      button = 2;
+      break;
+    case Qt::RightButton:
+      button = 3;
+      break;
+    default:
+      break;
+  }
   QPoint position = convertMousePosition(event);
-  getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), mMouseButton);
+  getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
 
 /*!
