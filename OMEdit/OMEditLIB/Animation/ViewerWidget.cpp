@@ -246,10 +246,11 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
         //qt counts pixels from upper left corner and osg from bottom left corner
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         pickVisualizer(static_cast<float>(event->position().x() * pixelRatio), static_cast<float>((height() - event->position().y()) * pixelRatio));
+        showVisualizerPickContextMenu(event->position().toPoint());
 #else
         pickVisualizer(static_cast<float>(event->x() * pixelRatio), static_cast<float>((height() - event->y()) * pixelRatio));
-#endif
         showVisualizerPickContextMenu(event->pos());
+#endif
         return;
       }
       break;
