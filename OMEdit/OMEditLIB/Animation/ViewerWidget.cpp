@@ -129,8 +129,8 @@ ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags flags)
 template<typename T>
 int ViewerWidget::convertSizeDimension(T dimension)
 {
-  int pixelRatio = qCeil(qApp->devicePixelRatio());
-  return static_cast<int>(dimension) * pixelRatio;
+  qreal pixelRatio = qApp->devicePixelRatio();
+  return static_cast<int>(static_cast<qreal>(.5) + (static_cast<qreal>(dimension) * pixelRatio));
 }
 
 /*!
