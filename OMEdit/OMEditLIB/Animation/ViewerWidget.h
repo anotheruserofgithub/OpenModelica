@@ -102,7 +102,7 @@ private:
   AbstractAnimationWindow* mpAnimationWidget;
   AbstractVisualizerObject* mpSelectedVisualizer;
   unsigned int mMouseButton = 0;
-public slots:
+protected slots:
   void changeVisualizerTransparency();
   void makeVisualizerInvisible();
   void changeVisualizerColor();
