@@ -79,7 +79,6 @@ public:
   ViewerWidget(QWidget *pParent = 0, Qt::WindowFlags flags = Qt::WindowFlags());
   osgViewer::View* getSceneView() {return mpSceneView;}
   OpenThreads::Mutex* getFrameMutex() {return mpFrameMutex;}
-  void pickVisualizer(int x, int y);
   void frame();
 protected:
   virtual void paintEvent(QPaintEvent *paintEvent) override;
@@ -92,6 +91,7 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void wheelEvent(QWheelEvent *event) override;
   virtual bool event(QEvent* event) override;
+  void pickVisualizer(int x, int y);
   void showVisualizerPickContextMenu(const QPoint& pos);
 private:
   osgGA::EventQueue* getEventQueue() const;
