@@ -299,17 +299,17 @@ void ViewerWidget::showVisualizerPickContextMenu(const QPoint& pos)
 
   // The context widget
   QMenu contextMenu(tr("Context menu"), this);
-  QMenu visualizerMenu(name, this);
+  QMenu visualizerMenu(name, &contextMenu);
 
   visualizerMenu.setIcon(QIcon(":/Resources/icons/animation.svg"));
-  QAction action0(QIcon(":/Resources/icons/reset.svg"), tr("Reset Visual Properties"), this);
-  QAction action1(QIcon(":/Resources/icons/transparency.svg"), tr("Change Transparency"), this);
-  QAction action2(QIcon(":/Resources/icons/invisible.svg"), tr("Make Visualizer Invisible"), this);
-  QAction action3(QIcon(":/Resources/icons/changeColor.svg"), tr("Change Color"), this);
-  QAction action4(QIcon(":/Resources/icons/specularity.svg"), tr("Change Specularity"), this);
-  QAction action5(QIcon(":/Resources/icons/checkered.svg"), tr("Apply Checker Texture"), this);
-  QAction action6(QIcon(":/Resources/icons/texture.svg"), tr("Apply Custom Texture"), this);
-  QAction action7(QIcon(":/Resources/icons/undo.svg"), tr("Remove Texture"), this);
+  QAction action0(QIcon(":/Resources/icons/reset.svg"), tr("Reset Visual Properties"), &contextMenu);
+  QAction action1(QIcon(":/Resources/icons/transparency.svg"), tr("Change Transparency"), &visualizerMenu);
+  QAction action2(QIcon(":/Resources/icons/invisible.svg"), tr("Make Visualizer Invisible"), &visualizerMenu);
+  QAction action3(QIcon(":/Resources/icons/changeColor.svg"), tr("Change Color"), &visualizerMenu);
+  QAction action4(QIcon(":/Resources/icons/specularity.svg"), tr("Change Specularity"), &visualizerMenu);
+  QAction action5(QIcon(":/Resources/icons/checkered.svg"), tr("Apply Checker Texture"), &visualizerMenu);
+  QAction action6(QIcon(":/Resources/icons/texture.svg"), tr("Apply Custom Texture"), &visualizerMenu);
+  QAction action7(QIcon(":/Resources/icons/undo.svg"), tr("Remove Texture"), &visualizerMenu);
 
   connect(&action0, SIGNAL(triggered()), this, SLOT(resetVisualPropertiesForAllVisualizers()));
   connect(&action1, SIGNAL(triggered()), this, SLOT(changeVisualizerTransparency()));
