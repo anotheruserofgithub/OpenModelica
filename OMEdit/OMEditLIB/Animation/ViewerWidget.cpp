@@ -121,6 +121,41 @@ ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags flags)
 }
 
 /*!
+ * \brief ViewerWidget::convertSizeDimension
+ * Converts the size dimension to account for screen DPI scaling.
+ * \param dimension
+ * \return
+ */
+template<typename T>
+int ViewerWidget::convertSizeDimension(T dimension)
+{
+  int pixelRatio = qCeil(qApp->devicePixelRatio());
+  return static_cast<int>(dimension) * pixelRatio;
+}
+
+/*!
+ * \brief ViewerWidget::convertMousePosition
+ * Converts the mouse position to account for screen DPI scaling.
+ * \param event
+ * \param reverseY
+ * \return
+ */
+QPoint ViewerWidget::convertMousePosition(QMouseEvent *event, bool reverseY)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  QPointF position = event->position();
+  using T = qreal;
+#else
+  QPoint position = event->pos();
+  using T = int;
+#endif
+  if (reverseY) {
+    position.setY(static_cast<T>(height()) - position.y());
+  }
+  return QPoint(convertSizeDimension(position.x()), convertSizeDimension(position.y()));
+}
+
+/*!
  * \brief ViewerWidget::paintEvent
  * Reimplementation of QOpenGLWidget::paintEvent().
  * \sa ViewerWidget::paintGL()
@@ -173,9 +208,12 @@ void ViewerWidget::frame()
  */
 void ViewerWidget::resizeGL(int width, int height)
 {
-  int pixelRatio = qCeil(qApp->devicePixelRatio());
-  getEventQueue()->windowResize(x() * pixelRatio, y() * pixelRatio, width * pixelRatio, height * pixelRatio);
-  mpGraphicsWindow->resized(x() * pixelRatio, y() * pixelRatio, width * pixelRatio, height * pixelRatio);
+  int x = convertSizeDimension(this->x());
+  int y = convertSizeDimension(this->y());
+  width = convertSizeDimension(width);
+  height = convertSizeDimension(height);
+  getEventQueue()->windowResize(x, y, width, height);
+  mpGraphicsWindow->resized(x, y, width, height);
 }
 
 /*!
@@ -209,12 +247,8 @@ void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
  */
 void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
 {
-  int pixelRatio = qCeil(qApp->devicePixelRatio());
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  getEventQueue()->mouseMotion(static_cast<float>(event->position().x() * pixelRatio), static_cast<float>(event->position().y() * pixelRatio));
-#else
-  getEventQueue()->mouseMotion(static_cast<float>(event->x() * pixelRatio), static_cast<float>(event->y() * pixelRatio));
-#endif
+  QPoint position = convertMousePosition(event);
+  getEventQueue()->mouseMotion(static_cast<float>(position.x()), static_cast<float>(position.y()));
 }
 
 /*!
@@ -228,7 +262,6 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
   // 2 = middle mouse button
   // 3 = right mouse button
   mMouseButton = 0;
-  int pixelRatio = qCeil(qApp->devicePixelRatio());
   switch (event->button()) {
     case Qt::LeftButton:
       if (event->modifiers() != Qt::ControlModifier) { // left mouse button without Ctrl
@@ -243,25 +276,23 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
     case Qt::RightButton:
       mMouseButton = 3;
       if (event->modifiers() == Qt::ShiftModifier) {
-        //qt counts pixels from upper left corner and osg from bottom left corner
+        //qt counts pixels from upper left corner and osg from bottom left corner, thus pass reverseY = true
+        QPoint position = convertMousePosition(event, true);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        pickVisualizer(static_cast<float>(event->position().x() * pixelRatio), static_cast<float>((height() - event->position().y()) * pixelRatio));
-        showVisualizerPickContextMenu(event->position().toPoint());
+        QPoint mousePosition = event->position().toPoint();
 #else
-        pickVisualizer(static_cast<float>(event->x() * pixelRatio), static_cast<float>((height() - event->y()) * pixelRatio));
-        showVisualizerPickContextMenu(event->pos());
+        QPoint mousePosition = event->pos();
 #endif
+        pickVisualizer(static_cast<float>(position.x()), static_cast<float>(position.y()));
+        showVisualizerPickContextMenu(mousePosition);
         return;
       }
       break;
     default:
       break;
   }
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  getEventQueue()->mouseButtonPress(static_cast<float>(event->position().x() * pixelRatio), static_cast<float>(event->position().y() * pixelRatio), mMouseButton);
-#else
-  getEventQueue()->mouseButtonPress(static_cast<float>(event->x() * pixelRatio), static_cast<float>(event->y() * pixelRatio), mMouseButton);
-#endif
+  QPoint position = convertMousePosition(event);
+  getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), mMouseButton);
 }
 
 /*!
@@ -496,12 +527,8 @@ void ViewerWidget::resetVisualPropertiesForAllVisualizers()
  */
 void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-  int pixelRatio = qCeil(qApp->devicePixelRatio());
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  getEventQueue()->mouseButtonRelease(static_cast<float>(event->position().x() * pixelRatio), static_cast<float>(event->position().y() * pixelRatio), mMouseButton);
-#else
-  getEventQueue()->mouseButtonRelease(static_cast<float>(event->x() * pixelRatio), static_cast<float>(event->y() * pixelRatio), mMouseButton);
-#endif
+  QPoint position = convertMousePosition(event);
+  getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), mMouseButton);
 }
 
 /*!

@@ -81,6 +81,9 @@ public:
   OpenThreads::Mutex* getFrameMutex() {return mpFrameMutex;}
   void frame();
 protected:
+  template<typename T>
+  int convertSizeDimension(T dimension);
+  QPoint convertMousePosition(QMouseEvent *event, bool reverseY = false);
   virtual void paintEvent(QPaintEvent *paintEvent) override;
   virtual void paintGL() override;
   virtual void resizeGL(int width, int height) override;
