@@ -85,6 +85,7 @@ protected:
   int convertSizeDimension(T dimension);
   QPoint convertMousePosition(QMouseEvent *event, bool reverseY = false);
   unsigned int convertMouseButton(QMouseEvent *event);
+  QPair<int, int> convertKeyCode(QKeyEvent *event);
   virtual void paintEvent(QPaintEvent *paintEvent) override;
   virtual void paintGL() override;
   virtual void resizeGL(int width, int height) override;

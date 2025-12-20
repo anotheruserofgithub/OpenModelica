@@ -185,6 +185,21 @@ unsigned int ViewerWidget::convertMouseButton(QMouseEvent *event)
 }
 
 /*!
+ * \brief ViewerWidget::convertKeyCode
+ * Converts the key code to the symbol expected by OSG.
+ * \param event
+ * \return
+ */
+QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
+{
+  QString keyString = event->text();
+  const char* keyData = keyString.toLocal8Bit().data();
+  int keySymbol = osgGA::GUIEventAdapter::KeySymbol(*keyData);
+  int virtualKeySymbol = 0;
+  return QPair<int, int>(keySymbol, virtualKeySymbol);
+}
+
+/*!
  * \brief ViewerWidget::paintEvent
  * Reimplementation of QOpenGLWidget::paintEvent().
  * \sa ViewerWidget::paintGL()
@@ -252,9 +267,8 @@ void ViewerWidget::resizeGL(int width, int height)
  */
 void ViewerWidget::keyPressEvent(QKeyEvent *event)
 {
-  QString keyString = event->text();
-  const char* keyData = keyString.toLocal8Bit().data();
-  getEventQueue()->keyPress(osgGA::GUIEventAdapter::KeySymbol(*keyData));
+  QPair<int, int> key = convertKeyCode(event);
+  getEventQueue()->keyPress(key.first, key.second);
 }
 
 /*!
@@ -264,9 +278,8 @@ void ViewerWidget::keyPressEvent(QKeyEvent *event)
  */
 void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
 {
-  QString keyString = event->text();
-  const char* keyData = keyString.toLocal8Bit().data();
-  getEventQueue()->keyRelease(osgGA::GUIEventAdapter::KeySymbol(*keyData));
+  QPair<int, int> key = convertKeyCode(event);
+  getEventQueue()->keyRelease(key.first, key.second);
 }
 
 /*!
