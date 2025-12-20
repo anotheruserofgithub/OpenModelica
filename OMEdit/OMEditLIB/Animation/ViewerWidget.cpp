@@ -245,9 +245,9 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
       if (event->modifiers() == Qt::ShiftModifier) {
         //qt counts pixels from upper left corner and osg from bottom left corner
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        pickVisualizer(event->position().x() * pixelRatio, (height() - event->position().y()) * pixelRatio);
+        pickVisualizer(static_cast<float>(event->position().x() * pixelRatio), static_cast<float>((height() - event->position().y()) * pixelRatio));
 #else
-        pickVisualizer(event->x() * pixelRatio, (height() - event->y()) * pixelRatio);
+        pickVisualizer(static_cast<float>(event->x() * pixelRatio), static_cast<float>((height() - event->y()) * pixelRatio));
 #endif
         showVisualizerPickContextMenu(event->pos());
         return;
@@ -269,7 +269,7 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
  * \param x - mouse position pixel in x direction in osg system
  * \param y - mouse position pixel in y direction in osg system
  */
-void ViewerWidget::pickVisualizer(int x, int y)
+void ViewerWidget::pickVisualizer(float x, float y)
 {
   mpSelectedVisualizer = nullptr;
   //std::cout<<"pickVisualizer "<<x<<" and "<<y<<std::endl;

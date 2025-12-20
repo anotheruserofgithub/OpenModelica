@@ -91,7 +91,7 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void wheelEvent(QWheelEvent *event) override;
   virtual bool event(QEvent* event) override;
-  void pickVisualizer(int x, int y);
+  void pickVisualizer(float x, float y);
   void showVisualizerPickContextMenu(const QPoint& pos);
 private:
   osgGA::EventQueue* getEventQueue() const;
