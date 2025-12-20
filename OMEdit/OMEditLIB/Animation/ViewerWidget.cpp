@@ -195,7 +195,7 @@ QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
   QString keyString = event->text();
   const char* keyData = keyString.toLocal8Bit().data();
   int keySymbol = osgGA::GUIEventAdapter::KeySymbol(*keyData);
-  int virtualKeySymbol = 0;
+  int virtualKeySymbol = event->key() == Qt::Key_Control ? osgGA::GUIEventAdapter::KEY_Control_L : 0;
   return QPair<int, int>(keySymbol, virtualKeySymbol);
 }
 
