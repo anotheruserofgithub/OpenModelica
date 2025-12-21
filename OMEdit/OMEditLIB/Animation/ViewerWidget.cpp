@@ -72,7 +72,7 @@ void Viewer::setUpThreading()
  * \param parent
  * \param flags
  */
-ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags flags)
+ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   : GLWidget(parent, flags)
 {
   // Set the number of samples used for multisampling
@@ -86,7 +86,7 @@ ViewerWidget::ViewerWidget(QWidget* parent, Qt::WindowFlags flags)
   setFormat(format);
 #endif
   mpGraphicsWindow = new osgViewer::GraphicsWindowEmbedded(x(), y(), width(), height());
-  mpViewer = new Viewer;
+  mpViewer = new Viewer();
   mpSceneView = new osgViewer::View();
   mpFrameMutex = new OpenThreads::Mutex();
   mpAnimationWidget = qobject_cast<AbstractAnimationWindow*>(parent);
@@ -204,7 +204,7 @@ QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
  * Reimplementation of QOpenGLWidget::paintEvent().
  * \sa ViewerWidget::paintGL()
  */
-void ViewerWidget::paintEvent(QPaintEvent* /* paintEvent */)
+void ViewerWidget::paintEvent(QPaintEvent */*paintEvent*/)
 {
   paintGL();
 }
@@ -301,7 +301,7 @@ void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
 void ViewerWidget::mousePressEvent(QMouseEvent *event)
 {
   if (event->button() == Qt::RightButton && event->modifiers() == Qt::ShiftModifier) {
-    //qt counts pixels from upper left corner and osg from bottom left corner, thus pass reverseY = true
+    // Qt counts pixels from upper left corner and OSG from bottom left corner, thus pass reverseY = true
     QPoint position = convertMousePosition(event, true);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     QPoint mousePosition = event->position().toPoint();
@@ -346,7 +346,7 @@ void ViewerWidget::pickVisualizer(float x, float y)
  * \brief ViewerWidget::showVisualizerPickContextMenu
  * \param pos
  */
-void ViewerWidget::showVisualizerPickContextMenu(const QPoint& pos)
+void ViewerWidget::showVisualizerPickContextMenu(const QPoint &pos)
 {
   QString name = mpSelectedVisualizer ? QString::fromStdString(mpSelectedVisualizer->_id) : QString();
   //std::cout<<"SHOW CONTEXT "<<name.toStdString()<<" compare "<<QString::compare(name,QString(""))<< std::endl;
@@ -577,7 +577,7 @@ void ViewerWidget::wheelEvent(QWheelEvent *event)
   static QPoint angleDelta = QPoint(0, 0);
   angleDelta += event->angleDelta();
   QPoint numDegrees = angleDelta / 8;
-  QPoint numSteps = numDegrees / 15; // see QWheelEvent documentation
+  QPoint numSteps = numDegrees / 15; // See QWheelEvent documentation
   if (numSteps.x() != 0 || numSteps.y() != 0) {
     angleDelta = QPoint(0, 0);
     osgGA::GUIEventAdapter::ScrollingMotion motion = (numSteps.x() > 0 || numSteps.y() > 0) ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN;
@@ -629,6 +629,6 @@ bool ViewerWidget::event(QEvent *event)
 osgGA::EventQueue* ViewerWidget::getEventQueue() const
 {
   osgGA::EventQueue* eventQueue = mpGraphicsWindow->getEventQueue();
-  assert (eventQueue != 0);
+  assert(eventQueue != nullptr);
   return eventQueue;
 }

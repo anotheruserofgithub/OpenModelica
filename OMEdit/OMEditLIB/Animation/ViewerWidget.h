@@ -69,14 +69,14 @@
 class Viewer : public osgViewer::CompositeViewer
 {
 public:
-  virtual void setUpThreading();
+  virtual void setUpThreading() override;
 };
 
 class ViewerWidget : public GLWidget
 {
   Q_OBJECT
 public:
-  ViewerWidget(QWidget *pParent = 0, Qt::WindowFlags flags = Qt::WindowFlags());
+  ViewerWidget(QWidget *pParent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
   osgViewer::View* getSceneView() {return mpSceneView;}
   OpenThreads::Mutex* getFrameMutex() {return mpFrameMutex;}
   void frame();
@@ -96,9 +96,9 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
   virtual void wheelEvent(QWheelEvent *event) override;
-  virtual bool event(QEvent* event) override;
+  virtual bool event(QEvent *event) override;
   void pickVisualizer(float x, float y);
-  void showVisualizerPickContextMenu(const QPoint& pos);
+  void showVisualizerPickContextMenu(const QPoint &pos);
 private:
   osgGA::EventQueue* getEventQueue() const;
   osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> mpGraphicsWindow;
