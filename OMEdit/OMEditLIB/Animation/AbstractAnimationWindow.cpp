@@ -59,7 +59,6 @@
  */
 AbstractAnimationWindow::AbstractAnimationWindow(QWidget *pParent)
   : QMainWindow(pParent),
-//    osgViewer::CompositeViewer(),
     mPathName(""),
     mFileName(""),
     mpVisualization(nullptr),

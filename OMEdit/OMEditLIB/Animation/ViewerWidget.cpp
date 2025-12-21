@@ -91,29 +91,38 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpFrameMutex = new OpenThreads::Mutex();
   mpAnimationWidget = qobject_cast<AbstractAnimationWindow*>(parent);
   mpSelectedVisualizer = nullptr;
-  // add a scene to viewer
+  // make sure the event queue has the correct window rectangle size and input range
+  mpGraphicsWindow->getEventQueue()->syncWindowRectangleWithGraphicsContext();
+  // add a scene to the viewer
   mpViewer->addView(mpSceneView);
-  // get the viewer widget
+  // configure the camera
   osg::ref_ptr<osg::Camera> camera = mpSceneView->getCamera();
   camera->setGraphicsContext(mpGraphicsWindow.get());
   camera->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
   camera->setViewport(new osg::Viewport(0, 0, width(), height()));
-  camera->setProjectionMatrixAsPerspective(30.0f, static_cast<double>(width()/2) / static_cast<double>(height()/2), 1.0f, 10000.0f);
-  mpSceneView->addEventHandler(new osgViewer::StatsHandler());
+  camera->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width()) / static_cast<double>(height()), 1.0, 10000.0);
   // reverse the mouse wheel zooming
   osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator();
   pMultiTouchTrackballManipulator->setWheelZoomFactor(-pMultiTouchTrackballManipulator->getWheelZoomFactor());
   mpSceneView->setCameraManipulator(pMultiTouchTrackballManipulator);
-  // the osg threading model
+  // TODO comment
+  mpSceneView->addEventHandler(new osgViewer::StatsHandler());
+  // run all OSG traversals in the same thread
   mpViewer->setThreadingModel(osgViewer::CompositeViewer::SingleThreaded);
-  // disable the default setting of viewer.done() by pressing Escape.
+  // remove the annoying automatic setting of the CPU affinity to core 0 by osgViewer::ViewerBase
+  //mpViewer->setUseConfigureAffinity(false);
+  // improve performance for a single-threaded viewer with a single graphics context
+  mpViewer->setReleaseContextAtEndOfFrameHint(false);
+  // disable the default setting of viewer.done() by pressing Escape
   mpViewer->setKeyEventSetsDone(0);
+  // TODO comment
   mpViewer->realize();
+  // TODO comment
+  setMinimumSize(100, 100);
   // This ensures that the widget will receive keyboard events. This focus
   // policy is not set by default. The default, Qt::NoFocus, will result in
   // keyboard events that are ignored.
   setFocusPolicy(Qt::StrongFocus);
-  setMinimumSize(100, 100);
   // Ensures that the widget receives mouse move events even though no
   // mouse button has been pressed. We require this in order to let the
   // graphics window switch viewports properly.
@@ -256,8 +265,8 @@ void ViewerWidget::resizeGL(int width, int height)
   int y = convertSizeDimension(this->y());
   width = convertSizeDimension(width);
   height = convertSizeDimension(height);
-  getEventQueue()->windowResize(x, y, width, height);
   mpGraphicsWindow->resized(x, y, width, height);
+  getEventQueue()->windowResize(x, y, width, height);
 }
 
 /*!

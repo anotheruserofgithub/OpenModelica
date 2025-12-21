@@ -65,6 +65,10 @@
  * This subclassing allows us to remove the annoying automatic
  * setting of the CPU affinity to core 0 by osgViewer::ViewerBase,
  * osgViewer::CompositeViewer's base class.
+ * Note this: Since OSG 3.6.0 we could call osgViewer::ViewerBase::setUseConfigureAffinity(false)
+ * before osgViewer::ViewerBase::realize(), which calls osgViewer::ViewerBase::setUpThreading(),
+ * instead of overriding osgViewer::ViewerBase::setUpThreading() with an outdated implementation
+ * (see OSG commit 91538d9).
  */
 class Viewer : public osgViewer::CompositeViewer
 {
