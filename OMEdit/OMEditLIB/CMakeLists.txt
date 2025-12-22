@@ -128,7 +128,6 @@ set(OMEDITLIB_SOURCES Util/Helper.cpp
                       FlatModelica/Expression.cpp
                       FlatModelica/ExpressionFuncs.cpp
                       FlatModelica/Parser.cpp
-                      Animation/OpenGLWidget.cpp
                       Animation/AbstractAnimationWindow.cpp
                       Animation/ViewerWidget.cpp
                       Animation/AnimationWindow.cpp
@@ -143,6 +142,12 @@ set(OMEDITLIB_SOURCES Util/Helper.cpp
                       Animation/Shape.cpp
                       Animation/Vector.cpp
                       resource_omedit.qrc)
+
+if (Qt${OM_QT_MAJOR_VERSION}OpenGL_VERSION VERSION_GREATER_EQUAL 5.4) # if Qt 5.4 or greater
+  set(OMEDITLIB_SOURCES ${OMEDITLIB_SOURCES} Animation/OpenGLWidget.cpp)
+else ()
+  set(OMEDITLIB_SOURCES ${OMEDITLIB_SOURCES} Animation/GLWidget.cpp)
+endif ()
 
 set(OMEDITLIB_HEADERS Util/Helper.h
                       Util/Utilities.h
@@ -260,7 +265,6 @@ set(OMEDITLIB_HEADERS Util/Helper.h
                       FlatModelica/Expression.h
                       FlatModelica/ExpressionFuncs.h
                       FlatModelica/Parser.h
-                      Animation/OpenGLWidget.h
                       Animation/AbstractAnimationWindow.h
                       Animation/ViewerWidget.h
                       Animation/AnimationWindow.h
@@ -276,6 +280,12 @@ set(OMEDITLIB_HEADERS Util/Helper.h
                       Animation/Shape.h
                       Animation/Vector.h
                       Animation/rapidxml.hpp)
+
+if (Qt${OM_QT_MAJOR_VERSION}OpenGL_VERSION VERSION_GREATER_EQUAL 5.4) # if Qt 5.4 or greater
+  set(OMEDITLIB_HEADERS ${OMEDITLIB_HEADERS} Animation/OpenGLWidget.h)
+else ()
+  set(OMEDITLIB_HEADERS ${OMEDITLIB_HEADERS} Animation/GLWidget.h)
+endif ()
 
 set(TS_FILES Resources/nls/OMEdit_de.ts
              Resources/nls/OMEdit_es.ts

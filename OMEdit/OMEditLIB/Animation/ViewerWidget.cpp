@@ -116,8 +116,6 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   // disable the default setting of viewer.done() by pressing Escape
   mpViewer->setKeyEventSetsDone(0);
   // TODO comment
-  mpViewer->realize();
-  // TODO comment
   setMinimumSize(100, 100);
   // This ensures that the widget will receive keyboard events. This focus
   // policy is not set by default. The default, Qt::NoFocus, will result in
@@ -209,13 +207,12 @@ QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
 }
 
 /*!
- * \brief ViewerWidget::paintEvent
- * Reimplementation of QOpenGLWidget::paintEvent().
- * \sa ViewerWidget::paintGL()
+ * \brief ViewerWidget::initializeGL
+ * Reimplementation of QOpenGLWidget::initializeGL().
  */
-void ViewerWidget::paintEvent(QPaintEvent */*paintEvent*/)
+void ViewerWidget::initializeGL()
 {
-  paintGL();
+  mpViewer->realize();
 }
 
 /*!
@@ -244,12 +241,7 @@ void ViewerWidget::paintGL()
  */
 void ViewerWidget::frame()
 {
-  makeCurrent();
-  QPainter painter(this);
-  painter.setRenderHint(QPainter::Antialiasing);
   mpViewer->frame();
-  painter.end();
-  doneCurrent();
 }
 
 /*!

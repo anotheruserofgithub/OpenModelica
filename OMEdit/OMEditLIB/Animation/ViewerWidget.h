@@ -52,7 +52,7 @@
 
 /*!
  * \note We need to create two files with same class name since Qt meta object compiler doesn't handle ifdef.
- * OpenGLWidget.h uses QOpenGLWidget and GLWidget.h uses QGLWidget
+ * OpenGLWidget.h uses QOpenGLWidget and GLWidget.h uses QGLWidget.
  */
 #include <QtGlobal>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
@@ -90,7 +90,7 @@ protected:
   QPoint convertMousePosition(QMouseEvent *event, bool reverseY = false);
   unsigned int convertMouseButton(QMouseEvent *event);
   QPair<int, int> convertKeyCode(QKeyEvent *event);
-  virtual void paintEvent(QPaintEvent *paintEvent) override;
+  virtual void initializeGL() override;
   virtual void paintGL() override;
   virtual void resizeGL(int width, int height) override;
   virtual void keyPressEvent(QKeyEvent *event) override;
