@@ -74,9 +74,9 @@ void Viewer::setUpThreading()
  */
 ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   : GLWidget(parent, flags)
-{//setAttribute(Qt::WA_NativeWindow);
+{
   // Set the number of samples used for multisampling
-#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#if 0//QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
   QSurfaceFormat format;
   format.setSamples(4);
   setFormat(format);
@@ -101,10 +101,6 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   camera->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
   camera->setViewport(new osg::Viewport(0, 0, width(), height()));
   camera->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width()) / static_cast<double>(height()), 1.0, 10000.0);
-  // https://github.com/openscenegraph/osgQt/blob/topic/Qt4/examples/osgviewerQt/osgviewerQt.cpp#L57-L59
-  // set the draw and read buffers up for a double buffered window with rendering going to back buffer
-  //camera->setDrawBuffer(GL_BACK);
-  //camera->setReadBuffer(GL_BACK);
   // reverse the mouse wheel zooming
   osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator();
   pMultiTouchTrackballManipulator->setWheelZoomFactor(-pMultiTouchTrackballManipulator->getWheelZoomFactor());
@@ -119,6 +115,8 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpViewer->setReleaseContextAtEndOfFrameHint(false);
   // disable the default setting of viewer.done() by pressing Escape
   mpViewer->setKeyEventSetsDone(0);
+  // TODO setQuitEventSetsDone(false) since our viewer does not call its run() method but we update it through qt, hence when the window closes there is nothing to do except cancel our update timer (in the future)
+  // https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osgViewer/CompositeViewer.cpp#L1242
   // TODO comment
   setMinimumSize(100, 100);
   // This ensures that the widget will receive keyboard events. This focus
@@ -168,7 +166,7 @@ QPoint ViewerWidget::convertMousePosition(QMouseEvent *event, bool reverseY)
   using T = int;
 #endif
   if (reverseY) {
-    position.setY(static_cast<T>(height()) - position.y());
+    position.setY(static_cast<T>(height() - 1) - position.y());
   }
   return QPoint(convertSizeDimension(position.x()), convertSizeDimension(position.y()));
 }
@@ -214,7 +212,7 @@ QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
   const char* keyData = keyString.toLocal8Bit().data();
   int keySymbol = osgGA::GUIEventAdapter::KeySymbol(*keyData);
   int virtualKeySymbol = event->key() == Qt::Key_Control ? osgGA::GUIEventAdapter::KEY_Control_L : 0;
-  return QPair<int, int>(keySymbol, virtualKeySymbol);
+  return QPair<int, int>(keySymbol, virtualKeySymbol); // TODO apparently fixed only in OSG 3.6.5
 }
 
 /*!
@@ -223,7 +221,9 @@ QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
  */
 void ViewerWidget::initializeGL()
 {
-  mpViewer->realize();
+  if (!mpViewer->isRealized()) { // TODO in case vectors scaling calls frame() before initializeGL() runs, which means it is the first frame that calls realize()
+    mpViewer->realize();
+  }
 }
 
 /*!
@@ -267,8 +267,10 @@ void ViewerWidget::resizeGL(int width, int height)
   int x = convertSizeDimension(this->x());
   int y = convertSizeDimension(this->y());
   // FIXME already resized with QGLWidget https://github.com/qt/qtbase/blob/v5.15.18-lts-lgpl/src/opengl/qgl.cpp#L4421-L4424
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
   width = convertSizeDimension(width);
   height = convertSizeDimension(height);
+#endif
   mpGraphicsWindow->resized(x, y, width, height);
   getEventQueue()->windowResize(x, y, width, height);
 }
