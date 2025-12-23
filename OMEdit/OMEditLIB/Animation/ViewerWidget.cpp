@@ -74,7 +74,7 @@ void Viewer::setUpThreading()
  */
 ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   : GLWidget(parent, flags)
-{
+{//setAttribute(Qt::WA_NativeWindow);
   // Set the number of samples used for multisampling
 #if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
   QSurfaceFormat format;
@@ -101,6 +101,10 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   camera->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
   camera->setViewport(new osg::Viewport(0, 0, width(), height()));
   camera->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width()) / static_cast<double>(height()), 1.0, 10000.0);
+  // https://github.com/openscenegraph/osgQt/blob/topic/Qt4/examples/osgviewerQt/osgviewerQt.cpp#L57-L59
+  // set the draw and read buffers up for a double buffered window with rendering going to back buffer
+  //camera->setDrawBuffer(GL_BACK);
+  //camera->setReadBuffer(GL_BACK);
   // reverse the mouse wheel zooming
   osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator();
   pMultiTouchTrackballManipulator->setWheelZoomFactor(-pMultiTouchTrackballManipulator->getWheelZoomFactor());
@@ -126,7 +130,8 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   // graphics window switch viewports properly.
   setMouseTracking(true);
 }
-
+#include <QScreen>
+#include <QWindow>
 /*!
  * \brief ViewerWidget::convertSizeDimension
  * Converts the size dimension to account for screen DPI scaling.
@@ -135,8 +140,14 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
  */
 template<typename T>
 int ViewerWidget::convertSizeDimension(T dimension)
-{
-  qreal pixelRatio = qApp->devicePixelRatio();
+{//qDebug() << "===!!! windowHandle() =" << window()->windowHandle(); // FIXME it is always nullptr!
+  qDebug() << "===!!! window()->windowHandle() =" << window()->windowHandle();
+  qreal pixelRatio = window() && window()->windowHandle() ? window()->windowHandle()->devicePixelRatio() : 0;//qApp->devicePixelRatio();
+  qDebug() << "=!=!=! QApplication::primaryScreen()->devicePixelRatio() =" << QApplication::primaryScreen()->devicePixelRatio();
+  qDebug() << "!=!=!= qApp->devicePixelRatio() =" << qApp->devicePixelRatio();
+  qDebug() << "!!!=== pixelRatio =" << pixelRatio;
+  // QApplication::primaryScreen()->devicePixelRatio() is also qreal but only available from Qt 5.5
+  // Anyway windowHandle() should never be null as soon as the widget is shown, just verify that...
   return static_cast<int>(static_cast<qreal>(.5) + (static_cast<qreal>(dimension) * pixelRatio));
 }
 
@@ -255,6 +266,7 @@ void ViewerWidget::resizeGL(int width, int height)
 {
   int x = convertSizeDimension(this->x());
   int y = convertSizeDimension(this->y());
+  // FIXME already resized with QGLWidget https://github.com/qt/qtbase/blob/v5.15.18-lts-lgpl/src/opengl/qgl.cpp#L4421-L4424
   width = convertSizeDimension(width);
   height = convertSizeDimension(height);
   mpGraphicsWindow->resized(x, y, width, height);
@@ -615,7 +627,7 @@ bool ViewerWidget::event(QEvent *event)
     case QEvent::MouseButtonRelease:
     case QEvent::MouseMove:
     case QEvent::Wheel:
-      update();
+      update(); // TODO override requestRedraw()
       break;
     default:
       break;
