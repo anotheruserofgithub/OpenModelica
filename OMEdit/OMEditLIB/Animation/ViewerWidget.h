@@ -61,6 +61,16 @@
 #include "GLWidget.h"
 #endif
 
+class GraphicsWindowEmbeddedQt : public osgViewer::GraphicsWindowEmbedded
+{
+public:
+  GraphicsWindowEmbeddedQt(int x, int y, int width, int height) : GraphicsWindowEmbedded(x, y, width, height) {}
+  virtual bool realizeImplementation() override {return realized = true;}
+  virtual bool isRealizedImplementation() const override {return realized;}
+private:
+  bool realized = false;
+};
+
 /*!
  * This subclassing allows us to remove the annoying automatic
  * setting of the CPU affinity to core 0 by osgViewer::ViewerBase,
@@ -105,7 +115,7 @@ protected:
   void showVisualizerPickContextMenu(const QPoint &pos);
 private:
   osgGA::EventQueue* getEventQueue() const;
-  osg::ref_ptr<osgViewer::GraphicsWindowEmbedded> mpGraphicsWindow;
+  osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow;
   osg::ref_ptr<Viewer> mpViewer;
   osgViewer::View* mpSceneView;
   OpenThreads::Mutex* mpFrameMutex;
