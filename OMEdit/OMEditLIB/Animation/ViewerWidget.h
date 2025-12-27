@@ -118,7 +118,7 @@ private:
   osg::ref_ptr<Viewer> mpViewer;
   osgViewer::View* mpSceneView;
   OpenThreads::Mutex* mpFrameMutex;
-  AbstractAnimationWindow* mpAnimationWidget;
+  AbstractAnimationWindow* mpAnimationWindow;
   AbstractVisualizerObject* mpSelectedVisualizer;
 protected slots:
   void changeVisualizerTransparency();

@@ -90,7 +90,7 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpViewer = new Viewer();
   mpSceneView = new osgViewer::View();
   mpFrameMutex = new OpenThreads::Mutex();
-  mpAnimationWidget = qobject_cast<AbstractAnimationWindow*>(parent);
+  mpAnimationWindow = qobject_cast<AbstractAnimationWindow*>(parent);
   mpSelectedVisualizer = nullptr;
   // Make sure the event queue has the correct window rectangle size and input range
   mpGraphicsWindow->getEventQueue()->syncWindowRectangleWithGraphicsContext();
@@ -346,10 +346,10 @@ void ViewerWidget::pickVisualizer(float x, float y)
     osgUtil::LineSegmentIntersector::Intersections::const_iterator hitr = intersections.cbegin();
     constexpr osg::NodePath::size_type lvl = 2;
     if (hitr->nodePath.size() > lvl && !hitr->nodePath.at(lvl)->getName().empty()) {
-      mpSelectedVisualizer = mpAnimationWidget->getVisualization()->getBaseData()->getVisualizerObjectByID(hitr->nodePath.at(lvl)->getName());
+      mpSelectedVisualizer = mpAnimationWindow->getVisualization()->getBaseData()->getVisualizerObjectByID(hitr->nodePath.at(lvl)->getName());
       //std::cout<<"Object identified by name "<<mpSelectedVisualizer->_id<<std::endl;
     } else if (hitr->drawable.valid()) {
-      mpSelectedVisualizer = mpAnimationWidget->getVisualization()->getBaseData()->getVisualizerObjectByID(hitr->drawable->className());
+      mpSelectedVisualizer = mpAnimationWindow->getVisualization()->getBaseData()->getVisualizerObjectByID(hitr->drawable->className());
       //std::cout<<"Object identified by its drawable "<<mpSelectedVisualizer->_id<<std::endl;
     }
   }
@@ -423,7 +423,7 @@ void ViewerWidget::changeVisualizerTransparency()
                                                   currentTransparency, min, max, step, &ok);
     if (ok) { // Picked transparency is not OK if the user cancels the dialog
       mpSelectedVisualizer->getVisualProperties()->getTransparency().set((float) (transparency - min) / (max - min));
-      mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
+      mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
   }
 }
@@ -436,7 +436,7 @@ void ViewerWidget::makeVisualizerInvisible()
 {
   if (mpSelectedVisualizer) {
     mpSelectedVisualizer->getVisualProperties()->getTransparency().set(1.0);
-    mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
+    mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
   }
 }
 
@@ -451,7 +451,7 @@ void ViewerWidget::changeVisualizerColor()
     const QColor color = QColorDialog::getColor(currentColor, this, Helper::chooseColor);
     if (color.isValid()) { // Picked color is invalid if the user cancels the dialog
       mpSelectedVisualizer->getVisualProperties()->getColor().set(color);
-      mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
+      mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
   }
 }
@@ -470,7 +470,7 @@ void ViewerWidget::changeVisualizerSpec()
                                               currentSpecular, min, max, step, &ok);
     if (ok) { // Picked specular coefficient is not OK if the user cancels the dialog
       mpSelectedVisualizer->getVisualProperties()->getSpecular().set((float) (specular - min) / (max - min));
-      mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
+      mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
   }
 }
@@ -492,7 +492,7 @@ void ViewerWidget::applyCheckerTexture()
       }
     }
     mpSelectedVisualizer->getVisualProperties()->getTextureImagePath().set(":/Resources/bitmaps/check.png");
-    mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
+    mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
   }
 }
 
@@ -517,7 +517,7 @@ void ViewerWidget::applyCustomTexture()
                                                             (QString*) currentFileName, Helper::bitmapFileTypes, nullptr);
     if (!fileName.isEmpty()) { // Picked file name is empty if the user cancels the dialog
       mpSelectedVisualizer->getVisualProperties()->getTextureImagePath().set(fileName.toStdString());
-      mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
+      mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
     }
   }
 }
@@ -539,7 +539,7 @@ void ViewerWidget::removeTexture()
       }
     }
     mpSelectedVisualizer->getVisualProperties()->getTextureImagePath().set("");
-    mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
+    mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(mpSelectedVisualizer);
   }
 }
 
@@ -549,9 +549,9 @@ void ViewerWidget::removeTexture()
  */
 void ViewerWidget::resetVisualPropertiesForAllVisualizers()
 {
-  for (AbstractVisualizerObject& visualizer : mpAnimationWidget->getVisualization()->getBaseData()->getVisualizerObjects()) {
+  for (AbstractVisualizerObject& visualizer : mpAnimationWindow->getVisualization()->getBaseData()->getVisualizerObjects()) {
     visualizer.getVisualProperties()->resetVisualProperties();
-    mpAnimationWidget->getVisualization()->getBaseData()->modifyVisualizer(visualizer);
+    mpAnimationWindow->getVisualization()->getBaseData()->modifyVisualizer(visualizer);
   }
 }
 
