@@ -61,18 +61,38 @@
 #include "GLWidget.h"
 #endif
 
+class ViewerWidget; // Forward declaration
+
 class GraphicsWindowEmbeddedQt : public osgViewer::GraphicsWindowEmbedded
 {
 public:
-  GraphicsWindowEmbeddedQt(int x, int y, int width, int height) : GraphicsWindowEmbedded(x, y, width, height) {}
+  GraphicsWindowEmbeddedQt(int x, int y, int width, int height, ViewerWidget* pViewerWidget);
   virtual bool realizeImplementation() override {return realized = true;}
   virtual bool isRealizedImplementation() const override {return realized;}
+  virtual void requestRedraw() override;
+  virtual void requestContinuousUpdate(bool needed = true) override;
+  virtual void requestWarpPointer(float x, float y) override;
 private:
   bool realized = false;
+  ViewerWidget* mpViewerWidget;
+  QTimer* mpTimer;
 };
 
 /*!
- * This subclassing allows us to remove the annoying automatic
+ * This subclassing allows us to forward update requests to the GraphicsWindowEmbeddedQt
+ * which then calls the QWidget::update() method of the ViewerWidget only when appropriate.
+ */
+class View : public osgViewer::View
+{
+public:
+  virtual void requestRedraw() override;
+  virtual void requestContinuousUpdate(bool needed = true) override;
+  virtual void requestWarpPointer(float x, float y) override;
+};
+
+/*!
+ * This subclassing allows us to merge update requests coming from multiple View instances.
+ * This subclassing also allows us to remove the annoying automatic
  * setting of the CPU affinity to core 0 by osgViewer::ViewerBase,
  * osgViewer::CompositeViewer's base class.
  * Note this: Since OSG 3.6.0 we could call osgViewer::ViewerBase::setUseConfigureAffinity(false)
@@ -83,7 +103,10 @@ private:
 class Viewer : public osgViewer::CompositeViewer
 {
 public:
+  bool requestContinuousUpdate(View* view, bool needed = true);
   virtual void setUpThreading() override;
+private:
+  QSet<View*> requestContinuousUpdateNeeded;
 };
 
 class ViewerWidget : public GLWidget
@@ -91,9 +114,11 @@ class ViewerWidget : public GLWidget
   Q_OBJECT
 public:
   ViewerWidget(QWidget *pParent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
-  osgViewer::View* getSceneView() {return mpSceneView;}
+  View* getSceneView() {return mpSceneView.get();}
   OpenThreads::Mutex* getFrameMutex() {return mpFrameMutex;}
   void frame();
+  template<typename T>
+  int convertSizeDimensionBack(T dimension);
 protected:
   template<typename T>
   int convertSizeDimension(T dimension);
@@ -116,7 +141,7 @@ protected:
 private:
   osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow;
   osg::ref_ptr<Viewer> mpViewer;
-  osgViewer::View* mpSceneView;
+  osg::ref_ptr<View> mpSceneView;
   OpenThreads::Mutex* mpFrameMutex;
   AbstractAnimationWindow* mpAnimationWindow;
   AbstractVisualizerObject* mpSelectedVisualizer;

@@ -49,6 +49,120 @@
 #include "Modeling/MessagesWidget.h"
 
 /*!
+ * \brief GraphicsWindowEmbeddedQt::GraphicsWindowEmbeddedQt
+ * \param x
+ * \param y
+ * \param width
+ * \param height
+ * \param pViewerWidget
+ */
+GraphicsWindowEmbeddedQt::GraphicsWindowEmbeddedQt(int x, int y, int width, int height, ViewerWidget* pViewerWidget)
+  : GraphicsWindowEmbedded(x, y, width, height)
+  , mpViewerWidget(pViewerWidget)
+  , mpTimer(new QTimer(mpViewerWidget))
+{
+  mpTimer->setTimerType(Qt::PreciseTimer);
+  QObject::connect(mpTimer, &QTimer::timeout, [=]{OSG_DEBUG << "GraphicsWindowEmbeddedQt::timeout()" << std::endl;mpViewerWidget->update();});
+}
+
+/*!
+ * \brief GraphicsWindowEmbeddedQt::requestRedraw
+ */
+void GraphicsWindowEmbeddedQt::requestRedraw()
+{OSG_DEBUG << "GraphicsWindowEmbeddedQt::requestRedraw()" << std::endl;
+  mpViewerWidget->update();
+}
+
+/*!
+ * \brief GraphicsWindowEmbeddedQt::requestContinuousUpdate
+ * \param needed
+ */
+void GraphicsWindowEmbeddedQt::requestContinuousUpdate(bool needed)
+{OSG_DEBUG << "GraphicsWindowEmbeddedQt::requestContinuousUpdate(" << needed << ")" << std::endl;
+  if (needed) {
+    mpTimer->start();
+  } else {
+    mpTimer->stop();
+  }
+}
+
+/*!
+ * \brief GraphicsWindowEmbeddedQt::requestWarpPointer
+ * \param x
+ * \param y
+ */
+void GraphicsWindowEmbeddedQt::requestWarpPointer(float x, float y)
+{
+  QPoint pos = QPoint(mpViewerWidget->convertSizeDimensionBack(x), mpViewerWidget->convertSizeDimensionBack(y));
+  QCursor::setPos(mpViewerWidget->mapToGlobal(pos));
+}
+
+/*!
+ * \brief View::requestRedraw
+ */
+void View::requestRedraw()
+{OSG_DEBUG << "View::requestRedraw()" << std::endl;
+  osgViewer::View::requestRedraw();
+  osg::ref_ptr<GraphicsWindowEmbeddedQt> gw = dynamic_cast<GraphicsWindowEmbeddedQt*>(_camera->getGraphicsContext());
+  if (gw.valid()) {
+    gw->requestRedraw();
+  }
+}
+
+/*!
+ * \brief View::requestContinuousUpdate
+ * \param needed
+ */
+void View::requestContinuousUpdate(bool needed)
+{OSG_DEBUG << "View::requestContinuousUpdate(" << needed << ")" << std::endl;
+  osg::ref_ptr<Viewer> viewer = dynamic_cast<Viewer*>(getViewerBase());
+  if (viewer.valid()) {
+    needed = viewer->requestContinuousUpdate(this, needed);
+  }
+  osgViewer::View::requestContinuousUpdate(needed);
+  osg::ref_ptr<GraphicsWindowEmbeddedQt> gw = dynamic_cast<GraphicsWindowEmbeddedQt*>(_camera->getGraphicsContext());
+  if (gw.valid()) {
+    /*needed = false;
+    osgViewer::GraphicsWindow::Views views;
+    gw->getViews(views);
+    for (osgViewer::View* view : views) {
+      if (view->getViewerBase() && view->getViewerBase()->getRequestContinousUpdate()) {
+        needed = true;
+        break;
+      }
+    }*/
+    gw->requestContinuousUpdate(needed);
+  }
+}
+
+/*!
+ * \brief View::requestWarpPointer
+ * \param x
+ * \param y
+ */
+void View::requestWarpPointer(float x, float y)
+{
+  osgViewer::View::requestWarpPointer(x, y);
+  // Already forwarded to GraphicsWindowEmbeddedQt::requestWarpPointer()
+}
+
+/*!
+ * \brief Viewer::requestContinuousUpdate
+ * \param view
+ * \param needed
+ * \return
+ */
+bool Viewer::requestContinuousUpdate(View* view, bool needed)
+{OSG_DEBUG << "Viewer::requestContinuousUpdate(" << needed << ")" << std::endl;
+  if (needed) {
+    requestContinuousUpdateNeeded.insert(view);
+  } else {
+    requestContinuousUpdateNeeded.remove(view);
+  }
+  return !requestContinuousUpdateNeeded.isEmpty();
+}
+
+/*!
  * \brief Viewer::setUpThreading
  */
 void Viewer::setUpThreading()
@@ -86,9 +200,9 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   format.setSamples(4);
   setFormat(format);
 #endif
-  mpGraphicsWindow = new GraphicsWindowEmbeddedQt(x(), y(), width(), height());
+  mpGraphicsWindow = new GraphicsWindowEmbeddedQt(x(), y(), width(), height(), this);
   mpViewer = new Viewer();
-  mpSceneView = new osgViewer::View();
+  mpSceneView = new View();
   mpFrameMutex = new OpenThreads::Mutex();
   mpAnimationWindow = qobject_cast<AbstractAnimationWindow*>(parent);
   mpSelectedVisualizer = nullptr;
@@ -122,10 +236,19 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   // The default, Qt::NoFocus, will result in keyboard events that are ignored.
   // This makes the widget grab focus either by tabbing, clicking, or wheeling.
   setFocusPolicy(Qt::WheelFocus);
-  // Ensures that the widget receives mouse move events even though no
-  // mouse button has been pressed. We require this in order to let the
-  // graphics window switch viewports properly.
-  setMouseTracking(true);
+}
+
+/*!
+ * \brief ViewerWidget::convertSizeDimensionBack
+ * Converts the size dimension back to account for screen DPI scaling.
+ * \param dimension
+ * \return
+ */
+template<typename T>
+int ViewerWidget::convertSizeDimensionBack(T dimension)
+{
+  qreal devicePixelRatio = window() && window()->windowHandle() ? window()->windowHandle()->devicePixelRatio() : qApp->devicePixelRatio();
+  return static_cast<int>(static_cast<qreal>(.5) + (static_cast<qreal>(dimension) / devicePixelRatio));
 }
 
 /*!
@@ -250,7 +373,7 @@ void ViewerWidget::paintGL()
  * \sa ViewerWidget::paintGL()
  */
 void ViewerWidget::frame()
-{
+{OSG_DEBUG << "ViewerWidget::frame()" << std::endl;
   mpViewer->frame();
 }
 
@@ -301,7 +424,7 @@ void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
  * \param event
  */
 void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
-{
+{OSG_DEBUG << "ViewerWidget::mouseMoveEvent()" << std::endl;
   QPoint position = convertMousePosition(event);
   mpGraphicsWindow->getEventQueue()->mouseMotion(static_cast<float>(position.x()), static_cast<float>(position.y()));
 }
@@ -312,7 +435,7 @@ void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
  * \param event
  */
 void ViewerWidget::mousePressEvent(QMouseEvent *event)
-{
+{OSG_DEBUG << "ViewerWidget::mousePressEvent()" << std::endl;
   if (event->button() == Qt::RightButton && event->modifiers() == Qt::ShiftModifier) {
     // Qt counts pixels from the upper-left corner and OSG from the lower-left corner (GL viewport), thus pass reverseY = true
     QPoint position = convertMousePosition(event, true);
@@ -561,7 +684,7 @@ void ViewerWidget::resetVisualPropertiesForAllVisualizers()
  * \param event
  */
 void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
-{
+{OSG_DEBUG << "ViewerWidget::mouseReleaseEvent()" << std::endl;
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
   mpGraphicsWindow->getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
@@ -573,7 +696,7 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
  * \param event
  */
 void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
-{
+{OSG_DEBUG << "ViewerWidget::mouseDoubleClickEvent()" << std::endl;
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
   mpGraphicsWindow->getEventQueue()->mouseDoubleButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
@@ -585,7 +708,7 @@ void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
  * \param event
  */
 void ViewerWidget::wheelEvent(QWheelEvent *event)
-{
+{OSG_DEBUG << "ViewerWidget::wheelEvent()" << std::endl;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
   static QPoint angleDelta = QPoint(0, 0);
   angleDelta += event->angleDelta();
@@ -614,7 +737,7 @@ void ViewerWidget::wheelEvent(QWheelEvent *event)
  * \return
  */
 bool ViewerWidget::event(QEvent *event)
-{
+{OSG_DEBUG << "ViewerWidget::event(" << event->type() << ")" << std::endl;
   bool handled = GLWidget::event(event);
   // This ensures that the OSG widget is always going to be repainted after the
   // user performed some interaction. Doing this in the event handler ensures
@@ -631,6 +754,6 @@ bool ViewerWidget::event(QEvent *event)
       break;
     default:
       break;
-  }
+  }OSG_DEBUG << "ViewerWidget::event(return)" << std::endl;
   return handled;
 }
