@@ -114,7 +114,6 @@ protected:
   void pickVisualizer(float x, float y);
   void showVisualizerPickContextMenu(const QPoint &pos);
 private:
-  osgGA::EventQueue* getEventQueue() const;
   osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow;
   osg::ref_ptr<Viewer> mpViewer;
   osgViewer::View* mpSceneView;

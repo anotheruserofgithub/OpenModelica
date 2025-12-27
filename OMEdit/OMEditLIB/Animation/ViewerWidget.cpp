@@ -270,7 +270,7 @@ void ViewerWidget::resizeGL(int width, int height)
   height = convertSizeDimension(height);
 #endif
   mpGraphicsWindow->resized(x, y, width, height);
-  getEventQueue()->windowResize(x, y, width, height);
+  mpGraphicsWindow->getEventQueue()->windowResize(x, y, width, height);
 }
 
 /*!
@@ -281,7 +281,7 @@ void ViewerWidget::resizeGL(int width, int height)
 void ViewerWidget::keyPressEvent(QKeyEvent *event)
 {
   QPair<int, int> key = convertKeyCode(event);
-  getEventQueue()->keyPress(key.first, key.second);
+  mpGraphicsWindow->getEventQueue()->keyPress(key.first, key.second);
 }
 
 /*!
@@ -292,7 +292,7 @@ void ViewerWidget::keyPressEvent(QKeyEvent *event)
 void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
 {
   QPair<int, int> key = convertKeyCode(event);
-  getEventQueue()->keyRelease(key.first, key.second);
+  mpGraphicsWindow->getEventQueue()->keyRelease(key.first, key.second);
 }
 
 /*!
@@ -303,7 +303,7 @@ void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
 void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
 {
   QPoint position = convertMousePosition(event);
-  getEventQueue()->mouseMotion(static_cast<float>(position.x()), static_cast<float>(position.y()));
+  mpGraphicsWindow->getEventQueue()->mouseMotion(static_cast<float>(position.x()), static_cast<float>(position.y()));
 }
 
 /*!
@@ -327,7 +327,7 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
   }
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
-  getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
+  mpGraphicsWindow->getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
 
 /*!
@@ -564,7 +564,7 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 {
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
-  getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
+  mpGraphicsWindow->getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
 
 /*!
@@ -576,7 +576,7 @@ void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
-  getEventQueue()->mouseDoubleButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
+  mpGraphicsWindow->getEventQueue()->mouseDoubleButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
 
 /*!
@@ -594,7 +594,7 @@ void ViewerWidget::wheelEvent(QWheelEvent *event)
   if (numSteps.x() != 0 || numSteps.y() != 0) {
     angleDelta = QPoint(0, 0);
     osgGA::GUIEventAdapter::ScrollingMotion motion = (numSteps.x() > 0 || numSteps.y() > 0) ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN;
-    getEventQueue()->mouseScroll(motion);
+    mpGraphicsWindow->getEventQueue()->mouseScroll(motion);
     event->accept();
   } else {
     event->ignore();
@@ -633,15 +633,4 @@ bool ViewerWidget::event(QEvent *event)
       break;
   }
   return handled;
-}
-
-/*!
- * \brief ViewerWidget::getEventQueue
- * \return
- */
-osgGA::EventQueue* ViewerWidget::getEventQueue() const
-{
-  osgGA::EventQueue* eventQueue = mpGraphicsWindow->getEventQueue();
-  assert(eventQueue != nullptr);
-  return eventQueue;
 }
