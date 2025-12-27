@@ -30,7 +30,7 @@
 /*
  * @author Adeel Asghar <adeel.asghar@liu.se>
  */
-// FIX: export QT_QPA_PLATFORM=xcb https://bugs.launchpad.net/ubuntu/+source/qtbase-opensource-src/+bug/2063332
+
 #include <QOpenGLContext> // must be included before OSG headers
 
 #include <osgGA/MultiTouchTrackballManipulator>
@@ -43,6 +43,7 @@
 #include <cassert>
 #include <QtMath>
 #include <QApplication>
+#include <QWindow>
 
 #include "ViewerWidget.h"
 #include "Modeling/MessagesWidget.h"
@@ -76,7 +77,7 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   : GLWidget(parent, flags)
 {
   // Set the number of samples used for multisampling
-#if 0//QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
   QSurfaceFormat format;
   format.setSamples(4);
   setFormat(format);
@@ -91,52 +92,42 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpFrameMutex = new OpenThreads::Mutex();
   mpAnimationWidget = qobject_cast<AbstractAnimationWindow*>(parent);
   mpSelectedVisualizer = nullptr;
-  // make sure the event queue has the correct window rectangle size and input range
+  // Make sure the event queue has the correct window rectangle size and input range
   mpGraphicsWindow->getEventQueue()->syncWindowRectangleWithGraphicsContext();
-  // add a scene to the viewer
+  // Add a scene to the viewer
   mpViewer->addView(mpSceneView);
-  // configure the camera
+  // Configure the camera
   osg::ref_ptr<osg::Camera> camera = mpSceneView->getCamera();
   camera->setGraphicsContext(mpGraphicsWindow.get());
   camera->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
   camera->setViewport(new osg::Viewport(0, 0, width(), height()));
   camera->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width()) / static_cast<double>(height()), 1.0, 10000.0);
-  // reverse the mouse wheel zooming
+  // Reverse the mouse wheel zooming
   osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator();
   pMultiTouchTrackballManipulator->setWheelZoomFactor(-pMultiTouchTrackballManipulator->getWheelZoomFactor());
   mpSceneView->setCameraManipulator(pMultiTouchTrackballManipulator);
-  // TODO comment
+  // Display OSG statistics by pressing the 's' key (multiple times)
   mpSceneView->addEventHandler(new osgViewer::StatsHandler());
-  // run all OSG traversals in the same thread
+  // Run all OSG traversals in the same thread
   mpViewer->setThreadingModel(osgViewer::CompositeViewer::SingleThreaded);
-  // remove the annoying automatic setting of the CPU affinity to core 0 by osgViewer::ViewerBase
-  //mpViewer->setUseConfigureAffinity(false);
-  // improve performance for a single-threaded viewer with a single graphics context
+  // Improve performance for a single-threaded viewer with a single graphics context
   mpViewer->setReleaseContextAtEndOfFrameHint(false);
-  // TODO setQuitEventSetsDone(false) since our viewer does not call its run() method but we update it through qt, hence when the window closes there is nothing to do except cancel our update timer (in the future)
-  // https://github.com/openscenegraph/OpenSceneGraph/blob/master/src/osgViewer/CompositeViewer.cpp#L1242
+  // Disable the default setting of Viewer::_done on a QUIT_APPLICATION event
   mpViewer->setQuitEventSetsDone(false);
-  // disable the default setting of viewer.done() by pressing Escape
+  // Disable the default setting of Viewer::_done by pressing Escape
   mpViewer->setKeyEventSetsDone(0);
-  // TODO comment
+  // Ensure that the scene remains visible
   setMinimumSize(100, 100);
-  // This ensures that the widget will receive keyboard events. This focus
-  // policy is not set by default. The default, Qt::NoFocus, will result in
-  // keyboard events that are ignored. // TODO explain the widget gains focus either by tabbing, clicking, or wheeling // TODO auto grab focus by GraphicsWindow
-  // TODO but only inside realize() if pointer in window, by default https://github.com/openscenegraph/OpenSceneGraph/blob/OpenSceneGraph-3.6.5/src/osgViewer/CompositeViewer.cpp#L667-L680
-  // TODO so maybe we should force grabFocus() in each resizeGL()? at least after all other widgets are loaded and the animation window is shown, it is the master
-  setFocusPolicy(Qt::WheelFocus); // TODO it is found in the enum https://doc.qt.io/archives/qt-5.15/qt.html#FocusPolicy-enum but not in the doc https://doc.qt.io/archives/qt-5.15/qwidget.html#focusPolicy-prop
+  // This focus policy ensures that the widget will receive keyboard events.
+  // The default, Qt::NoFocus, will result in keyboard events that are ignored.
+  // This makes the widget grab focus either by tabbing, clicking, or wheeling.
+  setFocusPolicy(Qt::WheelFocus);
   // Ensures that the widget receives mouse move events even though no
   // mouse button has been pressed. We require this in order to let the
   // graphics window switch viewports properly.
-  setMouseTracking(true); // TODO remove this with event() overload once updating by timer callback
-  // FIXME must keep mouse tracking if we want coordinates to be propagated to wheel scroll events for SET_CENTER_ON_WHEEL_FORWARD_MOVEMENT
-  // https://github.com/openscenegraph/OpenSceneGraph/blob/2e4ae2ea94595995c1fc56860051410b0c0be605/src/osgGA/StandardManipulator.cpp#L761-L784
-  // TODO better to enable mpViewer->setMouseTracking(true) when the flag SET_CENTER_ON_WHEEL_FORWARD_MOVEMENT is set, disable at clearing
-  // TODO and also reimplement camera manipulator's handleMouseMove() to us.requetRedraw() in order to consume useless events as soon as they are produced
+  setMouseTracking(true);
 }
-#include <QScreen>
-#include <QWindow>
+
 /*!
  * \brief ViewerWidget::convertSizeDimension
  * Converts the size dimension to account for screen DPI scaling.
@@ -145,14 +136,8 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
  */
 template<typename T>
 int ViewerWidget::convertSizeDimension(T dimension)
-{//OSG_DEBUG << "===!!! windowHandle() = " << window()->windowHandle() << std::endl; // FIXME it is always nullptr!
-  OSG_DEBUG << "===!!! window()->windowHandle() = " << window()->windowHandle() << std::endl;
+{
   qreal devicePixelRatio = window() && window()->windowHandle() ? window()->windowHandle()->devicePixelRatio() : qApp->devicePixelRatio();
-  OSG_DEBUG << "=!=!=! QApplication::primaryScreen()->devicePixelRatio() = " << QApplication::primaryScreen()->devicePixelRatio() << std::endl;
-  OSG_DEBUG << "!=!=!= qApp->devicePixelRatio() = " << qApp->devicePixelRatio() << std::endl;
-  OSG_DEBUG << "!!!=== devicePixelRatio = " << devicePixelRatio << std::endl;
-  // QApplication::primaryScreen()->devicePixelRatio() is also qreal but only available from Qt 5.5
-  // Anyway windowHandle() should never be null as soon as the widget is shown, just verify that...
   return static_cast<int>(static_cast<qreal>(.5) + (static_cast<qreal>(dimension) * devicePixelRatio));
 }
 
@@ -173,21 +158,6 @@ QPoint ViewerWidget::convertMousePosition(QMouseEvent *event, bool reverseY)
   using T = int;
 #endif
   if (reverseY) {
-    OSG_DEBUG << "width() = " << width() << ", position.x() = " << position.x() << std::endl;
-    OSG_DEBUG << "height() = " << height() << ", position.y() = " << position.y() << ", height-1-position.y = " << ((height() - 1) - position.y()) << std::endl;
-    //position.setY(static_cast<T>(height() - 1) - position.y()); // FIXME actually picking seems more accurate without this offset...
-    // TODO however by logging it is numerically exact so keep this exactness
-    // TODO maybe it could be the scaling by devicePixelRatio that would drift the position but it should really not
-    // TODO perhaps it is the resizing at the x() and y() position (frame of 1 pixel multiplied by devicePixelRatio) that yields this visible shift? since camera viewport begins at (0,0)
-    // TODO I was about to say this is all OK in the end, but eventually I saw that the y-coord spans [0, height] and not [0, height-1] as expected...
-    // TODO hence x-coord will also be forwarded within [0, width] * devicePixelRatio by default
-    // TODO test whether shapes are indeed spanning this range or if the camera viewport clips them
-    // TODO or is it a problem with devicePixelRatio? like, there are 1080*2 pixels high but Qt has to map back to 1080 for emulating a FHD screen?
-    // TODO this can be tested with clicking the edges at 100% resolution and 400%
-    // TODO also try to get the QPointF version and see if there are floating-point values
-    // TODO note: QPointF show only integer values
-    // TODO note: shapes are not clipped at position (width , height)
-    // TODO note: at 100% the range is indeed [(0,0);(width-1,height-1)] and with scaling it is rounded inside [(0,0);(width,height)]
     position.setY(static_cast<T>(height()) - position.y());
   }
   QPoint point = QPoint(convertSizeDimension(position.x()), convertSizeDimension(position.y()));
@@ -239,9 +209,9 @@ QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
   int keySymbol = osgGA::GUIEventAdapter::KeySymbol(*keyData);
   int virtualKeySymbol = event->key() == Qt::Key_Control ? osgGA::GUIEventAdapter::KEY_Control_L : 0;
   if (!keySymbol) { // Since OSG 3.6.5 this additional step could be omitted (see OSG commit f4fe1e5)
-    keySymbol = virtualKeySymbol; // TODO probably simpler to handle "virtual key" like this rather than mapping "unmodified key"
+    keySymbol = virtualKeySymbol;
   }
-  return QPair<int, int>(keySymbol, virtualKeySymbol); // TODO apparently fixed only in OSG 3.6.5
+  return QPair<int, int>(keySymbol, virtualKeySymbol);
 }
 
 /*!
@@ -249,13 +219,9 @@ QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
  * Reimplementation of QOpenGLWidget::initializeGL().
  */
 void ViewerWidget::initializeGL()
-{OSG_DEBUG << "---------- initializeGL()" << std::endl;
-  OSG_DEBUG << "---------- mpViewer->isRealized() ? " << mpViewer->isRealized() << std::endl;
-  if (!mpViewer->isRealized()) { // TODO in case vectors scaling calls frame() before initializeGL() runs, which means it is the first frame that calls realize()
-    mpViewer->realize();OSG_DEBUG << "---------- mpViewer->realize()" << std::endl; // FIXME it is not called if the condition is kept
-    // FIXME this is fixed by subclassing GraphicsWindowEmbedded to return true in isRealized() only after realize() is called by CompositeViewer
-    // FIXME this is not overkill since we will need this subclassing for GUIActionAdapter callbacks anyway, but otherwise not needed sinced initializedGL() is always called before chooseVectorScales()
-    // FIXME note that it is not really possible to override valid() by mpViewer.isValid() though, since the base constructor is called before member initialization and uses its own version of the virtual method
+{
+  if (!mpViewer->isRealized()) {
+    mpViewer->realize();
   }
 }
 
@@ -271,7 +237,7 @@ void ViewerWidget::initializeGL()
  * \sa ViewerWidget::frame()
  */
 void ViewerWidget::paintGL()
-{OSG_DEBUG << "---------- paintGL()" << std::endl;
+{
   mpFrameMutex->lock();
   frame();
   mpFrameMutex->unlock();
@@ -284,7 +250,7 @@ void ViewerWidget::paintGL()
  * \sa ViewerWidget::paintGL()
  */
 void ViewerWidget::frame()
-{OSG_DEBUG << "---------- frame()" << std::endl;
+{
   mpViewer->frame();
 }
 
@@ -296,11 +262,10 @@ void ViewerWidget::frame()
  * \param height
  */
 void ViewerWidget::resizeGL(int width, int height)
-{OSG_DEBUG << "---------- resizeGL()" << std::endl;
+{
   int x = convertSizeDimension(this->x());
   int y = convertSizeDimension(this->y());
-  // FIXME already resized with QGLWidget https://github.com/qt/qtbase/blob/v5.15.18-lts-lgpl/src/opengl/qgl.cpp#L4421-L4424
-#if 0//QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 4, 0)
   width = convertSizeDimension(width);
   height = convertSizeDimension(height);
 #endif
@@ -314,7 +279,7 @@ void ViewerWidget::resizeGL(int width, int height)
  * \param event
  */
 void ViewerWidget::keyPressEvent(QKeyEvent *event)
-{OSG_DEBUG << "---------- keyPressEvent()" << std::endl;
+{
   QPair<int, int> key = convertKeyCode(event);
   getEventQueue()->keyPress(key.first, key.second);
 }
@@ -325,7 +290,7 @@ void ViewerWidget::keyPressEvent(QKeyEvent *event)
  * \param event
  */
 void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
-{OSG_DEBUG << "---------- keyReleaseEvent()" << std::endl;
+{
   QPair<int, int> key = convertKeyCode(event);
   getEventQueue()->keyRelease(key.first, key.second);
 }
@@ -336,7 +301,7 @@ void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
  * \param event
  */
 void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
-{OSG_DEBUG << "---------- mouseMoveEvent()" << std::endl;
+{
   QPoint position = convertMousePosition(event);
   getEventQueue()->mouseMotion(static_cast<float>(position.x()), static_cast<float>(position.y()));
 }
@@ -347,7 +312,7 @@ void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
  * \param event
  */
 void ViewerWidget::mousePressEvent(QMouseEvent *event)
-{OSG_DEBUG << "---------- mousePressEvent()" << std::endl;
+{
   if (event->button() == Qt::RightButton && event->modifiers() == Qt::ShiftModifier) {
     // Qt counts pixels from the upper-left corner and OSG from the lower-left corner (GL viewport), thus pass reverseY = true
     QPoint position = convertMousePosition(event, true);
@@ -596,7 +561,7 @@ void ViewerWidget::resetVisualPropertiesForAllVisualizers()
  * \param event
  */
 void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
-{OSG_DEBUG << "---------- mouseReleaseEvent()" << std::endl;
+{
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
   getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
@@ -608,7 +573,7 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
  * \param event
  */
 void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
-{OSG_DEBUG << "---------- mouseDoubleClickEvent()" << std::endl;
+{
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
   getEventQueue()->mouseDoubleButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
@@ -620,7 +585,7 @@ void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
  * \param event
  */
 void ViewerWidget::wheelEvent(QWheelEvent *event)
-{OSG_DEBUG << "---------- wheelEvent()" << std::endl;
+{
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
   static QPoint angleDelta = QPoint(0, 0);
   angleDelta += event->angleDelta();
@@ -638,18 +603,18 @@ void ViewerWidget::wheelEvent(QWheelEvent *event)
   event->accept();
   int delta = event->delta();
   osgGA::GUIEventAdapter::ScrollingMotion motion = delta > 0 ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN;
-  getEventQueue()->mouseScroll(motion);
+  mpGraphicsWindow->getEventQueue()->mouseScroll(motion);
 #endif // QT_VERSION_CHECK
 }
 
 /*!
  * \brief ViewerWidget::event
- * Repaint the Graphics window on each user interaction.
+ * Repaints the graphics window on each user interaction.
  * \param event
  * \return
  */
 bool ViewerWidget::event(QEvent *event)
-{OSG_DEBUG << "---------- event()" << std::endl;
+{
   bool handled = GLWidget::event(event);
   // This ensures that the OSG widget is always going to be repainted after the
   // user performed some interaction. Doing this in the event handler ensures
@@ -662,7 +627,7 @@ bool ViewerWidget::event(QEvent *event)
     case QEvent::MouseButtonRelease:
     case QEvent::MouseMove:
     case QEvent::Wheel:
-      update(); // TODO override requestRedraw()
+      update();
       break;
     default:
       break;
@@ -677,6 +642,6 @@ bool ViewerWidget::event(QEvent *event)
 osgGA::EventQueue* ViewerWidget::getEventQueue() const
 {
   osgGA::EventQueue* eventQueue = mpGraphicsWindow->getEventQueue();
-  assert(eventQueue != nullptr); // TODO remove this method because this assesrt is useless since the event queue is created in the constructor of GraphicsWindow (and this would allow us to ignore putting it in a ref_ptr<> before .release() upon return)
+  assert(eventQueue != nullptr);
   return eventQueue;
 }

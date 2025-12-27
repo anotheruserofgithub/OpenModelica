@@ -608,13 +608,10 @@ bool AbstractAnimationWindow::loadVisualization()
     mpVisualization->initData();
     mpVisualization->setUpScene();
     mpVisualization->initVisualization();
-    OSG_DEBUG << "---------- setSceneData()" << std::endl;
     //add scene for the chosen visualization
     mpViewerWidget->getSceneView()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
-    OSG_DEBUG << "---------- chooseVectorScales()" << std::endl;
     //choose suitable scales for the vector visualizers so that they fit well in the scene
     mpVisualization->getBaseData()->chooseVectorScales(mpViewerWidget->getSceneView(), mpViewerWidget->getFrameMutex(), std::bind(&ViewerWidget::frame, mpViewerWidget));
-    OSG_DEBUG << "---------- done, initializing dock widgets" << std::endl;
   }
   //add window title
   setWindowTitle(QString::fromStdString(mFileName));
