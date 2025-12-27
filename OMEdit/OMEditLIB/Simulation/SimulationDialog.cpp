@@ -44,6 +44,7 @@
 #include "Modeling/Commands.h"
 #if !defined(WITHOUT_OSG)
 #include "Animation/AnimationWindow.h"
+#include "Animation/ViewerWidget.h"
 #endif
 #include "TranslationFlagsWidget.h"
 
@@ -1967,10 +1968,11 @@ void SimulationDialog::simulationProcessFinished(SimulationOptions simulationOpt
     }
 #if !defined(WITHOUT_OSG)
     // if simulated with animation then open the animation directly.
+    AnimationWindow *pAnimationWindow = nullptr;
     if (simulationOptions.getSimulateWithAnimation()) {
       if (simulationOptions.getFullResultFileName().endsWith(".mat")) {
         MainWindow::instance()->getPlotWindowContainer()->addAnimationWindow();
-        AnimationWindow *pAnimationWindow = MainWindow::instance()->getPlotWindowContainer()->getCurrentAnimationWindow();
+        pAnimationWindow = MainWindow::instance()->getPlotWindowContainer()->getCurrentAnimationWindow();
         if (pAnimationWindow) {
           pAnimationWindow->openAnimationFile(resultFileInfo.absoluteFilePath());
         }
@@ -1985,6 +1987,12 @@ void SimulationDialog::simulationProcessFinished(SimulationOptions simulationOpt
      * Make sure we always update the diagramWindow after simulation.
      */
     MainWindow::instance()->getPlotWindowContainer()->showDiagramWindow(0, false);
+#if !defined(WITHOUT_OSG)
+    // Give the focus to the scene viewer so that it receives keyboard events
+    if (pAnimationWindow) {
+      pAnimationWindow->getViewerWidget()->setFocus(Qt::ActiveWindowFocusReason);
+    }
+#endif
   }
   bool profiling = simulationOptions.getProfiling().compare(QStringLiteral("none")) != 0;
   if (OptionsDialog::instance()->getDebuggerPage()->getAlwaysShowTransformationsCheckBox()->isChecked() ||
