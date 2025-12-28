@@ -710,24 +710,20 @@ void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
 void ViewerWidget::wheelEvent(QWheelEvent *event)
 {OSG_DEBUG << "ViewerWidget::wheelEvent()" << std::endl;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-  static QPoint angleDelta = QPoint(0, 0);
+  static QPoint angleDelta = QPoint();
   angleDelta += event->angleDelta();
   QPoint numDegrees = angleDelta / 8;
   QPoint numSteps = numDegrees / 15; // See QWheelEvent documentation
-  if (numSteps.x() != 0 || numSteps.y() != 0) {
-    angleDelta = QPoint(0, 0);
-    osgGA::GUIEventAdapter::ScrollingMotion motion = (numSteps.x() > 0 || numSteps.y() > 0) ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN;
-    mpGraphicsWindow->getEventQueue()->mouseScroll(motion);
-    event->accept();
-  } else {
+  if (numSteps.isNull()) {
     event->ignore();
+    return;
   }
-#else // QT_VERSION_CHECK
-  event->accept();
-  int delta = event->delta();
-  osgGA::GUIEventAdapter::ScrollingMotion motion = delta > 0 ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN;
-  mpGraphicsWindow->getEventQueue()->mouseScroll(motion);
-#endif // QT_VERSION_CHECK
+  angleDelta = QPoint();
+  bool up = qAbs(numSteps.x()) > qAbs(numSteps.y()) ? numSteps.x() > 0 : numSteps.y() > 0;
+#else
+  bool up = event->delta() > 0;
+#endif
+  mpGraphicsWindow->getEventQueue()->mouseScroll(up ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN);
 }
 
 /*!
