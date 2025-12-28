@@ -87,7 +87,7 @@ void AnimationWindow::createActions()
   mpAnimationToolBar->addAction(mpRotateCameraLeftAction);
   mpAnimationToolBar->addAction(mpRotateCameraRightAction);
   mpAnimationToolBar->addAction(mpCenterAtOriginAction);
-  mpAnimationToolBar->addAction(mpFitToViewAction);
+  mpAnimationToolBar->addAction(mpFitInViewAction);
   mpAnimationToolBar->addSeparator();
   mpAnimationToolBar->addAction(mpCameraControlAction);
   mpAnimationToolBar->addSeparator();

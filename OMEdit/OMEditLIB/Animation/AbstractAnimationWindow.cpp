@@ -80,7 +80,7 @@ AbstractAnimationWindow::AbstractAnimationWindow(QWidget *pParent)
     mpRotateCameraLeftAction(nullptr),
     mpRotateCameraRightAction(nullptr),
     mpCenterAtOriginAction(nullptr),
-    mpFitToViewAction(nullptr),
+    mpFitInViewAction(nullptr),
     mpCameraControlAction(nullptr),
     mpInteractiveControlAction(nullptr),
     mCameraInitialized(false),
@@ -233,10 +233,10 @@ void AbstractAnimationWindow::createActions()
   mpCenterAtOriginAction = new QAction(QIcon(":/Resources/icons/center-at-origin.svg"), tr("Center at Origin"), this);
   mpCenterAtOriginAction->setStatusTip(tr("Center the scene at the origin"));
   connect(mpCenterAtOriginAction, SIGNAL(triggered()), this, SLOT(centerAtOrigin()));
-  // fit to view action
-  mpFitToViewAction = new QAction(QIcon(":/Resources/icons/fit-to-view.svg"), tr("Fit to View"), this);
-  mpFitToViewAction->setStatusTip(tr("Fit the scene to the view"));
-  connect(mpFitToViewAction, SIGNAL(triggered()), this, SLOT(fitToView()));
+  // fit in view action
+  mpFitInViewAction = new QAction(QIcon(":/Resources/icons/fit-in-view.svg"), tr("Fit in View"), this);
+  mpFitInViewAction->setStatusTip(tr("Fit the scene in the view"));
+  connect(mpFitInViewAction, SIGNAL(triggered()), this, SLOT(fitInView()));
   // camera control action
   mpCameraControlAction = mpAnimationCameraDockWidget->toggleViewAction();
   mpCameraControlAction->setIcon(QIcon(":/Resources/icons/joystick.svg"));
@@ -941,10 +941,10 @@ void AbstractAnimationWindow::centerAtOrigin()
 }
 
 /*!
- * \brief AbstractAnimationWindow::fitToView
- * fist the scene to the view
+ * \brief AbstractAnimationWindow::fitInView
+ * fits the scene in the view
  */
-void AbstractAnimationWindow::fitToView()
+void AbstractAnimationWindow::fitInView()
 {
   osg::ref_ptr<osgGA::OrbitManipulator> manipulator = static_cast<osgGA::OrbitManipulator*>(mpViewerWidget->getSceneView()->getCameraManipulator());
   const osg::Quat rotation = manipulator->getRotation();

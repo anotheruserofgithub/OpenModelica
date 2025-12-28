@@ -104,7 +104,7 @@ protected:
   QAction *mpRotateCameraLeftAction;
   QAction *mpRotateCameraRightAction;
   QAction *mpCenterAtOriginAction;
-  QAction *mpFitToViewAction;
+  QAction *mpFitInViewAction;
   QAction *mpCameraControlAction;
   QAction *mpInteractiveControlAction;
   QVector<DoubleSpinBoxIndexed*> mSpinBoxVector;
@@ -142,7 +142,7 @@ public slots:
   void rotateCameraRight();
   void centerAtHomePosition();
   void centerAtOrigin();
-  void fitToView();
+  void fitInView();
 };
 
 #endif // ABSTRACTANIMATIONWINDOW_H
