@@ -113,6 +113,7 @@ AbstractAnimationWindow::AbstractAnimationWindow(QWidget *pParent)
 /*!
  * \brief AbstractAnimationWindow::openAnimationFile
  * \param fileName
+ * \param stashCamera
  */
 void AbstractAnimationWindow::openAnimationFile(QString fileName, bool stashCamera)
 {
@@ -128,13 +129,15 @@ void AbstractAnimationWindow::openAnimationFile(QString fileName, bool stashCame
       mpAnimationPlayAction->setEnabled(true);
       mpAnimationPauseAction->setEnabled(true);
       mpAnimationRepeatAction->setEnabled(true);
+      mpAnimationRepeatAction->setChecked(false);
       mpAnimationSlider->setEnabled(true);
       bool state = mpAnimationSlider->blockSignals(true);
       mpAnimationSlider->setValue(mpVisualization->getTimeManager()->getTimeFraction());
       mpAnimationSlider->blockSignals(state);
-      mpSpeedComboBox->setEnabled(true);
       mpTimeTextBox->setEnabled(true);
       mpTimeTextBox->setText(QString::number(mpVisualization->getTimeManager()->getVisTime()));
+      mpSpeedComboBox->setEnabled(true);
+      mpSpeedComboBox->lineEdit()->setText(QString::number(mpVisualization->getTimeManager()->getSpeedUp()));
       /* Only use isometric view as default for csv file type.
        * Otherwise use side view as default which suits better for Modelica models.
        */
@@ -592,9 +595,11 @@ bool AbstractAnimationWindow::loadVisualization()
     return false;
   } else {
     //clear previous visualization
-    if (mpVisualization) {
+    if (mpVisualization) { // FIXME in the end this is not necessary, unless mpVisualization cannot be recreated, but anyway it fixes (part of) memory leaks
       clearView();
+      // FIXME issue only when there are vectors
       delete mpVisualization; // FIXME when reopening the result file in the same animation window none of the shapes are drawn at time 0 though all vectors are
+      mpVisualization = nullptr;
     }
     //init visualization
     if (visType == VisType::MAT) {
@@ -603,20 +608,20 @@ bool AbstractAnimationWindow::loadVisualization()
       mpVisualization = new VisualizationCSV(mFileName, mPathName);
     } else if (visType == VisType::FMU) {
       mpVisualization = new VisualizationFMU(mFileName, mPathName);
-    } else {
-      QString msg = tr("Could not init %1 %2.").arg(QString(mPathName.c_str())).arg(QString(mFileName.c_str()));
-      MessagesWidget::instance()->addGUIMessage(MessageItem(MessageItem::Modelica, msg, Helper::scriptingKind,
-                                                            Helper::errorLevel));
-      return false;
     }
+    Q_CHECK_PTR(mpVisualization);
     connect(mpVisualization->getTimeManager()->getUpdateSceneTimer(), SIGNAL(timeout()), SLOT(updateScene()));
     mpVisualization->initData();
     mpVisualization->setUpScene();
     mpVisualization->initVisualization();
+    mpVisualization->getOMVisScene()->getScene().getRootNode()->dirtyBound();
     //add scene for the chosen visualization
     mpViewerWidget->getSceneView()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
     //choose suitable scales for the vector visualizers so that they fit well in the scene
+    mpViewerWidget->makeCurrent(); // FIXME this fixes the issue about mpViewer->frame() call in chooseVectorScales()
     mpVisualization->getBaseData()->chooseVectorScales(mpViewerWidget->getSceneView(), mpViewerWidget->getFrameMutex(), std::bind(&ViewerWidget::frame, mpViewerWidget));
+    mpViewerWidget->doneCurrent();
+    //updateSceneTime(0); // FIXME this fixes the issue, but why??? -> it is the frame() call in chooseVectorScales() that is the culprit, but why???
   }
   //add window title
   setWindowTitle(QString::fromStdString(mFileName));
@@ -650,6 +655,7 @@ void AbstractAnimationWindow::resetCamera()
  * \brief AbstractAnimationWindow::cameraPosition
  * sets the camera position with the specified rotation from the focal center, which is reset at the home center,
  * maintaining the current distance to the focal center
+ * \param rotation
  */
 void AbstractAnimationWindow::cameraPosition(const osg::Quat& rotation)
 {
@@ -735,7 +741,7 @@ void AbstractAnimationWindow::updateScene()
 
 /*!
  * \brief AbstractAnimationWindow::animationFileSlotFunction
- * opens a file dialog to chooes an animation
+ * opens a file dialog to choose an animation
  */
 void AbstractAnimationWindow::chooseAnimationFileSlotFunction()
 {
@@ -784,7 +790,7 @@ void AbstractAnimationWindow::pauseSlotFunction()
 
 /*!
  * \brief AbstractAnimationWindow::repeatSlotFunciton
- * Slot function for the repeat button
+ * slot function for the repeat button
  * \param checked
  */
 void AbstractAnimationWindow::repeatSlotFunciton(bool checked)
@@ -818,6 +824,7 @@ void AbstractAnimationWindow::updateSceneTime(double time)
 /*!
  * \brief AbstractAnimationWindow::sliderSetTimeSlotFunction
  * slot function for the time slider to jump to the adjusted point of time
+ * \param value
  */
 void AbstractAnimationWindow::sliderSetTimeSlotFunction(int value)
 {
@@ -867,6 +874,7 @@ void AbstractAnimationWindow::setSpeedSlotFunction()
 /*!
  * \brief AbstractAnimationWindow::setPerspective
  * gets the identifier for the chosen perspective and calls the functions
+ * \param value
  */
 void AbstractAnimationWindow::setPerspective(int value)
 {
@@ -889,6 +897,7 @@ void AbstractAnimationWindow::setPerspective(int value)
 /*!
  * \brief AbstractAnimationWindow::rotateCamera
  * rotates the camera by the specified angle about the line of sight
+ * \param angle
  */
 void AbstractAnimationWindow::rotateCamera(double angle)
 {
@@ -955,6 +964,8 @@ void AbstractAnimationWindow::fitInView()
 
 /*!
  * \brief DoubleSpinBoxIndexed::DoubleSpinBoxIndexed
+ * \param pParent
+ * \param idx
  */
 DoubleSpinBoxIndexed::DoubleSpinBoxIndexed(QWidget *pParent, int idx)
   : QDoubleSpinBox(pParent)

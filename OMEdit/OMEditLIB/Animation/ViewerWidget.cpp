@@ -328,7 +328,8 @@ unsigned int ViewerWidget::convertMouseButton(QMouseEvent *event)
 QPair<int, int> ViewerWidget::convertKeyCode(QKeyEvent *event)
 {
   QString keyString = event->text();
-  const char* keyData = keyString.toLocal8Bit().data();
+  QByteArray keyByteArray = keyString.toLocal8Bit(); // FIXME see https://wiki.qt.io/Technical_FAQ#How_can_I_convert_a_QString_to_char.2A_and_vice_versa.3F (probably worked because of https://forum.qt.io/post/648180)
+  const char* keyData = keyByteArray.constData(); // FIXME see https://doc.qt.io/qt-6/qbytearray.html#data
   int keySymbol = osgGA::GUIEventAdapter::KeySymbol(*keyData);
   int virtualKeySymbol = event->key() == Qt::Key_Control ? osgGA::GUIEventAdapter::KEY_Control_L : 0;
   if (!keySymbol) { // Since OSG 3.6.5 this additional step could be omitted (see OSG commit f4fe1e5)
