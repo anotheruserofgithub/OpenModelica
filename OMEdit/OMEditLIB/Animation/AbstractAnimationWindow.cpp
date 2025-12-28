@@ -591,6 +591,11 @@ bool AbstractAnimationWindow::loadVisualization()
                                                           Helper::errorLevel));
     return false;
   } else {
+    //clear previous visualization
+    if (mpVisualization) {
+      clearView();
+      delete mpVisualization; // FIXME when reopening the result file in the same animation window none of the shapes are drawn at time 0 though all vectors are
+    }
     //init visualization
     if (visType == VisType::MAT) {
       mpVisualization = new VisualizationMAT(mFileName, mPathName);
