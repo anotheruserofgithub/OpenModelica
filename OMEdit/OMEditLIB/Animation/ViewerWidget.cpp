@@ -92,9 +92,14 @@ void GraphicsWindowEmbeddedQt::requestContinuousUpdate(bool needed)
  * \param y
  */
 void GraphicsWindowEmbeddedQt::requestWarpPointer(float x, float y)
-{
+{OSG_DEBUG << "GraphicsWindowEmbeddedQt::requestWarpPointer(" << x << ", " << y << ")" << std::endl;
   QPoint pos = QPoint(mpViewerWidget->convertSizeDimensionBack(x), mpViewerWidget->convertSizeDimensionBack(y));
-  QCursor::setPos(mpViewerWidget->mapToGlobal(pos));
+  OSG_DEBUG << "GraphicsWindowEmbeddedQt::requestWarpPointer(): pos = (" << pos.x() << ", " << pos.y() << ")" << std::endl;
+  QPoint globalPos = mpViewerWidget->mapToGlobal(pos);
+  OSG_DEBUG << "GraphicsWindowEmbeddedQt::requestWarpPointer(): globalPos = (" << globalPos.x() << ", " << globalPos.y() << ")" << std::endl;
+  OSG_DEBUG << "GraphicsWindowEmbeddedQt::requestWarpPointer(): QCursor::pos() = (" << QCursor::pos().x() << ", " << QCursor::pos().y() << ")" << std::endl;
+  QCursor::setPos(globalPos);
+  OSG_DEBUG << "GraphicsWindowEmbeddedQt::requestWarpPointer(): QCursor::pos() = (" << QCursor::pos().x() << ", " << QCursor::pos().y() << ")" << std::endl;
 }
 
 /*!
@@ -141,7 +146,7 @@ void View::requestContinuousUpdate(bool needed)
  * \param y
  */
 void View::requestWarpPointer(float x, float y)
-{
+{OSG_DEBUG << "View::requestWarpPointer(" << x << ", " << y << ")" << std::endl;
   osgViewer::View::requestWarpPointer(x, y);
   // Already forwarded to GraphicsWindowEmbeddedQt::requestWarpPointer()
 }
@@ -217,8 +222,11 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   camera->setViewport(new osg::Viewport(0, 0, width(), height()));
   camera->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width()) / static_cast<double>(height()), 1.0, 10000.0);
   // Reverse the mouse wheel zooming
-  osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator();
+  setCursor(Qt::CrossCursor);
+  setMouseTracking(true);
+  osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator(osgGA::StandardManipulator::UPDATE_MODEL_SIZE | osgGA::StandardManipulator::COMPUTE_HOME_USING_BBOX | osgGA::StandardManipulator::PROCESS_MOUSE_WHEEL | osgGA::StandardManipulator::SET_CENTER_ON_WHEEL_FORWARD_MOVEMENT);
   pMultiTouchTrackballManipulator->setWheelZoomFactor(-pMultiTouchTrackballManipulator->getWheelZoomFactor());
+  pMultiTouchTrackballManipulator->setAnimationTime(0.0);
   mpSceneView->setCameraManipulator(pMultiTouchTrackballManipulator);
   // Display OSG statistics by pressing the 's' key (multiple times)
   mpSceneView->addEventHandler(new osgViewer::StatsHandler());
