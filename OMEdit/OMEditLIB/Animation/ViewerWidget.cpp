@@ -108,10 +108,10 @@ void GraphicsWindowEmbeddedQt::requestWarpPointer(float x, float y)
 void View::requestRedraw()
 {OSG_DEBUG << "View::requestRedraw()" << std::endl;
   osgViewer::View::requestRedraw();
-  osg::ref_ptr<GraphicsWindowEmbeddedQt> gw = dynamic_cast<GraphicsWindowEmbeddedQt*>(_camera->getGraphicsContext());
+  /*osg::ref_ptr<GraphicsWindowEmbeddedQt> gw = dynamic_cast<GraphicsWindowEmbeddedQt*>(_camera->getGraphicsContext());
   if (gw.valid()) {
     gw->requestRedraw();
-  }
+  }*/
 }
 
 /*!
@@ -123,19 +123,21 @@ void View::requestContinuousUpdate(bool needed)
   osg::ref_ptr<Viewer> viewer = dynamic_cast<Viewer*>(getViewerBase());
   if (viewer.valid()) {
     needed = viewer->requestContinuousUpdate(this, needed);
+    OSG_DEBUG << "View::requestContinuousUpdate(): viewer request = " << needed << std::endl;
   }
   osgViewer::View::requestContinuousUpdate(needed);
   osg::ref_ptr<GraphicsWindowEmbeddedQt> gw = dynamic_cast<GraphicsWindowEmbeddedQt*>(_camera->getGraphicsContext());
   if (gw.valid()) {
-    /*needed = false;
+    needed = false;
     osgViewer::GraphicsWindow::Views views;
     gw->getViews(views);
-    for (osgViewer::View* view : views) {
-      if (view->getViewerBase() && view->getViewerBase()->getRequestContinousUpdate()) {
+    for (osg::ref_ptr<osgViewer::View> view : views) {
+      if (view.valid() && view->getViewerBase() && view->getViewerBase()->getRequestContinousUpdate()) {
         needed = true;
         break;
       }
-    }*/
+    }
+    OSG_DEBUG << "View::requestContinuousUpdate(): window request = " << needed << std::endl;
     gw->requestContinuousUpdate(needed);
   }
 }
@@ -208,6 +210,7 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpGraphicsWindow = new GraphicsWindowEmbeddedQt(x(), y(), width(), height(), this);
   mpViewer = new Viewer();
   mpSceneView = new View();
+  mpSceneView2 = new View();
   mpFrameMutex = new OpenThreads::Mutex();
   mpAnimationWindow = qobject_cast<AbstractAnimationWindow*>(parent);
   mpSelectedVisualizer = nullptr;
@@ -215,19 +218,26 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpGraphicsWindow->getEventQueue()->syncWindowRectangleWithGraphicsContext();
   // Add a scene to the viewer
   mpViewer->addView(mpSceneView);
+  mpViewer->addView(mpSceneView2);
   // Configure the camera
-  osg::ref_ptr<osg::Camera> camera = mpSceneView->getCamera();
-  camera->setGraphicsContext(mpGraphicsWindow.get());
-  camera->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
-  camera->setViewport(new osg::Viewport(0, 0, width(), height()));
-  camera->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width()) / static_cast<double>(height()), 1.0, 10000.0);
+  osg::ref_ptr<osg::Camera> camera1 = mpSceneView->getCamera();
+  camera1->setGraphicsContext(mpGraphicsWindow.get());
+  camera1->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
+  camera1->setViewport(new osg::Viewport(0, 0, width() / 2, height()));
+  camera1->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height()), 1.0, 10000.0);
+  osg::ref_ptr<osg::Camera> camera2 = mpSceneView2->getCamera();
+  camera2->setGraphicsContext(mpGraphicsWindow.get());
+  camera2->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
+  camera2->setViewport(new osg::Viewport(width() / 2, 0, width() / 2, height()));
+  camera2->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height()), 1.0, 10000.0);
   // Reverse the mouse wheel zooming
   setCursor(Qt::CrossCursor);
-  setMouseTracking(true);
-  osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator(osgGA::StandardManipulator::UPDATE_MODEL_SIZE | osgGA::StandardManipulator::COMPUTE_HOME_USING_BBOX | osgGA::StandardManipulator::PROCESS_MOUSE_WHEEL | osgGA::StandardManipulator::SET_CENTER_ON_WHEEL_FORWARD_MOVEMENT);
+  //setMouseTracking(true);
+  osgGA::MultiTouchTrackballManipulator *pMultiTouchTrackballManipulator = new osgGA::MultiTouchTrackballManipulator(osgGA::StandardManipulator::UPDATE_MODEL_SIZE | osgGA::StandardManipulator::COMPUTE_HOME_USING_BBOX | osgGA::StandardManipulator::PROCESS_MOUSE_WHEEL/* | osgGA::StandardManipulator::SET_CENTER_ON_WHEEL_FORWARD_MOVEMENT*/);
   pMultiTouchTrackballManipulator->setWheelZoomFactor(-pMultiTouchTrackballManipulator->getWheelZoomFactor());
   pMultiTouchTrackballManipulator->setAnimationTime(0.0);
   mpSceneView->setCameraManipulator(pMultiTouchTrackballManipulator);
+  mpSceneView2->setCameraManipulator(new osgGA::TrackballManipulator);
   // Display OSG statistics by pressing the 's' key (multiple times)
   mpSceneView->addEventHandler(new osgViewer::StatsHandler());
   // Run all OSG traversals in the same thread

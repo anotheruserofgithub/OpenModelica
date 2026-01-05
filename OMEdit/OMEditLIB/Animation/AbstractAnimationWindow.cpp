@@ -617,9 +617,11 @@ bool AbstractAnimationWindow::loadVisualization()
     mpVisualization->getOMVisScene()->getScene().getRootNode()->dirtyBound();
     //add scene for the chosen visualization
     mpViewerWidget->getSceneView()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
+    mpViewerWidget->getSceneView2()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
     //choose suitable scales for the vector visualizers so that they fit well in the scene
     mpViewerWidget->makeCurrent(); // FIXME this fixes the issue about mpViewer->frame() call in chooseVectorScales()
     mpVisualization->getBaseData()->chooseVectorScales(mpViewerWidget->getSceneView(), mpViewerWidget->getFrameMutex(), std::bind(&ViewerWidget::frame, mpViewerWidget));
+    mpVisualization->getBaseData()->chooseVectorScales(mpViewerWidget->getSceneView2(), mpViewerWidget->getFrameMutex(), std::bind(&ViewerWidget::frame, mpViewerWidget));
     mpViewerWidget->doneCurrent();
     //updateSceneTime(0); // FIXME this fixes the issue, but why??? -> it is the frame() call in chooseVectorScales() that is the culprit, but why???
   }
