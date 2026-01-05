@@ -128,13 +128,14 @@ void View::requestContinuousUpdate(bool needed)
   osgViewer::View::requestContinuousUpdate(needed);
   osg::ref_ptr<GraphicsWindowEmbeddedQt> gw = dynamic_cast<GraphicsWindowEmbeddedQt*>(_camera->getGraphicsContext());
   if (gw.valid()) {
-    needed = false;
-    osgViewer::GraphicsWindow::Views views;
-    gw->getViews(views);
-    for (osg::ref_ptr<osgViewer::View> view : views) {
-      if (view.valid() && view->getViewerBase() && view->getViewerBase()->getRequestContinousUpdate()) {
-        needed = true;
-        break;
+    if (!needed) {
+      osgViewer::GraphicsWindow::Views views;
+      gw->getViews(views);
+      for (osg::ref_ptr<osgViewer::View> view : views) {
+        if (view.valid() && view->getViewerBase() && view->getViewerBase()->getRequestContinousUpdate()) {
+          needed = true;
+          break;
+        }
       }
     }
     OSG_DEBUG << "View::requestContinuousUpdate(): window request = " << needed << std::endl;
@@ -209,6 +210,7 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
 #endif
   mpGraphicsWindow = new GraphicsWindowEmbeddedQt(x(), y(), width(), height(), this);
   mpViewer = new Viewer();
+  mpViewer2 = new Viewer();
   mpSceneView = new View();
   mpSceneView2 = new View();
   mpFrameMutex = new OpenThreads::Mutex();
@@ -218,7 +220,7 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpGraphicsWindow->getEventQueue()->syncWindowRectangleWithGraphicsContext();
   // Add a scene to the viewer
   mpViewer->addView(mpSceneView);
-  mpViewer->addView(mpSceneView2);
+  mpViewer2->addView(mpSceneView2);
   // Configure the camera
   osg::ref_ptr<osg::Camera> camera1 = mpSceneView->getCamera();
   camera1->setGraphicsContext(mpGraphicsWindow.get());
@@ -242,12 +244,16 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpSceneView->addEventHandler(new osgViewer::StatsHandler());
   // Run all OSG traversals in the same thread
   mpViewer->setThreadingModel(osgViewer::CompositeViewer::SingleThreaded);
+  mpViewer2->setThreadingModel(osgViewer::CompositeViewer::SingleThreaded);
   // Improve performance for a single-threaded viewer with a single graphics context
   mpViewer->setReleaseContextAtEndOfFrameHint(false);
+  mpViewer2->setReleaseContextAtEndOfFrameHint(false);
   // Disable the default setting of Viewer::_done on a QUIT_APPLICATION event
   mpViewer->setQuitEventSetsDone(false);
+  mpViewer2->setQuitEventSetsDone(false);
   // Disable the default setting of Viewer::_done by pressing Escape
   mpViewer->setKeyEventSetsDone(0);
+  mpViewer2->setKeyEventSetsDone(0);
   // Ensure that the scene remains visible
   setMinimumSize(100, 100);
   // This focus policy ensures that the widget will receive keyboard events.
@@ -365,6 +371,9 @@ void ViewerWidget::initializeGL()
   if (!mpViewer->isRealized()) {
     mpViewer->realize();
   }
+  if (!mpViewer2->isRealized()) {
+    mpViewer2->realize();
+  }
 }
 
 /*!
@@ -394,6 +403,7 @@ void ViewerWidget::paintGL()
 void ViewerWidget::frame()
 {OSG_DEBUG << "ViewerWidget::frame()" << std::endl;
   mpViewer->frame();
+  mpViewer2->frame();
 }
 
 /*!

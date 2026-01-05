@@ -142,6 +142,7 @@ protected:
 private:
   osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow;
   osg::ref_ptr<Viewer> mpViewer;
+  osg::ref_ptr<Viewer> mpViewer2;
   osg::ref_ptr<View> mpSceneView;
   osg::ref_ptr<View> mpSceneView2;
   OpenThreads::Mutex* mpFrameMutex;
