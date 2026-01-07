@@ -213,6 +213,8 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpViewer2 = new Viewer();
   mpSceneView = new View();
   mpSceneView2 = new View();
+  mpSceneView3 = new View();
+  mpSceneView4 = new View();
   mpFrameMutex = new OpenThreads::Mutex();
   mpAnimationWindow = qobject_cast<AbstractAnimationWindow*>(parent);
   mpSelectedVisualizer = nullptr;
@@ -221,17 +223,29 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   // Add a scene to the viewer
   mpViewer->addView(mpSceneView);
   mpViewer2->addView(mpSceneView2);
+  mpViewer->addView(mpSceneView3);
+  mpViewer2->addView(mpSceneView4);
   // Configure the camera
   osg::ref_ptr<osg::Camera> camera1 = mpSceneView->getCamera();
   camera1->setGraphicsContext(mpGraphicsWindow.get());
   camera1->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
-  camera1->setViewport(new osg::Viewport(0, 0, width() / 2, height()));
-  camera1->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height()), 1.0, 10000.0);
+  camera1->setViewport(new osg::Viewport(0, height() / 2, width() / 2, height() / 2));
+  camera1->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height() / 2), 1.0, 10000.0);
   osg::ref_ptr<osg::Camera> camera2 = mpSceneView2->getCamera();
   camera2->setGraphicsContext(mpGraphicsWindow.get());
   camera2->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
-  camera2->setViewport(new osg::Viewport(width() / 2, 0, width() / 2, height()));
-  camera2->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height()), 1.0, 10000.0);
+  camera2->setViewport(new osg::Viewport(width() / 2, height() / 2, width() / 2, height() / 2));
+  camera2->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height() / 2), 1.0, 10000.0);
+  osg::ref_ptr<osg::Camera> camera3 = mpSceneView3->getCamera();
+  camera3->setGraphicsContext(mpGraphicsWindow.get());
+  camera3->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
+  camera3->setViewport(new osg::Viewport(0, 0, width() / 2, height() / 2));
+  camera3->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height() / 2), 1.0, 10000.0);
+  osg::ref_ptr<osg::Camera> camera4 = mpSceneView4->getCamera();
+  camera4->setGraphicsContext(mpGraphicsWindow.get());
+  camera4->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
+  camera4->setViewport(new osg::Viewport(width() / 2, 0, width() / 2, height() / 2));
+  camera4->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height() / 2), 1.0, 10000.0);
   // Reverse the mouse wheel zooming
   setCursor(Qt::CrossCursor);
   //setMouseTracking(true);
@@ -240,6 +254,8 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   pMultiTouchTrackballManipulator->setAnimationTime(0.0);
   mpSceneView->setCameraManipulator(pMultiTouchTrackballManipulator);
   mpSceneView2->setCameraManipulator(new osgGA::TrackballManipulator);
+  mpSceneView3->setCameraManipulator(new osgGA::TrackballManipulator);
+  mpSceneView4->setCameraManipulator(new osgGA::TrackballManipulator);
   // Display OSG statistics by pressing the 's' key (multiple times)
   mpSceneView->addEventHandler(new osgViewer::StatsHandler());
   // Run all OSG traversals in the same thread
