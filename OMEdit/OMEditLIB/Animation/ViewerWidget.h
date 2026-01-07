@@ -143,6 +143,7 @@ protected:
   void showVisualizerPickContextMenu(const QPoint &pos);
 private:
   osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow;
+  osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow2;
   osg::ref_ptr<Viewer> mpViewer;
   osg::ref_ptr<Viewer> mpViewer2;
   osg::ref_ptr<View> mpSceneView;

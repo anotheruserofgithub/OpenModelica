@@ -208,7 +208,8 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   format.setSamples(4);
   setFormat(format);
 #endif
-  mpGraphicsWindow = new GraphicsWindowEmbeddedQt(x(), y(), width(), height(), this);
+  mpGraphicsWindow = new GraphicsWindowEmbeddedQt(x(), y(), width(), height() / 2, this);
+  mpGraphicsWindow2 = new GraphicsWindowEmbeddedQt(x(), y() + height() / 2, width(), height() / 2, this);
   mpViewer = new Viewer();
   mpViewer2 = new Viewer();
   mpSceneView = new View();
@@ -220,6 +221,7 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   mpSelectedVisualizer = nullptr;
   // Make sure the event queue has the correct window rectangle size and input range
   mpGraphicsWindow->getEventQueue()->syncWindowRectangleWithGraphicsContext();
+  mpGraphicsWindow2->getEventQueue()->syncWindowRectangleWithGraphicsContext();
   // Add a scene to the viewer
   mpViewer->addView(mpSceneView);
   mpViewer2->addView(mpSceneView2);
@@ -237,12 +239,12 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   camera2->setViewport(new osg::Viewport(width() / 2, height() / 2, width() / 2, height() / 2));
   camera2->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height() / 2), 1.0, 10000.0);
   osg::ref_ptr<osg::Camera> camera3 = mpSceneView3->getCamera();
-  camera3->setGraphicsContext(mpGraphicsWindow.get());
+  camera3->setGraphicsContext(mpGraphicsWindow2.get());
   camera3->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
   camera3->setViewport(new osg::Viewport(0, 0, width() / 2, height() / 2));
   camera3->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height() / 2), 1.0, 10000.0);
   osg::ref_ptr<osg::Camera> camera4 = mpSceneView4->getCamera();
-  camera4->setGraphicsContext(mpGraphicsWindow.get());
+  camera4->setGraphicsContext(mpGraphicsWindow2.get());
   camera4->setClearColor(osg::Vec4(0.95, 0.95, 0.95, 1.0));
   camera4->setViewport(new osg::Viewport(width() / 2, 0, width() / 2, height() / 2));
   camera4->setProjectionMatrixAsPerspective(30.0, static_cast<double>(width() / 2) / static_cast<double>(height() / 2), 1.0, 10000.0);
@@ -437,8 +439,10 @@ void ViewerWidget::resizeGL(int width, int height)
   width = convertSizeDimension(width);
   height = convertSizeDimension(height);
 #endif
-  mpGraphicsWindow->resized(x, y, width, height);
-  mpGraphicsWindow->getEventQueue()->windowResize(x, y, width, height);
+  mpGraphicsWindow->resized(x, y, width, height / 2);
+  mpGraphicsWindow2->resized(x, y + height / 2, width, height / 2);
+  mpGraphicsWindow->getEventQueue()->windowResize(x, y, width, height / 2);
+  mpGraphicsWindow2->getEventQueue()->windowResize(x, y + height / 2, width, height / 2);
 }
 
 /*!
@@ -450,6 +454,7 @@ void ViewerWidget::keyPressEvent(QKeyEvent *event)
 {
   QPair<int, int> key = convertKeyCode(event);
   mpGraphicsWindow->getEventQueue()->keyPress(key.first, key.second);
+  mpGraphicsWindow2->getEventQueue()->keyPress(key.first, key.second);
 }
 
 /*!
@@ -461,6 +466,7 @@ void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
 {
   QPair<int, int> key = convertKeyCode(event);
   mpGraphicsWindow->getEventQueue()->keyRelease(key.first, key.second);
+  mpGraphicsWindow2->getEventQueue()->keyRelease(key.first, key.second);
 }
 
 /*!
@@ -471,7 +477,11 @@ void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
 void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
 {OSG_DEBUG << "ViewerWidget::mouseMoveEvent()" << std::endl;
   QPoint position = convertMousePosition(event);
+  if (position.y() < convertSizeDimension(height() / 2)) {
   mpGraphicsWindow->getEventQueue()->mouseMotion(static_cast<float>(position.x()), static_cast<float>(position.y()));
+  } else {
+  mpGraphicsWindow2->getEventQueue()->mouseMotion(static_cast<float>(position.x()), static_cast<float>(position.y() - convertSizeDimension(height() / 2)));
+  }
 }
 
 /*!
@@ -495,7 +505,11 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
   }
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
+  if (position.y() < convertSizeDimension(height() / 2)) {
   mpGraphicsWindow->getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
+  } else {
+  mpGraphicsWindow2->getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y() - convertSizeDimension(height() / 2)), button);
+  }
 }
 
 /*!
@@ -732,7 +746,11 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 {OSG_DEBUG << "ViewerWidget::mouseReleaseEvent()" << std::endl;
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
+  if (position.y() < convertSizeDimension(height() / 2)) {
   mpGraphicsWindow->getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
+  } else {
+  mpGraphicsWindow2->getEventQueue()->mouseButtonRelease(static_cast<float>(position.x()), static_cast<float>(position.y() - convertSizeDimension(height() / 2)), button);
+  }
 }
 
 /*!
@@ -744,7 +762,11 @@ void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {OSG_DEBUG << "ViewerWidget::mouseDoubleClickEvent()" << std::endl;
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
+  if (position.y() < convertSizeDimension(height() / 2)) {
   mpGraphicsWindow->getEventQueue()->mouseDoubleButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
+  } else {
+  mpGraphicsWindow2->getEventQueue()->mouseDoubleButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y() - convertSizeDimension(height() / 2)), button);
+  }
 }
 
 /*!
@@ -769,6 +791,7 @@ void ViewerWidget::wheelEvent(QWheelEvent *event)
   bool up = event->delta() > 0;
 #endif
   mpGraphicsWindow->getEventQueue()->mouseScroll(up ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN);
+  mpGraphicsWindow2->getEventQueue()->mouseScroll(up ? osgGA::GUIEventAdapter::SCROLL_UP : osgGA::GUIEventAdapter::SCROLL_DOWN);
 }
 
 /*!
