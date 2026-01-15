@@ -595,10 +595,9 @@ bool AbstractAnimationWindow::loadVisualization()
     return false;
   } else {
     //clear previous visualization
-    if (mpVisualization) { // FIXME in the end this is not necessary, unless mpVisualization cannot be recreated, but anyway it fixes (part of) memory leaks
+    if (mpVisualization) {
       clearView();
-      // FIXME issue only when there are vectors
-      delete mpVisualization; // FIXME when reopening the result file in the same animation window none of the shapes are drawn at time 0 though all vectors are
+      delete mpVisualization;
       mpVisualization = nullptr;
     }
     //init visualization
@@ -614,20 +613,12 @@ bool AbstractAnimationWindow::loadVisualization()
     mpVisualization->initData();
     mpVisualization->setUpScene();
     mpVisualization->initVisualization();
-    mpVisualization->getOMVisScene()->getScene().getRootNode()->dirtyBound();
     //add scene for the chosen visualization
     mpViewerWidget->getSceneView()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
-    mpViewerWidget->getSceneView2()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
-    mpViewerWidget->getSceneView3()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
-    mpViewerWidget->getSceneView4()->setSceneData(mpVisualization->getOMVisScene()->getScene().getRootNode());
     //choose suitable scales for the vector visualizers so that they fit well in the scene
-    mpViewerWidget->makeCurrent(); // FIXME this fixes the issue about mpViewer->frame() call in chooseVectorScales()
+    mpViewerWidget->makeCurrent();
     mpVisualization->getBaseData()->chooseVectorScales(mpViewerWidget->getSceneView(), mpViewerWidget->getFrameMutex(), std::bind(&ViewerWidget::frame, mpViewerWidget));
-    mpViewerWidget->getSceneView2()->home();
-    mpViewerWidget->getSceneView3()->home();
-    mpViewerWidget->getSceneView4()->home();
     mpViewerWidget->doneCurrent();
-    //updateSceneTime(0); // FIXME this fixes the issue, but why??? -> it is the frame() call in chooseVectorScales() that is the culprit, but why???
   }
   //add window title
   setWindowTitle(QString::fromStdString(mFileName));

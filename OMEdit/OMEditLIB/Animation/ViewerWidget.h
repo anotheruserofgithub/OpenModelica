@@ -115,9 +115,6 @@ class ViewerWidget : public GLWidget
 public:
   ViewerWidget(QWidget *pParent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
   View* getSceneView() {return mpSceneView.get();}
-  View* getSceneView2() {return mpSceneView2.get();}
-  View* getSceneView3() {return mpSceneView3.get();}
-  View* getSceneView4() {return mpSceneView4.get();}
   OpenThreads::Mutex* getFrameMutex() {return mpFrameMutex;}
   void frame();
   template<typename T>
@@ -143,13 +140,8 @@ protected:
   void showVisualizerPickContextMenu(const QPoint &pos);
 private:
   osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow;
-  osg::ref_ptr<GraphicsWindowEmbeddedQt> mpGraphicsWindow2;
   osg::ref_ptr<Viewer> mpViewer;
-  osg::ref_ptr<Viewer> mpViewer2;
   osg::ref_ptr<View> mpSceneView;
-  osg::ref_ptr<View> mpSceneView2;
-  osg::ref_ptr<View> mpSceneView3;
-  osg::ref_ptr<View> mpSceneView4;
   OpenThreads::Mutex* mpFrameMutex;
   AbstractAnimationWindow* mpAnimationWindow;
   AbstractVisualizerObject* mpSelectedVisualizer;

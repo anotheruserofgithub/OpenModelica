@@ -757,7 +757,6 @@ void OMVisualBase::updateVectorCoords(VectorObject& vector, const double time)
  * \param[in] mutex OT mutex for synchronization of frame rendering.
  * \param[in] frame VW frame function to trigger frame rendering.
  */
-//#include <osgViewer/Renderer>
 void OMVisualBase::chooseVectorScales(osgViewer::View* view, OpenThreads::Mutex* mutex, std::function<void()> frame)
 {
   /* Return early if there is nothing to do */
@@ -784,11 +783,6 @@ void OMVisualBase::chooseVectorScales(osgViewer::View* view, OpenThreads::Mutex*
   }
   if (!frame) frame = std::bind(&osgViewer::ViewerBase::frame, view->getViewerBase(), USE_REFERENCE_TIME);
   frame(); // Work-around for osg::AutoTransform::computeBound() (see OSG commits 25abad8 & 92092a5 & 5c48904)
-  //static_cast<osgViewer::Renderer*>(view->getCamera()->getRenderer())->cull();
-  //osg::GraphicsOperation* renderer = view->getCamera()->getRenderer();
-  //(*renderer)(view->getCamera());
-  //(*view->getCamera()->getRenderer())(view->getCamera());
-
 
   /* Adjustable-radius vectors */
   {

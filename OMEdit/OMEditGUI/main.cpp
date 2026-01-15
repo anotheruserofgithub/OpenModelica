@@ -164,12 +164,17 @@ int main(int argc, char *argv[])
     }
   }
   Q_INIT_RESOURCE(resource_omedit);
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+  // These settings are enabled by default since Qt 6
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
   QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
+#endif
+
   OMEditApplication a(argc, argv, threadData);
 
 // Do not use the signal handler OR exception filter if user is building a debug version.
