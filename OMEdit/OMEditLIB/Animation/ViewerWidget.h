@@ -135,6 +135,7 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent *event) override;
   virtual void mouseDoubleClickEvent(QMouseEvent *event) override;
   virtual void wheelEvent(QWheelEvent *event) override;
+  virtual bool touchEvent(QTouchEvent *event);
   virtual bool event(QEvent *event) override;
   void pickVisualizer(float x, float y);
   void showVisualizerPickContextMenu(const QPoint &pos);

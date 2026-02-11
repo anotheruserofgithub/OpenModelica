@@ -235,6 +235,8 @@ ViewerWidget::ViewerWidget(QWidget *parent, Qt::WindowFlags flags)
   setMinimumSize(100, 100);
   // Change the cursor shape
   setCursor(Qt::CrossCursor);
+  // Enable touch events for multi-touch trackball manipulator
+  setAttribute(Qt::WA_AcceptTouchEvents);
   // This focus policy ensures that the widget will receive keyboard events.
   // The default, Qt::NoFocus, will result in keyboard events that are ignored.
   // This makes the widget grab focus either by tabbing, clicking, or wheeling.
@@ -731,29 +733,116 @@ void ViewerWidget::wheelEvent(QWheelEvent *event)
 }
 
 /*!
+ * \brief ViewerWidget::touchEvent
+ * Passes the widget's touch event to the graphics window.
+ * \param event
+ * \return
+ */
+bool ViewerWidget::touchEvent(QTouchEvent *event)
+{
+  osg::ref_ptr<osgGA::GUIEventAdapter> eventAdapter = nullptr;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+  for (const QEventPoint& point : event->points()) {
+    QPointF position = point.position();
+#else
+  for (const QTouchEvent::TouchPoint& point : event->touchPoints()) {
+    QPointF position = point.pos();
+#endif
+    position = -(QPointF(position.x() / width(), position.y() / height()) * 2.0 - QPointF(1.0, 1.0));
+    float x = static_cast<float>(position.x());
+    float y = static_cast<float>(position.y());
+    unsigned int id = static_cast<unsigned int>(point.id());
+    osgGA::GUIEventAdapter::TouchPhase phase;
+    switch (point.state()) {
+      case Qt::TouchPointPressed:
+        phase = osgGA::GUIEventAdapter::TOUCH_BEGAN;
+        break;
+      case Qt::TouchPointMoved:
+        phase = osgGA::GUIEventAdapter::TOUCH_MOVED;
+        break;
+      case Qt::TouchPointStationary:
+        phase = osgGA::GUIEventAdapter::TOUCH_STATIONERY;
+        break;
+      case Qt::TouchPointReleased:
+        phase = osgGA::GUIEventAdapter::TOUCH_ENDED;
+        break;
+      default:
+        phase = osgGA::GUIEventAdapter::TOUCH_UNKNOWN;
+        break;
+    };
+    if (eventAdapter.valid()) {
+      eventAdapter->addTouchPoint(id, phase, x, y);
+    } else {
+      switch (event->type()) {
+        case QEvent::TouchBegin:
+          eventAdapter = mpGraphicsWindow->getEventQueue()->touchBegan(id, phase, x, y);
+          break;
+        case QEvent::TouchUpdate:
+          eventAdapter = mpGraphicsWindow->getEventQueue()->touchMoved(id, phase, x, y);
+          break;
+        case QEvent::TouchEnd:
+        case QEvent::TouchCancel:
+          eventAdapter = mpGraphicsWindow->getEventQueue()->touchEnded(id, phase, x, y, 0);
+          break;
+      }
+    }
+  }
+  if (!eventAdapter.valid()) { // Empty list in case QEvent::TouchCancel
+    eventAdapter = mpGraphicsWindow->getEventQueue()->touchEnded(0, osgGA::GUIEventAdapter::TOUCH_UNKNOWN, 0.f, 0.f, 0);
+  }
+  return eventAdapter.valid();
+}
+
+/*!
  * \brief ViewerWidget::event
  * Repaints the graphics window on each user interaction.
+ * Handles touch events since there are no dedicated methods in QWidget.
  * \param event
  * \return
  */
 bool ViewerWidget::event(QEvent *event)
 {
-  bool handled = GLWidget::event(event);
+  bool handled = false;
+  bool repaint = false;
+  switch (event->type()) {
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    case QEvent::TouchCancel:
+      handled = touchEvent(static_cast<QTouchEvent*>(event));
+      repaint = true;
+      break;
+    case QEvent::MouseMove:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseButtonDblClick:
+#if QT_VERSION >= QT_VERSION_CHECK(5, 3, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      if (static_cast<QMouseEvent*>(event)->device()->type() != QInputDevice::DeviceType::Mouse &&
+          static_cast<QMouseEvent*>(event)->device()->type() != QInputDevice::DeviceType::TouchPad) {
+#else
+      if (static_cast<QMouseEvent*>(event)->source() != Qt::MouseEventNotSynthesized) {
+#endif
+        // Discard artificial mouse events during a touch sequence
+        event->ignore();
+        break;
+      }
+      [[fallthrough]];
+#endif
+    case QEvent::Wheel:
+    case QEvent::KeyPress:
+    case QEvent::KeyRelease:
+      repaint = true;
+      [[fallthrough]];
+    default:
+      handled = GLWidget::event(event);
+      break;
+  }
   // This ensures that the OSG widget is always going to be repainted after the
   // user performed some interaction. Doing this in the event handler ensures
   // that we don't forget about some event and prevents duplicate code.
-  switch (event->type()) {
-    case QEvent::KeyPress:
-    case QEvent::KeyRelease:
-    case QEvent::MouseButtonDblClick:
-    case QEvent::MouseButtonPress:
-    case QEvent::MouseButtonRelease:
-    case QEvent::MouseMove:
-    case QEvent::Wheel:
-      update();
-      break;
-    default:
-      break;
+  if (repaint) {
+    update();
   }
   return handled;
 }
