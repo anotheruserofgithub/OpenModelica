@@ -266,6 +266,7 @@ template<typename T>
 int ViewerWidget::convertSizeDimension(T dimension)
 {
   qreal devicePixelRatio = window() && window()->windowHandle() ? window()->windowHandle()->devicePixelRatio() : qApp->devicePixelRatio();
+  std::cout << "!!! devicePixelRatio = " << devicePixelRatio << std::endl;
   return static_cast<int>(static_cast<qreal>(.5) + (static_cast<qreal>(dimension) * devicePixelRatio));
 }
 
@@ -456,6 +457,7 @@ void ViewerWidget::mousePressEvent(QMouseEvent *event)
   }
   unsigned int button = convertMouseButton(event);
   QPoint position = convertMousePosition(event);
+  std::cout << "!!! position = (" << position.x() << ", " << position.y() << ")" << std::endl;
   mpGraphicsWindow->getEventQueue()->mouseButtonPress(static_cast<float>(position.x()), static_cast<float>(position.y()), button);
 }
 
@@ -770,6 +772,7 @@ bool ViewerWidget::touchEvent(QTouchEvent *event)
         phase = osgGA::GUIEventAdapter::TOUCH_UNKNOWN;
         break;
     };
+    std::cout << "----- Touch point " << id << " @ (" << x << ", " << y << ")" << " phase " << phase << std::endl;
     if (eventAdapter.valid()) {
       eventAdapter->addTouchPoint(id, phase, x, y);
     } else {
@@ -809,7 +812,9 @@ bool ViewerWidget::event(QEvent *event)
     case QEvent::TouchUpdate:
     case QEvent::TouchEnd:
     case QEvent::TouchCancel:
+      std::cout << "===== Touch event " << event->type() << std::endl;
       handled = touchEvent(static_cast<QTouchEvent*>(event));
+      std::cout << "handled = " << handled << std::endl;
       repaint = true;
       break;
     case QEvent::MouseMove:
@@ -817,10 +822,13 @@ bool ViewerWidget::event(QEvent *event)
     case QEvent::MouseButtonRelease:
     case QEvent::MouseButtonDblClick:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 3, 0)
+      std::cout << "===== Mouse event " << event->type() << std::endl;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      std::cout << "device type = " << static_cast<std::underlying_type<QInputDevice::DeviceType>::type>(static_cast<QMouseEvent*>(event)->device()->type()) << std::endl;
       if (static_cast<QMouseEvent*>(event)->device()->type() != QInputDevice::DeviceType::Mouse &&
           static_cast<QMouseEvent*>(event)->device()->type() != QInputDevice::DeviceType::TouchPad) {
 #else
+      std::cout << "mouse event source = " << static_cast<QMouseEvent*>(event)->source() << std::endl;
       if (static_cast<QMouseEvent*>(event)->source() != Qt::MouseEventNotSynthesized) {
 #endif
         // Discard artificial mouse events during a touch sequence
@@ -835,6 +843,7 @@ bool ViewerWidget::event(QEvent *event)
       repaint = true;
       [[fallthrough]];
     default:
+      std::cout << "===== Other event " << event->type() << std::endl;
       handled = GLWidget::event(event);
       break;
   }
