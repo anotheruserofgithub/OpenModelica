@@ -402,7 +402,7 @@ void ViewerWidget::resizeGL(int width, int height)
 
 /*!
  * \brief ViewerWidget::keyPressEvent
- * Passes the QWidget::keyPressEvent() to Graphics Window.
+ * Passes the QWidget::keyPressEvent() to the graphics window.
  * \param event
  */
 void ViewerWidget::keyPressEvent(QKeyEvent *event)
@@ -413,7 +413,7 @@ void ViewerWidget::keyPressEvent(QKeyEvent *event)
 
 /*!
  * \brief ViewerWidget::keyReleaseEvent
- * Passes the QWidget::keyReleaseEvent() to Graphics Window.
+ * Passes the QWidget::keyReleaseEvent() to the graphics window.
  * \param event
  */
 void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
@@ -424,7 +424,7 @@ void ViewerWidget::keyReleaseEvent(QKeyEvent *event)
 
 /*!
  * \brief ViewerWidget::mouseMoveEvent
- * Passes the QWidget::mouseMoveEvent() to Graphics Window.
+ * Passes the QWidget::mouseMoveEvent() to the graphics window.
  * \param event
  */
 void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
@@ -435,7 +435,7 @@ void ViewerWidget::mouseMoveEvent(QMouseEvent *event)
 
 /*!
  * \brief ViewerWidget::mousePressEvent
- * Passes the QWidget::mousePressEvent() to Graphics Window.
+ * Passes the QWidget::mousePressEvent() to the graphics window.
  * \param event
  */
 void ViewerWidget::mousePressEvent(QMouseEvent *event)
@@ -684,7 +684,7 @@ void ViewerWidget::resetVisualPropertiesForAllVisualizers()
 
 /*!
  * \brief ViewerWidget::mouseReleaseEvent
- * Passes the QWidget::mouseReleaseEvent() to Graphics Window.
+ * Passes the QWidget::mouseReleaseEvent() to the graphics window.
  * \param event
  */
 void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -696,7 +696,7 @@ void ViewerWidget::mouseReleaseEvent(QMouseEvent *event)
 
 /*!
  * \brief ViewerWidget::mouseDoubleClickEvent
- * Passes the QWidget::mouseDoubleClickEvent() to Graphics Window.
+ * Passes the QWidget::mouseDoubleClickEvent() to the graphics window.
  * \param event
  */
 void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
@@ -708,7 +708,7 @@ void ViewerWidget::mouseDoubleClickEvent(QMouseEvent *event)
 
 /*!
  * \brief ViewerWidget::wheelEvent
- * Passes the QWidget::wheelEvent() to Graphics Window.
+ * Passes the QWidget::wheelEvent() to the graphics window.
  * \param event
  */
 void ViewerWidget::wheelEvent(QWheelEvent *event)
