@@ -1174,76 +1174,75 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
     omc_free_csv_reader(csvReader);
   }
   //PLOT MAT
-  else
-    if(mFile.fileName().endsWith("mat"))
-    {
-      ModelicaMatReader reader;
-      ModelicaMatVariable_t *var;
-      QList<ModelicaMatVariable_t*> vars;
-      const char *msg = "";
-      QStringList variablesPlotted;
+  else if(mFile.fileName().endsWith("mat"))
+  {
+    ModelicaMatReader reader;
+    ModelicaMatVariable_t *var;
+    QList<ModelicaMatVariable_t*> vars;
+    const char *msg = "";
+    QStringList variablesPlotted;
 
-      //Read in mat file
-      if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader)))
-        throw PlotException(windowTitle(), msg);
-      //calculate time
-      double startTime = omc_matlab4_startTime(&reader);
-      double stopTime =  omc_matlab4_stopTime(&reader);
-      if (reader.nvar < 1) {
-        omc_free_matlab4_reader(&reader);
-        throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, "time");
-      }
-      if (time<startTime || stopTime<time) {
-        omc_free_matlab4_reader(&reader);
-        TimeOutOfBoundsException timeOutOfBoundsException(windowTitle(), QFileInfo(mFile), startTime, stopTime);
-        if (mTimeOutOfBounds) {
-          throw RecurringPlotException(timeOutOfBoundsException);
-        }
-        mTimeOutOfBounds = true;
-        throw timeOutOfBoundsException;
-      } else {
-        mTimeOutOfBounds = false;
-      }
-      QStringList::Iterator itVarList;
-      for (itVarList = mVariablesList.begin(); itVarList != mVariablesList.end(); itVarList++){
-        if (!editCase) {
-          QFileInfo fileInfo(mFile);
-          pPlotCurve = new PlotCurve(fileInfo.fileName(), fileInfo.absoluteFilePath(), "array index", getXUnit(), getXDisplayUnit(), *itVarList, getYUnit(), getYDisplayUnit(), mpPlot);
-          mpPlot->addPlotCurve(pPlotCurve);
-        }
-        int i = 1;
-        do {
-          QString varNameQS = (*itVarList);
-          if (QRegExp("der\\(\\D(\\w)*\\)").exactMatch(varNameQS)){
-            varNameQS.chop(1);
-            varNameQS.append("["+QString::number(i)+"])");
-          } else {
-            varNameQS.append("["+QString::number(i)+"]");
-          }
-          if(!(var = omc_matlab4_find_var(&reader, varNameQS.toStdString().c_str()))) break;
-          i++;
-          vars.push_back(var);
-        } while (true);
-        QVector<ModelicaMatVariable_t*> varVec = vars.toVector();
-        res = new double [vars.count()];
-        omc_matlab4_read_vars_val(res, &reader, varVec.data(), vars.count(), time);
-        pPlotCurve->clearXAxisVector();
-        pPlotCurve->clearYAxisVector();
-        for (int i = 0; i < vars.count(); i++){
-          pPlotCurve->addXAxisValue(i+1);
-          pPlotCurve->addYAxisValue(res[i]);
-        }
-        pPlotCurve->plotData();
-        pPlotCurve->attach(mpPlot);
-        updateTimeText();
-        delete[] res;
-      }
-      // if plottype is PLOT then check which requested variables are not found in the file
-      if (isPlot())
-        checkForErrors(mVariablesList, variablesPlotted);
-      // close the file
+    //Read in mat file
+    if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader)))
+      throw PlotException(windowTitle(), msg);
+    //calculate time
+    double startTime = omc_matlab4_startTime(&reader);
+    double stopTime =  omc_matlab4_stopTime(&reader);
+    if (reader.nvar < 1) {
       omc_free_matlab4_reader(&reader);
+      throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, "time");
     }
+    if (time<startTime || stopTime<time) {
+      omc_free_matlab4_reader(&reader);
+      TimeOutOfBoundsException timeOutOfBoundsException(windowTitle(), QFileInfo(mFile), startTime, stopTime);
+      if (mTimeOutOfBounds) {
+        throw RecurringPlotException(timeOutOfBoundsException);
+      }
+      mTimeOutOfBounds = true;
+      throw timeOutOfBoundsException;
+    } else {
+      mTimeOutOfBounds = false;
+    }
+    QStringList::Iterator itVarList;
+    for (itVarList = mVariablesList.begin(); itVarList != mVariablesList.end(); itVarList++){
+      if (!editCase) {
+        QFileInfo fileInfo(mFile);
+        pPlotCurve = new PlotCurve(fileInfo.fileName(), fileInfo.absoluteFilePath(), "array index", getXUnit(), getXDisplayUnit(), *itVarList, getYUnit(), getYDisplayUnit(), mpPlot);
+        mpPlot->addPlotCurve(pPlotCurve);
+      }
+      int i = 1;
+      do {
+        QString varNameQS = (*itVarList);
+        if (QRegExp("der\\(\\D(\\w)*\\)").exactMatch(varNameQS)){
+          varNameQS.chop(1);
+          varNameQS.append("["+QString::number(i)+"])");
+        } else {
+          varNameQS.append("["+QString::number(i)+"]");
+        }
+        if(!(var = omc_matlab4_find_var(&reader, varNameQS.toStdString().c_str()))) break;
+        i++;
+        vars.push_back(var);
+      } while (true);
+      QVector<ModelicaMatVariable_t*> varVec = vars.toVector();
+      res = new double [vars.count()];
+      omc_matlab4_read_vars_val(res, &reader, varVec.data(), vars.count(), time);
+      pPlotCurve->clearXAxisVector();
+      pPlotCurve->clearYAxisVector();
+      for (int i = 0; i < vars.count(); i++){
+        pPlotCurve->addXAxisValue(i+1);
+        pPlotCurve->addYAxisValue(res[i]);
+      }
+      pPlotCurve->plotData();
+      pPlotCurve->attach(mpPlot);
+      updateTimeText();
+      delete[] res;
+    }
+    // if plottype is PLOT then check which requested variables are not found in the file
+    if (isPlot())
+      checkForErrors(mVariablesList, variablesPlotted);
+    // close the file
+    omc_free_matlab4_reader(&reader);
+  }
 }
 
 void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
