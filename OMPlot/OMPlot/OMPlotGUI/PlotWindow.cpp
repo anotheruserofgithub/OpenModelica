@@ -860,6 +860,7 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
       ModelicaMatReader reader;
       ModelicaMatVariable_t *var;
       const char *msg = "";
+      QStringList variablesPlotted;
 
       //Read the .mat file
       if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader)))
@@ -876,6 +877,7 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
         omc_free_matlab4_reader(&reader);
         throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, xVariable);
       }
+      variablesPlotted.append(xVariable);
       // clear previous curve data
       pPlotCurve->clearXAxisVector();
       pPlotCurve->clearYAxisVector();
@@ -907,6 +909,7 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
         omc_free_matlab4_reader(&reader);
         throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, yVariable);
       }
+      variablesPlotted.append(yVariable);
       // if variable is not a parameter then
       if (!var->isParam)
       {
@@ -932,6 +935,9 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
       pPlotCurve->plotData();
       pPlotCurve->attach(mpPlot);
       mpPlot->replot();
+      // check which requested variables are not found in the file
+      checkForErrors(mVariablesList, variablesPlotted);
+      // close the file
       omc_free_matlab4_reader(&reader);
     }
   }
@@ -1182,7 +1188,6 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
     QList<ModelicaMatVariable_t*> vars;
     double *res;
     const char *msg = "";
-    QStringList variablesPlotted;
 
     //Read in mat file
     if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader)))
@@ -1239,10 +1244,6 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
       updateTimeText();
       delete[] res;
     }
-    // if plottype is PLOT then check which requested variables are not found in the file
-    if (isPlot())
-      checkForErrors(mVariablesList, variablesPlotted);
-    // close the file
     omc_free_matlab4_reader(&reader);
   }
 }
