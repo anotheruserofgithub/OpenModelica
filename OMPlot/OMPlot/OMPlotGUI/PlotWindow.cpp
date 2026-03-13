@@ -482,14 +482,15 @@ void PlotWindow::setupToolbar(int toolbarIconSize)
 
 void PlotWindow::plot(PlotCurve *pPlotCurve)
 {
-  QString currentLine;
   if (mVariablesList.isEmpty() && isPlot())
     throw NoVariableException(windowTitle(), ERROR_NO_VARIABLES_SPECIFIED);
 
   bool editCase = pPlotCurve ? true : false;
+
   //PLOT PLT
   if (mFile.fileName().endsWith("plt"))
   {
+    QString currentLine;
     // open the file
     if (!mFile.open(QIODevice::ReadOnly)) {
       throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
@@ -699,9 +700,6 @@ void PlotWindow::plot(PlotCurve *pPlotCurve)
 
 void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
 {
-  QString xVariable, yVariable, xTitle, yTitle;
-  int pair = 0;
-
   if (mVariablesList.isEmpty())
     throw NoVariableException(windowTitle(), ERROR_NO_VARIABLES_SPECIFIED);
   else if (mVariablesList.size()%2 != 0)
@@ -709,17 +707,19 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
 
   bool editCase = pPlotCurve ? true : false;
 
-  for (pair = 0; pair < mVariablesList.size(); pair += 2)
+  for (int pair = 0; pair < mVariablesList.size(); pair += 2)
   {
-    xVariable = mVariablesList.at(pair);
-    yVariable = mVariablesList.at(pair+1);
+    QString xVariable = mVariablesList.at(pair);
+    QString yVariable = mVariablesList.at(pair+1);
 
-    if (pair==0) {
+    QString xTitle;
+    QString yTitle;
+    if (pair == 0) {
       xTitle = xVariable;
       yTitle = yVariable;
     } else {
-      xTitle += ", "+xVariable;
-      yTitle += ", "+yVariable;
+      xTitle += ", " + xVariable;
+      yTitle += ", " + yVariable;
     }
     setXLabel(xTitle);
     setYLabel(yTitle);
@@ -1033,16 +1033,18 @@ void PlotWindow::updateTimeText()
 
 void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
 {
-  double *res;
-  QString currentLine;
   setTime(time);
+
   if (mVariablesList.isEmpty() && isPlotArray())
     throw NoVariableException(windowTitle(), ERROR_NO_VARIABLES_SPECIFIED);
+
   bool editCase = pPlotCurve ? true : false;
+
   //PLOT PLT
   //we presume time is the first dataset and array elements datasets are consequent
   if (mFile.fileName().endsWith("plt"))
   {
+    QString currentLine;
     /* open the file */
     if (!mFile.open(QIODevice::ReadOnly))
       throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
@@ -1062,7 +1064,6 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
       mFile.close();
       throw PlotException(windowTitle(), ERROR_INTERVAL_SIZE_NOT_SPECIFIED);
     }
-    //    double vals[intervalSize];
     //Read in timevector
     auto timeVals = std::make_unique<double[]>(intervalSize);
     readPLTDataset(textStream, "time", intervalSize, timeVals.get());
@@ -1179,6 +1180,7 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
     ModelicaMatReader reader;
     ModelicaMatVariable_t *var;
     QList<ModelicaMatVariable_t*> vars;
+    double *res;
     const char *msg = "";
     QStringList variablesPlotted;
 
@@ -1247,9 +1249,8 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
 
 void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
 {
-  QString xVariable, yVariable, xTitle, yTitle;
-  int pair = 0;
   setTime(time);
+
   if (mVariablesList.isEmpty())
     throw NoVariableException(windowTitle(), ERROR_NO_VARIABLES_SPECIFIED);
   else if (mVariablesList.size()%2 != 0)
@@ -1257,17 +1258,19 @@ void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
 
   bool editCase = pPlotCurve ? true : false;
 
-  for (pair = 0; pair < mVariablesList.size(); pair += 2)
+  for (int pair = 0; pair < mVariablesList.size(); pair += 2)
   {
-    xVariable = mVariablesList.at(pair);
-    yVariable = mVariablesList.at(pair+1);
+    QString xVariable = mVariablesList.at(pair);
+    QString yVariable = mVariablesList.at(pair+1);
 
-    if (pair==0) {
+    QString xTitle;
+    QString yTitle;
+    if (pair == 0) {
       xTitle = xVariable;
       yTitle = yVariable;
     } else {
-      xTitle += ", "+xVariable;
-      yTitle += ", "+yVariable;
+      xTitle += ", " + xVariable;
+      yTitle += ", " + yVariable;
     }
     setXLabel(xTitle);
     setYLabel(yTitle);
@@ -1419,6 +1422,7 @@ void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
       //Declare variables
       ModelicaMatReader reader;
       ModelicaMatVariable_t *var;
+      QList<ModelicaMatVariable_t*> vars;
       double *res;
       const char *msg = "";
 
@@ -1451,7 +1455,6 @@ void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
       }
       pPlotCurve->clearXAxisVector();
       pPlotCurve->clearYAxisVector();
-      QList<ModelicaMatVariable_t*> vars;
       QStringList varPair;
       varPair.push_back(xVariable);
       varPair.push_back(yVariable);
