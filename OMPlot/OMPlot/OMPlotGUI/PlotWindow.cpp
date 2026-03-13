@@ -346,18 +346,22 @@ void PlotWindow::getStartStopTime(double &start, double &stop)
     omc_free_csv_reader(csvReader);
   }
   //PLOT MAT
-  else if(mFile.fileName().endsWith("mat"))
+  else if (mFile.fileName().endsWith("mat"))
   {
     ModelicaMatReader reader;
     const char *msg = "";
+
     //Read in mat file
-    if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader))) {
+    if (0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader))) {
       throw PlotException(windowTitle(), msg);
     }
-
-    //Read in timevector
+    if (reader.nvar < 1) {
+      omc_free_matlab4_reader(&reader);
+      throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, "time");
+    }
+    //calculate time
     start = omc_matlab4_startTime(&reader);
-    stop =  omc_matlab4_stopTime(&reader);
+    stop = omc_matlab4_stopTime(&reader);
 
     // close the file
     omc_free_matlab4_reader(&reader);
@@ -614,7 +618,7 @@ void PlotWindow::plot(PlotCurve *pPlotCurve)
     omc_free_csv_reader(csvReader);
   }
   //PLOT MAT
-  else if(mFile.fileName().endsWith("mat"))
+  else if (mFile.fileName().endsWith("mat"))
   {
     ModelicaMatReader reader;
     ModelicaMatVariable_t *var;
@@ -622,17 +626,16 @@ void PlotWindow::plot(PlotCurve *pPlotCurve)
     QStringList variablesPlotted;
 
     //Read in mat file
-    if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader))) {
+    if (0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader))) {
       throw PlotException(windowTitle(), msg);
     }
-
     if (reader.nvar < 1) {
       omc_free_matlab4_reader(&reader);
       throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, "time");
     }
-
+    //calculate time
     double startTime = omc_matlab4_startTime(&reader);
-    double stopTime =  omc_matlab4_stopTime(&reader);
+    double stopTime = omc_matlab4_stopTime(&reader);
     //Read in timevector
     double *timeVals = omc_matlab4_read_vals(&reader,1);
     if (!timeVals) {
@@ -854,7 +857,7 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
       omc_free_csv_reader(csvReader);
     }
     //PLOT MAT
-    else if(mFile.fileName().endsWith("mat"))
+    else if (mFile.fileName().endsWith("mat"))
     {
       //Declare variables
       ModelicaMatReader reader;
@@ -863,9 +866,9 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
       QStringList variablesPlotted;
 
       //Read the .mat file
-      if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader)))
+      if (0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader))) {
         throw PlotException(windowTitle(), msg);
-
+      }
       if (!editCase) {
         QFileInfo fileInfo(mFile);
         pPlotCurve = new PlotCurve(fileInfo.fileName(), fileInfo.absoluteFilePath(), xVariable, getXUnit(), getXDisplayUnit(), yVariable, getYUnit(), getYDisplayUnit(), mpPlot);
@@ -1181,7 +1184,7 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
     omc_free_csv_reader(csvReader);
   }
   //PLOT MAT
-  else if(mFile.fileName().endsWith("mat"))
+  else if (mFile.fileName().endsWith("mat"))
   {
     ModelicaMatReader reader;
     ModelicaMatVariable_t *var;
@@ -1190,15 +1193,16 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
     const char *msg = "";
 
     //Read in mat file
-    if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader)))
+    if (0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader))) {
       throw PlotException(windowTitle(), msg);
-    //calculate time
-    double startTime = omc_matlab4_startTime(&reader);
-    double stopTime =  omc_matlab4_stopTime(&reader);
+    }
     if (reader.nvar < 1) {
       omc_free_matlab4_reader(&reader);
       throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, "time");
     }
+    //calculate time
+    double startTime = omc_matlab4_startTime(&reader);
+    double stopTime = omc_matlab4_stopTime(&reader);
     if (time<startTime || stopTime<time) {
       omc_free_matlab4_reader(&reader);
       TimeOutOfBoundsException timeOutOfBoundsException(windowTitle(), QFileInfo(mFile), startTime, stopTime);
@@ -1418,7 +1422,7 @@ void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
       omc_free_csv_reader(csvReader);
     }
     //PLOT MAT
-    else if(mFile.fileName().endsWith("mat"))
+    else if (mFile.fileName().endsWith("mat"))
     {
       //Declare variables
       ModelicaMatReader reader;
@@ -1428,21 +1432,21 @@ void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
       const char *msg = "";
 
       //Read the .mat file
-      if(0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader)))
+      if (0 != (msg = omc_new_matlab4_reader(mFile.fileName().toStdString().c_str(), &reader))) {
         throw PlotException(windowTitle(), msg);
-
+      }
       if (!editCase) {
         QFileInfo fileInfo(mFile);
         pPlotCurve = new PlotCurve(fileInfo.fileName(), fileInfo.absoluteFilePath(), xVariable, getXUnit(), getXDisplayUnit(), yVariable, getYUnit(), getYDisplayUnit(), mpPlot);
         mpPlot->addPlotCurve(pPlotCurve);
       }
-      //calculate time
-      double startTime = omc_matlab4_startTime(&reader);
-      double stopTime =  omc_matlab4_stopTime(&reader);
       if (reader.nvar < 1) {
         omc_free_matlab4_reader(&reader);
         throw NoVariableException(windowTitle(), ERROR_VARIABLE_DOES_NOT_EXIST, "time");
       }
+      //calculate time
+      double startTime = omc_matlab4_startTime(&reader);
+      double stopTime = omc_matlab4_stopTime(&reader);
       if (time<startTime || stopTime<time) {
         omc_free_matlab4_reader(&reader);
         TimeOutOfBoundsException timeOutOfBoundsException(windowTitle(), QFileInfo(mFile), startTime, stopTime);
