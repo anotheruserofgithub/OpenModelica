@@ -564,9 +564,9 @@ void PlotWindow::plot(PlotCurve *pPlotCurve)
     QStringList variablesPlotted;
     struct csv_data *csvReader;
     csvReader = read_csv(mFile.fileName().toStdString().c_str());
-    if (csvReader == NULL)
+    if (csvReader == NULL) {
       throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
-
+    }
     //Read in timevector
     double *timeVals = read_csv_dataset(csvReader, "time");
     if (timeVals == NULL)
@@ -808,9 +808,9 @@ void PlotWindow::plotParametric(PlotCurve *pPlotCurve)
       QStringList variablesPlotted;
       struct csv_data *csvReader;
       csvReader = read_csv(mFile.fileName().toStdString().c_str());
-      if (csvReader == NULL)
+      if (csvReader == NULL) {
         throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
-
+      }
       double *xVals = NULL, *yVals = NULL;
       // read in all values
       for (int i = 0; i < csvReader->numvars; i++)
@@ -1055,8 +1055,9 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
   {
     QString currentLine;
     /* open the file */
-    if (!mFile.open(QIODevice::ReadOnly))
+    if (!mFile.open(QIODevice::ReadOnly)) {
       throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
+    }
     QTextStream textStream(&mFile);
     // read the interval size from the file
     int intervalSize = -1;
@@ -1123,8 +1124,9 @@ void PlotWindow::plotArray(double time, PlotCurve *pPlotCurve)
     /* open the file */
     struct csv_data *csvReader;
     csvReader = read_csv(mFile.fileName().toStdString().c_str());
-    if (csvReader == NULL)
+    if (csvReader == NULL) {
       throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
+    }
     //Read in timevector
     double *timeVals = read_csv_dataset(csvReader, "time");
     if (timeVals == NULL)
@@ -1285,8 +1287,9 @@ void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
     if (mFile.fileName().endsWith("plt"))
     {
       /* open the file */
-      if (!mFile.open(QIODevice::ReadOnly))
+      if (!mFile.open(QIODevice::ReadOnly)) {
         throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
+      }
       QTextStream textStream(&mFile);
       // read the interval size from the file
       QString currentLine;
@@ -1347,14 +1350,15 @@ void PlotWindow::plotArrayParametric(double time, PlotCurve *pPlotCurve)
       updateTimeText();
       mFile.close();
     }
-    //    //PLOT CSV
+    //PLOT CSV
     else if (mFile.fileName().endsWith("csv"))
     {
       /* open the file */
       struct csv_data *csvReader;
       csvReader = read_csv(mFile.fileName().toStdString().c_str());
-      if (csvReader == NULL)
+      if (csvReader == NULL) {
         throw NoFileException(windowTitle(), ERROR_FAILED_TO_OPEN_FILE, mFile.fileName());
+      }
       //Read in timevector
       double *timeVals = read_csv_dataset(csvReader, "time");
       if (timeVals == NULL)
